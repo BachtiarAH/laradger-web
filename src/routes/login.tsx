@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { Button, Card, ErrorBox, Field, Input, Label } from '../components/ui'
+import { Button, Card, ErrorBox, Field, Input } from '../components/ui'
 
 export const Route = createFileRoute('/login')({
   component: LoginComponent,
@@ -39,10 +39,10 @@ function LoginComponent() {
   return (
     <div className="mx-auto mt-8 max-w-md">
       <Card className="p-6">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-xl font-bold text-foreground">
           Log in
         </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-1 text-sm text-muted-foreground">
           Enter your credentials to access the ledger.
         </p>
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -76,9 +76,9 @@ function LoginComponent() {
             Log in
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-4 text-center text-sm text-muted-foreground">
           No account yet?{' '}
-          <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+          <Link to="/register" className="font-medium text-primary hover:underline">
             Register
           </Link>
         </p>

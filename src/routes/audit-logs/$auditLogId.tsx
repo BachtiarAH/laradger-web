@@ -17,9 +17,9 @@ export const Route = createFileRoute('/audit-logs/$auditLogId')({
 })
 
 function JsonBlock({ value }: { value: unknown }) {
-  if (value === null || value === undefined) return <span className="text-gray-400">null</span>
+  if (value === null || value === undefined) return <span className="text-muted-foreground">null</span>
   return (
-    <pre className="mt-2 max-h-96 overflow-auto rounded-md bg-gray-100 p-3 text-xs leading-relaxed dark:bg-gray-800">
+    <pre className="mt-2 max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs leading-relaxed">
       {JSON.stringify(value, null, 2)}
     </pre>
   )
@@ -55,24 +55,24 @@ function AuditLogDetailPage() {
           <Card className="p-6">
             <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
               <div>
-                <dt className="text-gray-500 dark:text-gray-400">Action</dt>
+                <dt className="text-muted-foreground">Action</dt>
                 <dd className="mt-1 font-mono text-xs">{log.action}</dd>
               </div>
               <div>
-                <dt className="text-gray-500 dark:text-gray-400">User</dt>
+                <dt className="text-muted-foreground">User</dt>
                 <dd className="mt-1">{log.user?.name ?? log.user_id}</dd>
               </div>
               <div>
-                <dt className="text-gray-500 dark:text-gray-400">Journal</dt>
+                <dt className="text-muted-foreground">Journal</dt>
                 <dd className="mt-1 font-mono text-xs">{log.journal_id ?? '—'}</dd>
               </div>
               <div>
-                <dt className="text-gray-500 dark:text-gray-400">Created</dt>
+                <dt className="text-muted-foreground">Created</dt>
                 <dd className="mt-1">{formatDate(log.created_at)}</dd>
               </div>
               {log.reason && (
                 <div className="col-span-2">
-                  <dt className="text-gray-500 dark:text-gray-400">Reason</dt>
+                  <dt className="text-muted-foreground">Reason</dt>
                   <dd className="mt-1">{log.reason}</dd>
                 </div>
               )}
@@ -81,13 +81,13 @@ function AuditLogDetailPage() {
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card className="p-6">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Before
               </h2>
               <JsonBlock value={log.before} />
             </Card>
             <Card className="p-6">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 After
               </h2>
               <JsonBlock value={log.after} />

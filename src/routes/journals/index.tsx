@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { z } from 'zod'
 import * as React from 'react'
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
@@ -15,50 +14,57 @@ import {
   LoadingBox,
   PageHeader,
   Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Table,
+  TableBody,
+  TableHeader,
+  TableRow,
   Td,
   Th,
 } from '../../components/ui'
 
-const validateSearch = z.object({
-  page: z.number().int().min(1).catch(1).default(1),
-  status: z
-    .enum(['draft', 'posted', 'archived'])
-    .optional()
-    .catch(undefined),
-  source: z
-    .enum(['manual', 'imported', 'system'])
-    .optional()
-    .catch(undefined),
-  from: z.string().optional().catch(undefined),
-  to: z.string().optional().catch(undefined),
-})
-
 export const Route = createFileRoute('/journals/')({
-  validateSearch,
   component: JournalsPage,
 })
 
 function JournalsPage() {
-  const search = Route.useSearch()
-  const navigate = Route.useNavigate()
-
-  const setSearch = (patch: Partial<typeof search>) => {
-    navigate({ search: { ...search, ...patch } })
-  }
+  const [page, setPage] = React.useState(1)
+  const [status, setStatus] = React.useState('')
+  const [source, setSource] = React.useState('')
+  const [from, setFrom] = React.useState('')
+  const [to, setTo] = React.useState('')
 
   const { data, error, loading } = useFetch(
     () =>
       api.listJournals({
-        page: search.page,
+        page,
         per_page: 15,
-        status: search.status,
-        source: search.source,
-        from: search.from,
-        to: search.to,
+        status: status || undefined,
+        source: source || undefined,
+        from: from || undefined,
+        to: to || undefined,
       }),
-    [search.page, search.status, search.source, search.from, search.to],
+    [page, status, source, from, to],
   )
+
+  const resetFilters = () => {
+    setStatus('')
+    setSource('')
+    setFrom('')
+    setTo('')
+    setPage(1)
+  }
+
+  const setFilter = (name: 'status' | 'source' | 'from' | 'to', value: string) => {
+    if (name === 'status') setStatus(value)
+    if (name === 'source') setSource(value)
+    if (name === 'from') setFrom(value)
+    if (name === 'to') setTo(value)
+    setPage(1)
+  }
 
   return (
     <RequireAuth>
@@ -76,56 +82,50 @@ function JournalsPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
           <Field label="Status">
             <Select
-              value={search.status ?? ''}
-              onChange={(e) =>
-                setSearch({ status: (e.target.value || undefined) as never, page: 1 })
-              }
+              value={status || undefined}
+              onValueChange={(value) => setFilter('status', value)}
             >
-              <option value="">All statuses</option>
-              <option value="draft">draft</option>
-              <option value="posted">posted</option>
-              <option value="archived">archived</option>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">draft</SelectItem>
+                <SelectItem value="posted">posted</SelectItem>
+                <SelectItem value="archived">archived</SelectItem>
+              </SelectContent>
             </Select>
           </Field>
           <Field label="Source">
             <Select
-              value={search.source ?? ''}
-              onChange={(e) =>
-                setSearch({ source: (e.target.value || undefined) as never, page: 1 })
-              }
+              value={source || undefined}
+              onValueChange={(value) => setFilter('source', value)}
             >
-              <option value="">All sources</option>
-              <option value="manual">manual</option>
-              <option value="imported">imported</option>
-              <option value="system">system</option>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All sources" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manual">manual</SelectItem>
+                <SelectItem value="imported">imported</SelectItem>
+                <SelectItem value="system">system</SelectItem>
+              </SelectContent>
             </Select>
           </Field>
           <Field label="From">
             <Input
               type="date"
-              value={search.from ?? ''}
-              onChange={(e) =>
-                setSearch({ from: e.target.value || undefined, page: 1 })
-              }
+              value={from}
+              onChange={(e) => setFilter('from', e.target.value)}
             />
           </Field>
           <Field label="To">
             <Input
               type="date"
-              value={search.to ?? ''}
-              onChange={(e) =>
-                setSearch({ to: e.target.value || undefined, page: 1 })
-              }
+              value={to}
+              onChange={(e) => setFilter('to', e.target.value)}
             />
           </Field>
           <div className="flex items-end">
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={() =>
-                navigate({ search: { page: 1 } })
-              }
-            >
+            <Button variant="secondary" className="w-full" onClick={resetFilters}>
               Clear filters
             </Button>
           </div>
@@ -139,17 +139,17 @@ function JournalsPage() {
         {!loading && data && (
           <>
             {data.data.length === 0 ? (
-              <p className="p-6 text-sm text-gray-500">
+              <p className="p-6 text-sm text-muted-foreground">
                 No journals found.{' '}
-                <Link to="/journals/new" className="text-indigo-600 dark:text-indigo-400">
+                <Link to="/journals/new" className="font-medium text-primary hover:underline">
                   Create your first journal
                 </Link>
                 .
               </p>
             ) : (
               <Table>
-                <thead className="border-b border-gray-200 dark:border-gray-800">
-                  <tr>
+                <TableHeader>
+                  <TableRow>
                     <Th>Reference</Th>
                     <Th>Description</Th>
                     <Th>Date</Th>
@@ -157,11 +157,11 @@ function JournalsPage() {
                     <Th>Source</Th>
                     <Th>Lines</Th>
                     <Th className="text-right">Actions</Th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {data.data.map((journal) => (
-                    <tr key={journal.id}>
+                    <TableRow key={journal.id}>
                       <Td>{journal.reference || '—'}</Td>
                       <Td className="max-w-xs truncate">{journal.description}</Td>
                       <Td>{new Date(journal.transaction_date).toLocaleDateString()}</Td>
@@ -172,22 +172,22 @@ function JournalsPage() {
                         <Link
                           to="/journals/$journalId"
                           params={{ journalId: journal.id }}
-                          className="text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                          className="text-sm text-primary hover:underline"
                         >
                           View
                         </Link>
                       </Td>
-                    </tr>
+                    </TableRow>
                   ))}
-                </tbody>
+                </TableBody>
               </Table>
             )}
-            <div className="border-t border-gray-200 px-4 py-3 dark:border-gray-800">
+            <div className="border-t border-border px-4 py-3">
               <Pagination
                 page={data.current_page}
                 lastPage={data.last_page}
                 total={data.total}
-                onPageChange={(page) => setSearch({ page })}
+                onPageChange={setPage}
               />
             </div>
           </>

@@ -17,6 +17,10 @@ import {
   LoadingBox,
   PageHeader,
   Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '../../components/ui'
 import type { JournalSource, JournalStatus } from '../../lib/types'
 
@@ -136,12 +140,16 @@ function NewJournalPage() {
               </Field>
               <Field label="Status" htmlFor="status">
                 <Select
-                  id="status"
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as JournalStatus)}
+                  onValueChange={(value) => setStatus(value as JournalStatus)}
                 >
-                  <option value="draft">draft</option>
-                  <option value="posted">posted</option>
+                  <SelectTrigger id="status" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">draft</SelectItem>
+                    <SelectItem value="posted">posted</SelectItem>
+                  </SelectContent>
                 </Select>
               </Field>
               <Field label="Source" htmlFor="source">
@@ -160,27 +168,27 @@ function NewJournalPage() {
           </Card>
 
           <Card className="space-y-4 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 className="text-lg font-semibold text-foreground">
               Lines
             </h2>
             <LineEditor accounts={accounts.data?.data ?? []} lines={lines} onChange={setLines} />
           </Card>
 
           <Card className="space-y-4 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 className="text-lg font-semibold text-foreground">
               Tags
             </h2>
             {tags.data?.data.length === 0 ? (
-              <p className="text-sm text-gray-500">No tags available.</p>
+              <p className="text-sm text-muted-foreground">No tags available.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {tags.data?.data.map((tag) => (
                   <label
                     key={tag.id}
-                    className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-sm ${
+                    className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-sm transition-colors ${
                       tagIds.includes(tag.id)
-                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200'
-                        : 'border-gray-300 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-input text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                   >
                     <input

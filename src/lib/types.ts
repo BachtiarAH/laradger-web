@@ -28,7 +28,6 @@ export type Account = {
 }
 
 export type AccountStore = {
-  code: string
   name: string
   type: AccountType
   parent_id?: string | null
@@ -109,6 +108,31 @@ export type JournalTag = {
   tag?: Tag | null
 }
 
+export type Budget = {
+  id: string
+  name: string
+  description: string | null
+  amount: string
+  starts_at: string
+  ends_at: string
+  created_at: string
+  updated_at: string
+  accounts?: Account[]
+  tags?: Tag[]
+}
+
+export type BudgetStore = {
+  name: string
+  description?: string | null
+  amount: number
+  starts_at: string
+  ends_at: string
+  account_ids?: string[]
+  tag_ids?: string[]
+}
+
+export type BudgetUpdate = Partial<BudgetStore>
+
 export type AuditLog = {
   id: string
   user_id: string
@@ -123,25 +147,10 @@ export type AuditLog = {
   journal?: Journal | null
 }
 
-export type PaginationLink = {
-  url: string | null
-  label: string
-  active: boolean
-}
-
 export type Paginated<T> = {
-  current_page: number
   data: T[]
-  first_page_url: string
-  from: number | null
+  current_page: number
   last_page: number
-  last_page_url: string
-  links: PaginationLink[]
-  next_page_url: string | null
-  path: string
-  per_page: number
-  prev_page_url: string | null
-  to: number | null
   total: number
 }
 

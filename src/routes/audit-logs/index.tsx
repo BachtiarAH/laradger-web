@@ -10,6 +10,9 @@ import {
   LoadingBox,
   PageHeader,
   Table,
+  TableBody,
+  TableHeader,
+  TableRow,
   Td,
   Th,
   formatDate,
@@ -38,21 +41,21 @@ function AuditLogsPage() {
         {!loading && data && (
           <>
             {data.data.length === 0 ? (
-              <p className="p-6 text-sm text-gray-500">No audit logs yet.</p>
+              <p className="p-6 text-sm text-muted-foreground">No audit logs yet.</p>
             ) : (
               <Table>
-                <thead className="border-b border-gray-200 dark:border-gray-800">
-                  <tr>
+                <TableHeader>
+                  <TableRow>
                     <Th>Action</Th>
                     <Th>User</Th>
                     <Th>Reason</Th>
                     <Th>Created</Th>
                     <Th className="text-right">Actions</Th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {data.data.map((log) => (
-                    <tr key={log.id}>
+                    <TableRow key={log.id}>
                       <Td>
                         <span className="font-mono text-xs">{log.action}</span>
                       </Td>
@@ -63,17 +66,17 @@ function AuditLogsPage() {
                         <Link
                           to="/audit-logs/$auditLogId"
                           params={{ auditLogId: log.id }}
-                          className="text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                          className="text-sm text-primary hover:underline"
                         >
                           View
                         </Link>
                       </Td>
-                    </tr>
+                    </TableRow>
                   ))}
-                </tbody>
+                </TableBody>
               </Table>
             )}
-            <div className="border-t border-gray-200 px-4 py-3 dark:border-gray-800">
+            <div className="border-t border-border px-4 py-3">
               <Pagination
                 page={data.current_page}
                 lastPage={data.last_page}

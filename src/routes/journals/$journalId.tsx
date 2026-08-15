@@ -3,6 +3,7 @@ import * as React from 'react'
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
 import { RequireAuth } from '../../components/RequireAuth'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 import {
   Badge,
   Button,
@@ -13,7 +14,14 @@ import {
   LoadingBox,
   PageHeader,
   Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Table,
+  TableBody,
+  TableHeader,
+  TableRow,
   Td,
   Th,
   formatDate,
@@ -46,6 +54,10 @@ function JournalDetailPage() {
   const [editing, setEditing] = React.useState(false)
   const [editingLineId, setEditingLineId] = React.useState<string | null>(null)
 
+  const [confirmDelete, setConfirmDelete] = React.useState(false)
+  const [confirmReverse, setConfirmReverse] = React.useState(false)
+  const [confirmLine, setConfirmLine] = React.useState<JournalLine | null>(null)
+
   // Edit journal form
   const [formDate, setFormDate] = React.useState('')
   const [formDescription, setFormDescription] = React.useState('')
@@ -59,11 +71,9 @@ function JournalDetailPage() {
     credit: '',
     description: '',
   })
-  const [addingLine, setAddingLine] = React.useState(false)
 
   // Attach tag
   const [attachTagId, setAttachTagId] = React.useState('')
-  const [attachingTag, setAttachingTag] = React.useState(false)
 
   React.useEffect(() => {
     if (journal) {
@@ -114,20 +124,26 @@ function JournalDetailPage() {
     })
   }
 
-  const handleDelete = () => {
-    if (!window.confirm(`Delete journal "${journal?.reference}"?`)) return
-    return runAction(async () => {
+  const handleDelete = async () => {
+    setActionError(null)
+    try {
       await api.deleteJournal(journalId)
       navigate({ to: '/journals' })
-    })
+    } catch (err) {
+      setActionError(err)
+      throw err
+    }
   }
 
-  const handleReverse = () => {
-    if (!window.confirm('Create a reversal for this journal?')) return
-    return runAction(async () => {
+  const handleReverse = async () => {
+    setActionError(null)
+    try {
       const result = await api.reverseJournal(journalId)
       navigate({ to: '/journals/$journalId', params: { journalId: result.data.id } })
-    })
+    } catch (err) {
+      setActionError(err)
+      throw err
+    }
   }
 
   const handleAddLine = () => {
@@ -153,12 +169,15 @@ function JournalDetailPage() {
     })
   }
 
-  const handleDeleteLine = (line: JournalLine) => {
-    if (!window.confirm('Delete this journal line?')) return
-    return runAction(async () => {
+  const handleDeleteLine = async (line: JournalLine) => {
+    setActionError(null)
+    try {
       await api.deleteJournalLine(line.id)
       setEditingLineId(null)
-    })
+    } catch (err) {
+      setActionError(err)
+      throw err
+    }
   }
 
   const handleUpdateLine = (
@@ -221,12 +240,12 @@ function JournalDetailPage() {
                 </Button>
               )}
               {isPosted && (
-                <Button onClick={handleReverse} loading={busy}>
+                <Button onClick={() => setConfirmReverse(true)}>
                   Reverse
                 </Button>
               )}
               {isDraft && (
-                <Button variant="danger" onClick={handleDelete} loading={busy}>
+                <Button variant="danger" onClick={() => setConfirmDelete(true)}>
                   Delete
                 </Button>
               )}
@@ -244,32 +263,32 @@ function JournalDetailPage() {
           <Card className="mb-4 p-6">
             <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
               <div>
-                <dt className="text-gray-500 dark:text-gray-400">Status</dt>
+                <dt className="text-muted-foreground">Status</dt>
                 <dd className="mt-1"><Badge value={journal.status} /></dd>
               </div>
               <div>
-                <dt className="text-gray-500 dark:text-gray-400">Source</dt>
+                <dt className="text-muted-foreground">Source</dt>
                 <dd className="mt-1"><Badge value={journal.source} /></dd>
               </div>
               <div>
-                <dt className="text-gray-500 dark:text-gray-400">Transaction date</dt>
+                <dt className="text-muted-foreground">Transaction date</dt>
                 <dd>{new Date(journal.transaction_date).toLocaleString()}</dd>
               </div>
               <div>
-                <dt className="text-gray-500 dark:text-gray-400">Created by</dt>
+                <dt className="text-muted-foreground">Created by</dt>
                 <dd>{journal.user?.name ?? journal.user_id}</dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-gray-500 dark:text-gray-400">Description</dt>
+                <dt className="text-muted-foreground">Description</dt>
                 <dd>{journal.description || '—'}</dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-gray-500 dark:text-gray-400">Updated</dt>
+                <dt className="text-muted-foreground">Updated</dt>
                 <dd>{formatDate(journal.updated_at)}</dd>
               </div>
               {journal.reverse_from_id && (
                 <div className="col-span-2">
-                  <dt className="text-gray-500 dark:text-gray-400">Reversal of</dt>
+                  <dt className="text-muted-foreground">Reversal of</dt>
                   <dd className="font-mono text-xs">{journal.reverse_from_id}</dd>
                 </div>
               )}
@@ -278,7 +297,7 @@ function JournalDetailPage() {
 
           {editing && (
             <Card className="mb-4 space-y-4 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-foreground">
                 Edit journal
               </h2>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -298,12 +317,17 @@ function JournalDetailPage() {
                 <Field label="Status">
                   <Select
                     value={formStatus}
-                    onChange={(e) =>
-                      setFormStatus(e.target.value as 'draft' | 'posted')
+                    onValueChange={(value) =>
+                      setFormStatus(value as 'draft' | 'posted')
                     }
                   >
-                    <option value="draft">draft</option>
-                    <option value="posted">posted</option>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">draft</SelectItem>
+                      <SelectItem value="posted">posted</SelectItem>
+                    </SelectContent>
                   </Select>
                 </Field>
               </div>
@@ -326,31 +350,31 @@ function JournalDetailPage() {
           )}
 
           <Card className="mb-4">
-            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-800">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <h2 className="text-lg font-semibold text-foreground">
                 Lines
               </h2>
-              <div className="text-sm text-gray-500">
-                Debit <span className="font-medium text-gray-900 dark:text-white">{totalDebit}</span>
+              <div className="text-sm text-muted-foreground">
+                Debit <span className="font-medium text-foreground">{totalDebit}</span>
                 <span className="mx-2">/</span>
                 Credit{' '}
-                <span className="font-medium text-gray-900 dark:text-white">{totalCredit}</span>
+                <span className="font-medium text-foreground">{totalCredit}</span>
               </div>
             </div>
             {lines.length === 0 ? (
-              <p className="p-6 text-sm text-gray-500">No lines on this journal.</p>
+              <p className="p-6 text-sm text-muted-foreground">No lines on this journal.</p>
             ) : (
               <Table>
-                <thead className="border-b border-gray-200 dark:border-gray-800">
-                  <tr>
+                <TableHeader>
+                  <TableRow>
                     <Th>Account</Th>
                     <Th>Debit</Th>
                     <Th>Credit</Th>
                     <Th>Description</Th>
                     {isDraft && <Th className="text-right">Actions</Th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {lines.map((line) =>
                     editingLineId === line.id ? (
                       <LineEditRow
@@ -362,58 +386,62 @@ function JournalDetailPage() {
                         onSave={(patch) => handleUpdateLine(line, patch)}
                       />
                     ) : (
-                      <tr key={line.id}>
+                      <TableRow key={line.id}>
                         <Td>{accountName(line.account_id)}</Td>
                         <Td>{line.debit ? Number(line.debit).toLocaleString() : '—'}</Td>
                         <Td>{line.credit ? Number(line.credit).toLocaleString() : '—'}</Td>
                         <Td>{line.description || '—'}</Td>
                         {isDraft && (
                           <Td className="text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-3">
                               <button
                                 type="button"
-                                className="text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                                className="text-sm text-primary hover:underline"
                                 onClick={() => setEditingLineId(line.id)}
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
-                                className="text-sm text-red-600 hover:text-red-500"
-                                onClick={() => handleDeleteLine(line)}
+                                className="text-sm text-destructive hover:underline"
+                                onClick={() => setConfirmLine(line)}
                               >
                                 Delete
                               </button>
                             </div>
                           </Td>
                         )}
-                      </tr>
+                      </TableRow>
                     ),
                   )}
-                </tbody>
+                </TableBody>
               </Table>
             )}
 
             {isDraft && (
-              <div className="border-t border-gray-200 p-6 dark:border-gray-800">
-                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-500">
+              <div className="border-t border-border p-6">
+                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   Add line
                 </h3>
                 <div className="grid grid-cols-12 items-end gap-2">
                   <div className="col-span-4">
                     <Field label="Account">
                       <Select
-                        value={newLine.account_id}
-                        onChange={(e) =>
-                          setNewLine((prev) => ({ ...prev, account_id: e.target.value }))
+                        value={newLine.account_id || undefined}
+                        onValueChange={(value) =>
+                          setNewLine((prev) => ({ ...prev, account_id: value }))
                         }
                       >
-                        <option value="">Select account…</option>
-                        {(accounts.data?.data ?? []).map((account) => (
-                          <option key={account.id} value={account.id}>
-                            {account.code} — {account.name}
-                          </option>
-                        ))}
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select account…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(accounts.data?.data ?? []).map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              {account.code} — {account.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
                       </Select>
                     </Field>
                   </div>
@@ -460,7 +488,7 @@ function JournalDetailPage() {
                     <Button
                       variant="secondary"
                       onClick={handleAddLine}
-                      loading={addingLine}
+                      loading={busy}
                       className="w-full !px-2 !py-1.5"
                     >
                       +
@@ -472,17 +500,17 @@ function JournalDetailPage() {
           </Card>
 
           <Card className="p-6">
-            <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 className="mb-3 text-lg font-semibold text-foreground">
               Tags
             </h2>
             {(journal.tags ?? []).length === 0 ? (
-              <p className="text-sm text-gray-500">No tags attached.</p>
+              <p className="text-sm text-muted-foreground">No tags attached.</p>
             ) : (
               <div className="mb-4 flex flex-wrap gap-2">
                 {journal.tags?.map((tag) => (
                   <span
                     key={tag.id}
-                    className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-3 py-1 text-sm dark:border-gray-700"
+                    className="inline-flex items-center gap-2 rounded-full border border-input px-3 py-1 text-sm"
                   >
                     {tag.name} <Badge value={tag.type} />
                   </span>
@@ -493,21 +521,25 @@ function JournalDetailPage() {
               <div className="flex max-w-md items-end gap-2">
                 <Field label="Attach tag">
                   <Select
-                    value={attachTagId}
-                    onChange={(e) => setAttachTagId(e.target.value)}
+                    value={attachTagId || undefined}
+                    onValueChange={setAttachTagId}
                   >
-                    <option value="">Select tag…</option>
-                    {availableTags.map((tag: Tag) => (
-                      <option key={tag.id} value={tag.id}>
-                        {tag.name}
-                      </option>
-                    ))}
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select tag…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTags.map((tag: Tag) => (
+                        <SelectItem key={tag.id} value={tag.id}>
+                          {tag.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </Field>
                 <Button
                   variant="secondary"
                   onClick={handleAttachTag}
-                  loading={attachingTag}
+                  loading={busy}
                   disabled={!attachTagId}
                 >
                   Attach
@@ -517,6 +549,37 @@ function JournalDetailPage() {
           </Card>
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete journal"
+        description={
+          journal
+            ? `Delete journal "${journal.reference}"? This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+      />
+
+      <ConfirmDialog
+        open={confirmReverse}
+        onOpenChange={setConfirmReverse}
+        title="Reverse journal"
+        description="Create a reversal journal entry for this transaction?"
+        confirmLabel="Reverse"
+        onConfirm={handleReverse}
+      />
+
+      <ConfirmDialog
+        open={confirmLine !== null}
+        onOpenChange={(open) => !open && setConfirmLine(null)}
+        title="Delete line"
+        description="Delete this journal line?"
+        confirmLabel="Delete"
+        onConfirm={() => confirmLine && handleDeleteLine(confirmLine)}
+      />
     </RequireAuth>
   )
 }
@@ -545,20 +608,22 @@ function LineEditRow({
   const [description, setDescription] = React.useState(line.description ?? '')
 
   return (
-    <tr>
-      <td className="px-4 py-3">
-        <Select
-          value={accountId}
-          onChange={(e) => setAccountId(e.target.value)}
-        >
-          {accounts.map((account) => (
-            <option key={account.id} value={account.id}>
-              {account.code} — {account.name}
-            </option>
-          ))}
+    <TableRow>
+      <Td>
+        <Select value={accountId} onValueChange={setAccountId}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {accounts.map((account) => (
+              <SelectItem key={account.id} value={account.id}>
+                {account.code} — {account.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
-      </td>
-      <td className="px-4 py-3">
+      </Td>
+      <Td>
         <Input
           type="number"
           step="0.01"
@@ -566,8 +631,8 @@ function LineEditRow({
           value={debit}
           onChange={(e) => setDebit(e.target.value)}
         />
-      </td>
-      <td className="px-4 py-3">
+      </Td>
+      <Td>
         <Input
           type="number"
           step="0.01"
@@ -575,14 +640,14 @@ function LineEditRow({
           value={credit}
           onChange={(e) => setCredit(e.target.value)}
         />
-      </td>
-      <td className="px-4 py-3">
+      </Td>
+      <Td>
         <Input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-      </td>
-      <td className="px-4 py-3 text-right">
+      </Td>
+      <Td className="text-right">
         <div className="flex justify-end gap-2">
           <Button
             variant="secondary"
@@ -606,7 +671,7 @@ function LineEditRow({
             Save
           </Button>
         </div>
-      </td>
-    </tr>
+      </Td>
+    </TableRow>
   )
 }

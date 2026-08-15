@@ -4,17 +4,29 @@ import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
 import { RequireAuth } from '../../components/RequireAuth'
 import { Pagination } from '../../components/Pagination'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 import {
   Badge,
   Button,
   Card,
   ErrorBox,
+  Field,
+  Input,
   LoadingBox,
   PageHeader,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Table,
+  TableBody,
+  TableHeader,
+  TableRow,
   Td,
   Th,
 } from '../../components/ui'
+import { ACCOUNT_TYPES } from '../../components/AccountForm'
 import type { Account } from '../../lib/types'
 
 export const Route = createFileRoute('/accounts/')({
@@ -23,25 +35,55 @@ export const Route = createFileRoute('/accounts/')({
 
 function AccountsPage() {
   const [page, setPage] = React.useState(1)
-  const [deleting, setDeleting] = React.useState<string | null>(null)
+  const [search, setSearch] = React.useState('')
+  const [type, setType] = React.useState('')
+  const [currency, setCurrency] = React.useState('')
+  const [status, setStatus] = React.useState('')
+  const [confirmAccount, setConfirmAccount] = React.useState<Account | null>(
+    null,
+  )
   const [actionError, setActionError] = React.useState<unknown>(null)
 
   const { data, error, loading, reload } = useFetch(
-    () => api.listAccounts({ page, per_page: 15 }),
-    [page],
+    () =>
+      api.listAccounts({
+        page,
+        per_page: 15,
+        search: search || undefined,
+        type: type || undefined,
+        currency: currency || undefined,
+        status: status || undefined,
+      }),
+    [page, search, type, currency, status],
   )
 
+  const setFilter = (
+    name: 'search' | 'type' | 'currency' | 'status',
+    value: string,
+  ) => {
+    if (name === 'search') setSearch(value)
+    if (name === 'type') setType(value)
+    if (name === 'currency') setCurrency(value)
+    if (name === 'status') setStatus(value)
+    setPage(1)
+  }
+
+  const resetFilters = () => {
+    setSearch('')
+    setType('')
+    setCurrency('')
+    setStatus('')
+    setPage(1)
+  }
+
   const handleDelete = async (account: Account) => {
-    if (!window.confirm(`Delete account "${account.code} — ${account.name}"?`)) return
-    setDeleting(account.id)
     setActionError(null)
     try {
       await api.deleteAccount(account.id)
       await reload()
     } catch (err) {
       setActionError(err)
-    } finally {
-      setDeleting(null)
+      throw err
     }
   }
 
@@ -60,39 +102,95 @@ function AccountsPage() {
       {actionError != null && <div className="mb-4"><ErrorBox error={actionError} /></div>}
       {error != null && <div className="mb-4"><ErrorBox error={error} /></div>}
 
+      <Card className="mb-4 p-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
+          <Field label="Search name">
+            <Input
+              placeholder="Search accounts…"
+              value={search}
+              onChange={(e) => setFilter('search', e.target.value)}
+            />
+          </Field>
+          <Field label="Type">
+            <Select
+              value={type || undefined}
+              onValueChange={(value) => setFilter('type', value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All types" />
+              </SelectTrigger>
+              <SelectContent>
+                {ACCOUNT_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Currency">
+            <Input
+              placeholder="e.g. IDR"
+              maxLength={3}
+              value={currency}
+              onChange={(e) => setFilter('currency', e.target.value.toUpperCase())}
+            />
+          </Field>
+          <Field label="Status">
+            <Select
+              value={status || undefined}
+              onValueChange={(value) => setFilter('status', value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">active</SelectItem>
+                <SelectItem value="inactive">inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <div className="flex items-end">
+            <Button variant="secondary" className="w-full" onClick={resetFilters}>
+              Clear filters
+            </Button>
+          </div>
+        </div>
+      </Card>
+
       <Card>
         {loading && <LoadingBox label="Loading accounts…" />}
         {!loading && data && (
           <>
             {data.data.length === 0 ? (
-              <p className="p-6 text-sm text-gray-500">
+              <p className="p-6 text-sm text-muted-foreground">
                 No accounts yet.{' '}
-                <Link to="/accounts/new" className="text-indigo-600 dark:text-indigo-400">
+                <Link to="/accounts/new" className="font-medium text-primary hover:underline">
                   Create your first account
                 </Link>
                 .
               </p>
             ) : (
               <Table>
-                <thead className="border-b border-gray-200 dark:border-gray-800">
-                  <tr>
+                <TableHeader>
+                  <TableRow>
                     <Th>Code</Th>
                     <Th>Name</Th>
                     <Th>Type</Th>
                     <Th>Currency</Th>
                     <Th>Status</Th>
                     <Th className="text-right">Actions</Th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {data.data.map((account) => (
-                    <tr key={account.id}>
+                    <TableRow key={account.id}>
                       <Td>{account.code}</Td>
                       <Td>
                         <Link
                           to="/accounts/$accountId"
                           params={{ accountId: account.id }}
-                          className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                          className="font-medium text-primary hover:underline"
                         >
                           {account.name}
                         </Link>
@@ -101,30 +199,29 @@ function AccountsPage() {
                       <Td>{account.currency}</Td>
                       <Td><Badge value={account.status} /></Td>
                       <Td className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-3">
                           <Link
                             to="/accounts/$accountId"
                             params={{ accountId: account.id }}
-                            className="text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                            className="text-sm text-primary hover:underline"
                           >
                             Edit
                           </Link>
                           <button
                             type="button"
-                            disabled={deleting === account.id}
-                            onClick={() => handleDelete(account)}
-                            className="text-sm text-red-600 hover:text-red-500 disabled:opacity-50"
+                            onClick={() => setConfirmAccount(account)}
+                            className="text-sm text-destructive hover:underline"
                           >
                             Delete
                           </button>
                         </div>
                       </Td>
-                    </tr>
+                    </TableRow>
                   ))}
-                </tbody>
+                </TableBody>
               </Table>
             )}
-            <div className="border-t border-gray-200 px-4 py-3 dark:border-gray-800">
+            <div className="border-t border-border px-4 py-3">
               <Pagination
                 page={data.current_page}
                 lastPage={data.last_page}
@@ -135,6 +232,19 @@ function AccountsPage() {
           </>
         )}
       </Card>
+
+      <ConfirmDialog
+        open={confirmAccount !== null}
+        onOpenChange={(open) => !open && setConfirmAccount(null)}
+        title="Delete account"
+        description={
+          confirmAccount
+            ? `Delete account "${confirmAccount.code} — ${confirmAccount.name}"? This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        onConfirm={() => confirmAccount && handleDelete(confirmAccount)}
+      />
     </RequireAuth>
   )
 }

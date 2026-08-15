@@ -4,6 +4,9 @@ import type {
   ApiEnvelope,
   AuditLog,
   AuthResponse,
+  Budget,
+  BudgetStore,
+  BudgetUpdate,
   Journal,
   JournalLine,
   JournalLineStore,
@@ -129,14 +132,41 @@ export const api = {
   logout: () => post<{ message: string }>('/logout'),
 
   // Accounts
-  listAccounts: (params: { page?: number; per_page?: number } = {}) =>
-    get<Paginated<Account>>(`/accounts${toQuery(params)}`),
+  listAccounts: (
+    params: {
+      page?: number
+      per_page?: number
+      type?: string
+      currency?: string
+      status?: string
+      search?: string
+    } = {},
+  ) => get<RawList<Account>>(`/accounts${toQuery(params)}`).then(asList),
   getAccount: (id: string) => get<ApiEnvelope<Account>>(`/accounts/${id}`),
   createAccount: (payload: AccountStore) =>
     post<ApiEnvelope<Account>>('/accounts', payload),
   updateAccount: (id: string, payload: AccountStore) =>
     put<ApiEnvelope<Account>>(`/accounts/${id}`, payload),
   deleteAccount: (id: string) => del(`/accounts/${id}`),
+
+  // Budgets
+  listBudgets: (
+    params: {
+      page?: number
+      per_page?: number
+      search?: string
+      starts_at?: string
+      ends_at?: string
+      tag_id?: string
+      account_id?: string
+    } = {},
+  ) => get<RawList<Budget>>(`/budgets${toQuery(params)}`).then(asList),
+  getBudget: (id: string) => get<ApiEnvelope<Budget>>(`/budgets/${id}`),
+  createBudget: (payload: BudgetStore) =>
+    post<ApiEnvelope<Budget>>('/budgets', payload),
+  updateBudget: (id: string, payload: BudgetUpdate) =>
+    put<ApiEnvelope<Budget>>(`/budgets/${id}`, payload),
+  deleteBudget: (id: string) => del(`/budgets/${id}`),
 
   // Journals
   listJournals: (
@@ -148,7 +178,7 @@ export const api = {
       from?: string
       to?: string
     } = {},
-  ) => get<Paginated<Journal>>(`/journals${toQuery(params)}`),
+  ) => get<RawList<Journal>>(`/journals${toQuery(params)}`).then(asList),
   getJournal: (id: string) => get<ApiEnvelope<Journal>>(`/journals/${id}`),
   createJournal: (payload: JournalStore) =>
     post<ApiEnvelope<Journal>>('/journals', payload),
@@ -160,7 +190,7 @@ export const api = {
 
   // Journal lines
   listJournalLines: (params: { page?: number; per_page?: number } = {}) =>
-    get<Paginated<JournalLine>>(`/journal-lines${toQuery(params)}`),
+    get<RawList<JournalLine>>(`/journal-lines${toQuery(params)}`).then(asList),
   createJournalLine: (payload: JournalLineStore) =>
     post<ApiEnvelope<JournalLine>>('/journal-lines', payload),
   updateJournalLine: (id: string, payload: JournalLineStore) =>
@@ -173,7 +203,7 @@ export const api = {
 
   // Tags
   listTags: (params: { page?: number; per_page?: number } = {}) =>
-    get<Paginated<Tag>>(`/tags${toQuery(params)}`),
+    get<RawList<Tag>>(`/tags${toQuery(params)}`).then(asList),
   createTag: (payload: { name: string; type: Tag['type'] }) =>
     post<ApiEnvelope<Tag>>('/tags', payload),
   updateTag: (id: string, payload: { name: string; type: Tag['type'] }) =>
@@ -182,6 +212,28 @@ export const api = {
 
   // Audit logs
   listAuditLogs: (params: { page?: number; per_page?: number } = {}) =>
-    get<Paginated<AuditLog>>(`/audit-logs${toQuery(params)}`),
+    get<RawList<AuditLog>>(`/audit-logs${toQuery(params)}`).then(asList),
   getAuditLog: (id: string) => get<ApiEnvelope<AuditLog>>(`/audit-logs/${id}`),
+}
+
+type RawList<T> = {
+  data?: T[]
+  meta?: {
+    current_page?: number
+    last_page?: number
+    total?: number
+  }
+  current_page?: number
+  last_page?: number
+  total?: number
+}
+
+function asList<T>(raw: RawList<T>): Paginated<T> {
+  const meta = raw.meta ?? {}
+  return {
+    data: raw.data ?? [],
+    current_page: meta.current_page ?? raw.current_page ?? 1,
+    last_page: meta.last_page ?? raw.last_page ?? 1,
+    total: meta.total ?? raw.total ?? raw.data?.length ?? 0,
+  }
 }

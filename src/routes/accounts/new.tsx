@@ -23,11 +23,28 @@ function NewAccountPage() {
     }
   }
 
+  const handleCreateAnother = async (
+    payload: Parameters<typeof api.createAccount>[0],
+  ) => {
+    setSaving(true)
+    try {
+      await api.createAccount(payload)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <RequireAuth>
       <PageHeader title="New account" subtitle="Add a chart of accounts entry" />
       <Card className="p-6">
-        <AccountForm onSubmit={handleSubmit} submitLabel="Create account" loading={saving} />
+        <AccountForm
+          onSubmit={handleSubmit}
+          submitLabel="Create account"
+          loading={saving}
+          createAnother
+          onCreateAnother={handleCreateAnother}
+        />
       </Card>
     </RequireAuth>
   )

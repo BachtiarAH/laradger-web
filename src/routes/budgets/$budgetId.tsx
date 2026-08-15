@@ -1,11 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { api } from '../../lib/api'
-import { AccountForm } from '../../components/AccountForm'
+import { BudgetForm } from '../../components/BudgetForm'
 import { RequireAuth } from '../../components/RequireAuth'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import {
-  Badge,
   Button,
   Card,
   ErrorBox,
@@ -14,28 +13,34 @@ import {
 } from '../../components/ui'
 import { useFetch } from '../../lib/useFetch'
 
-export const Route = createFileRoute('/accounts/$accountId')({
-  component: AccountDetailPage,
+export const Route = createFileRoute('/budgets/$budgetId')({
+  component: BudgetDetailPage,
 })
 
-function AccountDetailPage() {
-  const { accountId } = Route.useParams()
+function formatAmount(value: string | null | undefined): string {
+  if (!value) return '—'
+  const n = Number(value)
+  return Number.isNaN(n) ? value : n.toLocaleString()
+}
+
+function BudgetDetailPage() {
+  const { budgetId } = Route.useParams()
   const navigate = useNavigate()
   const [saving, setSaving] = React.useState(false)
   const [confirmDelete, setConfirmDelete] = React.useState(false)
   const [actionError, setActionError] = React.useState<unknown>(null)
 
   const { data, error, loading, reload } = useFetch(
-    () => api.getAccount(accountId),
-    [accountId],
+    () => api.getBudget(budgetId),
+    [budgetId],
   )
-  const account = data?.data
+  const budget = data?.data
 
-  const handleSubmit = async (payload: Parameters<typeof api.updateAccount>[1]) => {
+  const handleSubmit = async (payload: Parameters<typeof api.updateBudget>[1]) => {
     setSaving(true)
     setActionError(null)
     try {
-      await api.updateAccount(accountId, payload)
+      await api.updateBudget(budgetId, payload)
       await reload()
     } catch (err) {
       setActionError(err)
@@ -47,8 +52,8 @@ function AccountDetailPage() {
   const handleDelete = async () => {
     setActionError(null)
     try {
-      await api.deleteAccount(accountId)
-      navigate({ to: '/accounts' })
+      await api.deleteBudget(budgetId)
+      navigate({ to: '/budgets' })
     } catch (err) {
       setActionError(err)
       throw err
@@ -58,15 +63,15 @@ function AccountDetailPage() {
   return (
     <RequireAuth>
       <PageHeader
-        title={account ? `${account.code} — ${account.name}` : 'Account'}
-        subtitle={account ? `Account ${account.id}` : undefined}
+        title={budget ? budget.name : 'Budget'}
+        subtitle={budget ? `Budget ${budget.id}` : undefined}
         actions={
-          account && (
+          budget && (
             <>
               <Button variant="danger" onClick={() => setConfirmDelete(true)}>
                 Delete
               </Button>
-              <Button variant="secondary" onClick={() => navigate({ to: '/accounts' })}>
+              <Button variant="secondary" onClick={() => navigate({ to: '/budgets' })}>
                 Back
               </Button>
             </>
@@ -76,9 +81,9 @@ function AccountDetailPage() {
 
       {actionError != null && <div className="mb-4"><ErrorBox error={actionError} /></div>}
       {error != null && <div className="mb-4"><ErrorBox error={error} /></div>}
-      {loading && <Card className="p-4"><LoadingBox label="Loading account…" /></Card>}
+      {loading && <Card className="p-4"><LoadingBox label="Loading budget…" /></Card>}
 
-      {account && (
+      {budget && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Card className="p-6">
             <h2 className="mb-4 text-lg font-semibold text-foreground">
@@ -86,36 +91,37 @@ function AccountDetailPage() {
             </h2>
             <dl className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <dt className="text-muted-foreground">Type</dt>
-                <dd className="mt-1"><Badge value={account.type} /></dd>
+                <dt className="text-muted-foreground">Amount</dt>
+                <dd className="mt-1 text-xl font-bold text-foreground">
+                  {formatAmount(budget.amount)}
+                </dd>
               </div>
               <div>
-                <dt className="text-muted-foreground">Status</dt>
-                <dd className="mt-1"><Badge value={account.status} /></dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Currency</dt>
-                <dd>{account.currency}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Parent</dt>
-                <dd>
-                  {account.parent ? (
-                    <span className="text-primary">
-                      {account.parent.code} — {account.parent.name}
-                    </span>
-                  ) : (
-                    '—'
-                  )}
+                <dt className="text-muted-foreground">Period</dt>
+                <dd className="mt-1">
+                  {new Date(budget.starts_at).toLocaleDateString()} —{' '}
+                  {new Date(budget.ends_at).toLocaleDateString()}
                 </dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-muted-foreground">Children</dt>
-                <dd>
-                  {account.children && account.children.length > 0
-                    ? account.children
-                        .map((child) => `${child.code} — ${child.name}`)
+                <dt className="text-muted-foreground">Description</dt>
+                <dd className="mt-1">{budget.description || '—'}</dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-muted-foreground">Accounts</dt>
+                <dd className="mt-1">
+                  {(budget.accounts ?? []).length > 0
+                    ? budget.accounts
+                        ?.map((a) => `${a.code} — ${a.name}`)
                         .join(', ')
+                    : '—'}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-muted-foreground">Tags</dt>
+                <dd className="mt-1">
+                  {(budget.tags ?? []).length > 0
+                    ? budget.tags?.map((t) => t.name).join(', ')
                     : '—'}
                 </dd>
               </div>
@@ -125,8 +131,8 @@ function AccountDetailPage() {
             <h2 className="mb-4 text-lg font-semibold text-foreground">
               Edit
             </h2>
-            <AccountForm
-              initial={account}
+            <BudgetForm
+              initial={budget}
               onSubmit={handleSubmit}
               submitLabel="Save changes"
               loading={saving}
@@ -138,11 +144,9 @@ function AccountDetailPage() {
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title="Delete account"
+        title="Delete budget"
         description={
-          account
-            ? `Delete account "${account.code} — ${account.name}"? This action cannot be undone.`
-            : ''
+          budget ? `Delete budget "${budget.name}"? This action cannot be undone.` : ''
         }
         confirmLabel="Delete"
         onConfirm={handleDelete}

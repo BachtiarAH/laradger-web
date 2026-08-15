@@ -18,6 +18,9 @@ import { Route as AccountsAccountIdRouteImport } from './routes/accounts/$accoun
 import { Route as AccountsNewRouteImport } from './routes/accounts/new'
 import { Route as AuditLogsIndexRouteImport } from './routes/audit-logs/index'
 import { Route as AuditLogsAuditLogIdRouteImport } from './routes/audit-logs/$auditLogId'
+import { Route as BudgetsIndexRouteImport } from './routes/budgets/index'
+import { Route as BudgetsBudgetIdRouteImport } from './routes/budgets/$budgetId'
+import { Route as BudgetsNewRouteImport } from './routes/budgets/new'
 import { Route as JournalsIndexRouteImport } from './routes/journals/index'
 import { Route as JournalsJournalIdRouteImport } from './routes/journals/$journalId'
 import { Route as JournalsNewRouteImport } from './routes/journals/new'
@@ -68,6 +71,21 @@ const AuditLogsAuditLogIdRoute = AuditLogsAuditLogIdRouteImport.update({
   path: '/audit-logs/$auditLogId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BudgetsIndexRoute = BudgetsIndexRouteImport.update({
+  id: '/budgets/',
+  path: '/budgets/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BudgetsBudgetIdRoute = BudgetsBudgetIdRouteImport.update({
+  id: '/budgets/$budgetId',
+  path: '/budgets/$budgetId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BudgetsNewRoute = BudgetsNewRouteImport.update({
+  id: '/budgets/new',
+  path: '/budgets/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JournalsIndexRoute = JournalsIndexRouteImport.update({
   id: '/journals/',
   path: '/journals/',
@@ -97,10 +115,13 @@ export interface FileRoutesByFullPath {
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/accounts/new': typeof AccountsNewRoute
   '/audit-logs/$auditLogId': typeof AuditLogsAuditLogIdRoute
+  '/budgets/$budgetId': typeof BudgetsBudgetIdRoute
+  '/budgets/new': typeof BudgetsNewRoute
   '/journals/$journalId': typeof JournalsJournalIdRoute
   '/journals/new': typeof JournalsNewRoute
   '/accounts/': typeof AccountsIndexRoute
   '/audit-logs/': typeof AuditLogsIndexRoute
+  '/budgets/': typeof BudgetsIndexRoute
   '/journals/': typeof JournalsIndexRoute
   '/tags/': typeof TagsIndexRoute
 }
@@ -112,10 +133,13 @@ export interface FileRoutesByTo {
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/accounts/new': typeof AccountsNewRoute
   '/audit-logs/$auditLogId': typeof AuditLogsAuditLogIdRoute
+  '/budgets/$budgetId': typeof BudgetsBudgetIdRoute
+  '/budgets/new': typeof BudgetsNewRoute
   '/journals/$journalId': typeof JournalsJournalIdRoute
   '/journals/new': typeof JournalsNewRoute
   '/accounts': typeof AccountsIndexRoute
   '/audit-logs': typeof AuditLogsIndexRoute
+  '/budgets': typeof BudgetsIndexRoute
   '/journals': typeof JournalsIndexRoute
   '/tags': typeof TagsIndexRoute
 }
@@ -128,10 +152,13 @@ export interface FileRoutesById {
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/accounts/new': typeof AccountsNewRoute
   '/audit-logs/$auditLogId': typeof AuditLogsAuditLogIdRoute
+  '/budgets/$budgetId': typeof BudgetsBudgetIdRoute
+  '/budgets/new': typeof BudgetsNewRoute
   '/journals/$journalId': typeof JournalsJournalIdRoute
   '/journals/new': typeof JournalsNewRoute
   '/accounts/': typeof AccountsIndexRoute
   '/audit-logs/': typeof AuditLogsIndexRoute
+  '/budgets/': typeof BudgetsIndexRoute
   '/journals/': typeof JournalsIndexRoute
   '/tags/': typeof TagsIndexRoute
 }
@@ -145,10 +172,13 @@ export interface FileRouteTypes {
     | '/accounts/$accountId'
     | '/accounts/new'
     | '/audit-logs/$auditLogId'
+    | '/budgets/$budgetId'
+    | '/budgets/new'
     | '/journals/$journalId'
     | '/journals/new'
     | '/accounts/'
     | '/audit-logs/'
+    | '/budgets/'
     | '/journals/'
     | '/tags/'
   fileRoutesByTo: FileRoutesByTo
@@ -160,10 +190,13 @@ export interface FileRouteTypes {
     | '/accounts/$accountId'
     | '/accounts/new'
     | '/audit-logs/$auditLogId'
+    | '/budgets/$budgetId'
+    | '/budgets/new'
     | '/journals/$journalId'
     | '/journals/new'
     | '/accounts'
     | '/audit-logs'
+    | '/budgets'
     | '/journals'
     | '/tags'
   id:
@@ -175,10 +208,13 @@ export interface FileRouteTypes {
     | '/accounts/$accountId'
     | '/accounts/new'
     | '/audit-logs/$auditLogId'
+    | '/budgets/$budgetId'
+    | '/budgets/new'
     | '/journals/$journalId'
     | '/journals/new'
     | '/accounts/'
     | '/audit-logs/'
+    | '/budgets/'
     | '/journals/'
     | '/tags/'
   fileRoutesById: FileRoutesById
@@ -191,10 +227,13 @@ export interface RootRouteChildren {
   AccountsAccountIdRoute: typeof AccountsAccountIdRoute
   AccountsNewRoute: typeof AccountsNewRoute
   AuditLogsAuditLogIdRoute: typeof AuditLogsAuditLogIdRoute
+  BudgetsBudgetIdRoute: typeof BudgetsBudgetIdRoute
+  BudgetsNewRoute: typeof BudgetsNewRoute
   JournalsJournalIdRoute: typeof JournalsJournalIdRoute
   JournalsNewRoute: typeof JournalsNewRoute
   AccountsIndexRoute: typeof AccountsIndexRoute
   AuditLogsIndexRoute: typeof AuditLogsIndexRoute
+  BudgetsIndexRoute: typeof BudgetsIndexRoute
   JournalsIndexRoute: typeof JournalsIndexRoute
   TagsIndexRoute: typeof TagsIndexRoute
 }
@@ -264,6 +303,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuditLogsAuditLogIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/budgets/': {
+      id: '/budgets/'
+      path: '/budgets'
+      fullPath: '/budgets/'
+      preLoaderRoute: typeof BudgetsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/budgets/$budgetId': {
+      id: '/budgets/$budgetId'
+      path: '/budgets/$budgetId'
+      fullPath: '/budgets/$budgetId'
+      preLoaderRoute: typeof BudgetsBudgetIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/budgets/new': {
+      id: '/budgets/new'
+      path: '/budgets/new'
+      fullPath: '/budgets/new'
+      preLoaderRoute: typeof BudgetsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/journals/': {
       id: '/journals/'
       path: '/journals'
@@ -303,10 +363,13 @@ const rootRouteChildren: RootRouteChildren = {
   AccountsAccountIdRoute: AccountsAccountIdRoute,
   AccountsNewRoute: AccountsNewRoute,
   AuditLogsAuditLogIdRoute: AuditLogsAuditLogIdRoute,
+  BudgetsBudgetIdRoute: BudgetsBudgetIdRoute,
+  BudgetsNewRoute: BudgetsNewRoute,
   JournalsJournalIdRoute: JournalsJournalIdRoute,
   JournalsNewRoute: JournalsNewRoute,
   AccountsIndexRoute: AccountsIndexRoute,
   AuditLogsIndexRoute: AuditLogsIndexRoute,
+  BudgetsIndexRoute: BudgetsIndexRoute,
   JournalsIndexRoute: JournalsIndexRoute,
   TagsIndexRoute: TagsIndexRoute,
 }

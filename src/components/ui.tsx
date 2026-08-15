@@ -1,81 +1,78 @@
 import * as React from 'react'
+import { AlertCircle, Loader2 } from 'lucide-react'
 import { ApiError } from '../lib/api'
+import { cn } from '../lib/utils'
+import { Button as ShadcnButton } from './ui/button'
+import { Input as ShadcnInput } from './ui/input'
+import { Label as ShadcnLabel } from './ui/label'
+import { Badge as ShadcnBadge } from './ui/badge'
+import {
+  Table as ShadcnTable,
+  TableHead,
+  TableCell,
+} from './ui/table'
+import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success'
 
-const buttonStyles: Record<ButtonVariant, string> = {
-  primary:
-    'bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:outline-indigo-600',
-  secondary:
-    'bg-white text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50',
-  danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600',
-  success: 'bg-emerald-600 text-white hover:bg-emerald-700',
+const buttonVariantMap: Record<
+  ButtonVariant,
+  React.ComponentProps<typeof ShadcnButton>['variant']
+> = {
+  primary: 'default',
+  secondary: 'outline',
+  danger: 'destructive',
+  success: 'default',
 }
 
 export function Button({
   variant = 'primary',
   className = '',
   loading = false,
+  children,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
   loading?: boolean
 }) {
   return (
-    <button
+    <ShadcnButton
       {...props}
-      disabled={props.disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${buttonStyles[variant]} ${className}`}
+      variant={buttonVariantMap[variant]}
+      className={cn(
+        variant === 'success' &&
+          'bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400',
+        className,
+      )}
     >
-      {loading && <Spinner />}
-      {props.children}
-    </button>
+      {loading && <Loader2 className="animate-spin" aria-hidden />}
+      {children}
+    </ShadcnButton>
   )
 }
 
 export function Spinner({ className = '' }: { className?: string }) {
   return (
-    <span
-      className={`inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent ${className}`}
+    <Loader2
+      className={cn('animate-spin', className)}
       aria-hidden
     />
   )
 }
 
-export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className={`block w-full rounded-md border-0 px-3 py-1.5 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-700 ${props.className ?? ''}`}
-    />
-  )
-}
+export const Input = ShadcnInput
+export const Label = ShadcnLabel
 
-export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select
-      {...props}
-      className={`block w-full rounded-md border-0 px-3 py-1.5 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-700 ${props.className ?? ''}`}
-    />
-  )
-}
-
-export function Label({
-  children,
-  htmlFor,
-}: {
-  children: React.ReactNode
-  htmlFor?: string
-}) {
-  return (
-    <label
-      htmlFor={htmlFor}
-      className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-    >
-      {children}
-    </label>
-  )
-}
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select'
 
 export function Field({
   label,
@@ -94,7 +91,7 @@ export function Field({
         <Label htmlFor={htmlFor}>{label}</Label>
       </div>
       {children}
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
     </div>
   )
 }
@@ -103,33 +100,37 @@ export function ErrorBox({ error }: { error: unknown }) {
   if (!error) return null
   if (error instanceof ApiError) {
     return (
-      <div className="rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
-        <p className="font-semibold">{error.message}</p>
+      <Alert variant="destructive">
+        <AlertCircle />
+        <AlertTitle>{error.message}</AlertTitle>
         {error.errors && Object.keys(error.errors).length > 0 && (
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            {Object.entries(error.errors).flatMap(([field, messages]) =>
-              messages.map((msg) => (
-                <li key={`${field}:${msg}`}>
-                  <span className="font-medium">{field}:</span> {msg}
-                </li>
-              )),
-            )}
-          </ul>
+          <AlertDescription>
+            <ul className="list-disc space-y-1 pl-5">
+              {Object.entries(error.errors).flatMap(([field, messages]) =>
+                messages.map((msg) => (
+                  <li key={`${field}:${msg}`}>
+                    <span className="font-medium">{field}:</span> {msg}
+                  </li>
+                )),
+              )}
+            </ul>
+          </AlertDescription>
         )}
-      </div>
+      </Alert>
     )
   }
   return (
-    <div className="rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
-      {String(error)}
-    </div>
+    <Alert variant="destructive">
+      <AlertCircle />
+      <AlertDescription>{String(error)}</AlertDescription>
+    </Alert>
   )
 }
 
 export function LoadingBox({ label = 'Loading…' }: { label?: string }) {
   return (
-    <div className="flex items-center gap-2 py-8 text-sm text-gray-500">
-      <Spinner /> {label}
+    <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+      <Loader2 className="animate-spin" aria-hidden /> {label}
     </div>
   )
 }
@@ -143,7 +144,10 @@ export function Card({
 }) {
   return (
     <div
-      className={`rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 ${className}`}
+      className={cn(
+        'rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10',
+        className,
+      )}
     >
       {children}
     </div>
@@ -162,13 +166,11 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {subtitle}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
         )}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -177,11 +179,11 @@ export function PageHeader({
 }
 
 const badgeColors: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
+  draft: 'bg-muted text-muted-foreground',
   posted: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200',
   archived: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200',
   active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200',
-  inactive: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
+  inactive: 'bg-muted text-muted-foreground',
   manual: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
   imported: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200',
   system: 'bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-200',
@@ -197,29 +199,14 @@ const badgeColors: Record<string, string> = {
   transfer: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200',
 }
 
-export function Badge({
-  value,
-}: {
-  value: string
-}) {
-  const color = badgeColors[value] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200'
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${color}`}
-    >
-      {value}
-    </span>
-  )
+export function Badge({ value }: { value: string }) {
+  const color =
+    badgeColors[value] ?? 'bg-muted text-muted-foreground'
+  return <ShadcnBadge className={color}>{value}</ShadcnBadge>
 }
 
 export function Table({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-800">
-        {children}
-      </table>
-    </div>
-  )
+  return <ShadcnTable>{children}</ShadcnTable>
 }
 
 export function Th({
@@ -230,11 +217,14 @@ export function Th({
   className?: string
 }) {
   return (
-    <th
-      className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 ${className}`}
+    <TableHead
+      className={cn(
+        'px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground',
+        className,
+      )}
     >
       {children}
-    </th>
+    </TableHead>
   )
 }
 
@@ -246,13 +236,15 @@ export function Td({
   className?: string
 }) {
   return (
-    <td
-      className={`whitespace-nowrap px-4 py-3 text-gray-900 dark:text-gray-100 ${className}`}
+    <TableCell
+      className={cn('px-4 py-3 text-foreground', className)}
     >
       {children}
-    </td>
+    </TableCell>
   )
 }
+
+export { TableBody, TableHeader, TableRow } from './ui/table'
 
 export function formatDate(value: string | null | undefined): string {
   if (!value) return '—'

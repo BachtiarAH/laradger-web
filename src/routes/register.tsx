@@ -45,10 +45,10 @@ function RegisterComponent() {
   return (
     <div className="mx-auto mt-8 max-w-md">
       <Card className="p-6">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-xl font-bold text-foreground">
           Create an account
         </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-1 text-sm text-muted-foreground">
           Register to get a token for the Ledgify API.
         </p>
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -94,9 +94,9 @@ function RegisterComponent() {
             Register
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-4 text-center text-sm text-muted-foreground">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+          <Link to="/login" className="font-medium text-primary hover:underline">
             Log in
           </Link>
         </p>

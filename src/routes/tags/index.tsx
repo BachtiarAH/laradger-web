@@ -4,6 +4,7 @@ import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
 import { RequireAuth } from '../../components/RequireAuth'
 import { Pagination } from '../../components/Pagination'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 import {
   Badge,
   Button,
@@ -14,7 +15,14 @@ import {
   LoadingBox,
   PageHeader,
   Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Table,
+  TableBody,
+  TableHeader,
+  TableRow,
   Td,
   Th,
 } from '../../components/ui'
@@ -34,6 +42,7 @@ function TagsPage() {
   const [editName, setEditName] = React.useState('')
   const [editType, setEditType] = React.useState<TagType>('vendor')
   const [busyId, setBusyId] = React.useState<string | null>(null)
+  const [confirmTag, setConfirmTag] = React.useState<Tag | null>(null)
   const [error, setError] = React.useState<unknown>(null)
 
   const { data, error: loadError, loading, reload } = useFetch(
@@ -52,6 +61,7 @@ function TagsPage() {
       await reload()
     } catch (err) {
       setError(err)
+      throw err
     } finally {
       setBusyId(null)
     }
@@ -82,12 +92,16 @@ function TagsPage() {
     })
   }
 
-  const handleDelete = (tag: Tag) => {
-    if (!window.confirm(`Delete tag "${tag.name}"?`)) return
-    return runAction(tag.id, async () => {
+  const handleDelete = async (tag: Tag) => {
+    setError(null)
+    try {
       await api.deleteTag(tag.id)
       setEditing(null)
-    })
+      await reload()
+    } catch (err) {
+      setError(err)
+      throw err
+    }
   }
 
   return (
@@ -98,7 +112,7 @@ function TagsPage() {
       {loadError != null && <div className="mb-4"><ErrorBox error={loadError} /></div>}
 
       <Card className="mb-4 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
           Create tag
         </h2>
         <form onSubmit={handleCreate} className="flex max-w-lg items-end gap-3">
@@ -116,13 +130,18 @@ function TagsPage() {
             <Field label="Type">
               <Select
                 value={type}
-                onChange={(e) => setType(e.target.value as TagType)}
+                onValueChange={(value) => setType(value as TagType)}
               >
-                {TAG_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TAG_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </Field>
           </div>
@@ -137,40 +156,47 @@ function TagsPage() {
         {!loading && data && (
           <>
             {data.data.length === 0 ? (
-              <p className="p-6 text-sm text-gray-500">No tags yet.</p>
+              <p className="p-6 text-sm text-muted-foreground">No tags yet.</p>
             ) : (
               <Table>
-                <thead className="border-b border-gray-200 dark:border-gray-800">
-                  <tr>
+                <TableHeader>
+                  <TableRow>
                     <Th>Name</Th>
                     <Th>Type</Th>
                     <Th className="text-right">Actions</Th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {data.data.map((tag) => (
-                    <tr key={tag.id}>
+                    <TableRow key={tag.id}>
                       {editing?.id === tag.id ? (
                         <>
-                          <td className="px-4 py-3">
+                          <Td>
                             <Input
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
                             />
-                          </td>
-                          <td className="px-4 py-3">
+                          </Td>
+                          <Td>
                             <Select
                               value={editType}
-                              onChange={(e) => setEditType(e.target.value as TagType)}
+                              onValueChange={(value) =>
+                                setEditType(value as TagType)
+                              }
                             >
-                              {TAG_TYPES.map((t) => (
-                                <option key={t} value={t}>
-                                  {t}
-                                </option>
-                              ))}
+                              <SelectTrigger className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {TAG_TYPES.map((t) => (
+                                  <SelectItem key={t} value={t}>
+                                    {t}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
                             </Select>
-                          </td>
-                          <td className="px-4 py-3 text-right">
+                          </Td>
+                          <Td className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button
                                 variant="secondary"
@@ -187,26 +213,25 @@ function TagsPage() {
                                 Save
                               </Button>
                             </div>
-                          </td>
+                          </Td>
                         </>
                       ) : (
                         <>
                           <Td>{tag.name}</Td>
                           <Td><Badge value={tag.type} /></Td>
                           <Td className="text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-3">
                               <button
                                 type="button"
-                                className="text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                                className="text-sm text-primary hover:underline"
                                 onClick={() => startEdit(tag)}
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
-                                disabled={busyId === tag.id}
-                                className="text-sm text-red-600 hover:text-red-500 disabled:opacity-50"
-                                onClick={() => handleDelete(tag)}
+                                className="text-sm text-destructive hover:underline"
+                                onClick={() => setConfirmTag(tag)}
                               >
                                 Delete
                               </button>
@@ -214,12 +239,12 @@ function TagsPage() {
                           </Td>
                         </>
                       )}
-                    </tr>
+                    </TableRow>
                   ))}
-                </tbody>
+                </TableBody>
               </Table>
             )}
-            <div className="border-t border-gray-200 px-4 py-3 dark:border-gray-800">
+            <div className="border-t border-border px-4 py-3">
               <Pagination
                 page={data.current_page}
                 lastPage={data.last_page}
@@ -230,6 +255,17 @@ function TagsPage() {
           </>
         )}
       </Card>
+
+      <ConfirmDialog
+        open={confirmTag !== null}
+        onOpenChange={(open) => !open && setConfirmTag(null)}
+        title="Delete tag"
+        description={
+          confirmTag ? `Delete tag "${confirmTag.name}"? This action cannot be undone.` : ''
+        }
+        confirmLabel="Delete"
+        onConfirm={() => confirmTag && handleDelete(confirmTag)}
+      />
     </RequireAuth>
   )
 }

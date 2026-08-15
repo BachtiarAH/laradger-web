@@ -1,3 +1,6 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button } from './ui'
+
 export function Pagination({
   page,
   lastPage,
@@ -9,52 +12,35 @@ export function Pagination({
   total: number
   onPageChange: (page: number) => void
 }) {
-  if (lastPage <= 1) return null
+  if (total <= 0) return null
 
-  const pages: number[] = []
-  const start = Math.max(1, Math.min(page - 2, lastPage - 4))
-  const end = Math.min(lastPage, start + 4)
-  for (let i = start; i <= end; i++) pages.push(i)
-
-  const linkClass =
-    'inline-flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium'
-  const activeClass = 'bg-indigo-600 text-white'
-  const inactiveClass =
-    'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800'
-  const disabledClass = 'cursor-not-allowed text-gray-400'
+  const canPrev = page > 1
+  const canNext = page < lastPage
 
   return (
-    <div className="mt-4 flex items-center justify-between text-sm">
-      <span className="text-gray-500 dark:text-gray-400">
-        {total} total
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-sm text-muted-foreground">
+        Page {page} of {lastPage} · {total} items
       </span>
-      <div className="flex items-center gap-1">
-        <button
+      <div className="flex items-center gap-2">
+        <Button
           type="button"
-          disabled={page <= 1}
+          variant="secondary"
+          disabled={!canPrev}
           onClick={() => onPageChange(page - 1)}
-          className={`${linkClass} ${page <= 1 ? disabledClass : inactiveClass}`}
         >
-          ‹
-        </button>
-        {pages.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPageChange(p)}
-            className={`${linkClass} ${p === page ? activeClass : inactiveClass}`}
-          >
-            {p}
-          </button>
-        ))}
-        <button
+          <ChevronLeft className="size-4" aria-hidden />
+          Prev
+        </Button>
+        <Button
           type="button"
-          disabled={page >= lastPage}
+          variant={canNext ? 'primary' : 'secondary'}
+          disabled={!canNext}
           onClick={() => onPageChange(page + 1)}
-          className={`${linkClass} ${page >= lastPage ? disabledClass : inactiveClass}`}
         >
-          ›
-        </button>
+          Next
+          <ChevronRight className="size-4" aria-hidden />
+        </Button>
       </div>
     </div>
   )
