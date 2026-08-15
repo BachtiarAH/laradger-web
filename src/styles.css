@@ -3,7 +3,7 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
-@custom-variant dark (&:where(prefers-color-scheme: dark));
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   * {
@@ -18,7 +18,11 @@
 }
 
 html {
-  color-scheme: light dark;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 @theme inline {
