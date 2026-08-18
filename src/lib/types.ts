@@ -3,12 +3,23 @@ export type AccountStatus = 'active' | 'inactive'
 export type JournalStatus = 'draft' | 'posted' | 'archived'
 export type JournalSource = 'manual' | 'imported' | 'system'
 export type TagType = 'priority' | 'recurring' | 'vendor' | 'tax' | 'transfer'
+export type TenantRole = 'owner' | 'member'
+
+export type Tenant = {
+  id: string
+  name: string
+  slug: string
+  role?: TenantRole
+  created_at?: string
+  updated_at?: string
+}
 
 export type User = {
   id: string
   name: string
   email: string
   email_verified_at: string | null
+  tenants?: Tenant[]
   created_at: string
   updated_at: string
 }
@@ -108,6 +119,21 @@ export type JournalTag = {
   tag?: Tag | null
 }
 
+export type JournalDraftLine = {
+  account_name?: string
+  account_type?: AccountType
+  debit?: string | null
+  credit?: string | null
+  description?: string | null
+}
+
+export type JournalDraft = {
+  transaction_date?: string | null
+  description?: string | null
+  lines?: JournalDraftLine[]
+  tags?: string[]
+}
+
 export type Budget = {
   id: string
   name: string
@@ -161,4 +187,14 @@ export type ApiEnvelope<T> = {
 export type AuthResponse = {
   user: User
   token: string
+  tenant?: Tenant
+}
+
+export type RegisterPayload = {
+  name: string
+  email: string
+  password: string
+  password_confirmation?: string
+  tenant_name?: string
+  tenant_slug?: string
 }

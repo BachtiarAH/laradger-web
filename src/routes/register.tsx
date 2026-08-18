@@ -33,7 +33,10 @@ function RegisterComponent() {
         password,
         password_confirmation: passwordConfirmation,
       })
-      login(result.token, result.user)
+      login(result.token, result.user, {
+        tenants: result.user.tenants,
+        tenant: result.tenant,
+      })
       navigate({ to: '/' })
     } catch (err) {
       setError(err)

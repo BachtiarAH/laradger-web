@@ -8,22 +8,38 @@ import type {
   BudgetStore,
   BudgetUpdate,
   Journal,
+  JournalDraft,
   JournalLine,
   JournalLineStore,
   JournalStore,
   JournalTag,
   Paginated,
+  RegisterPayload,
   Tag,
+  Tenant,
 } from './types'
 
 export const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
   'http://localhost:8000/api/v1'
 const TOKEN_KEY = 'ledgify.token'
+const TENANT_KEY = 'ledgify.tenant'
 
 export const getToken = (): string | null => localStorage.getItem(TOKEN_KEY)
 export const setToken = (token: string) => localStorage.setItem(TOKEN_KEY, token)
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY)
+
+export const getTenant = (): Tenant | null => {
+  try {
+    const raw = localStorage.getItem(TENANT_KEY)
+    return raw ? (JSON.parse(raw) as Tenant) : null
+  } catch {
+    return null
+  }
+}
+export const setTenant = (tenant: Tenant) =>
+  localStorage.setItem(TENANT_KEY, JSON.stringify(tenant))
+export const clearTenant = () => localStorage.removeItem(TENANT_KEY)
 
 const unauthorizedHandlers = new Set<() => void>()
 
@@ -75,6 +91,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   const token = getToken()
   if (token) headers.Authorization = `Bearer ${token}`
+  const tenant = getTenant()
+  if (tenant) headers['X-Tenant'] = tenant.slug
 
   let res: Response
   try {
@@ -121,15 +139,15 @@ const del = (path: string) => request<void>(path, { method: 'DELETE' })
 
 export const api = {
   // Auth
-  register: (payload: {
-    name: string
-    email: string
-    password: string
-    password_confirmation?: string
-  }) => post<AuthResponse>('/register', payload),
+  register: (payload: RegisterPayload) => post<AuthResponse>('/register', payload),
   login: (payload: { email: string; password: string; device_name?: string }) =>
     post<AuthResponse>('/login', payload),
   logout: () => post<{ message: string }>('/logout'),
+
+  // Tenants
+  listTenants: () => get<{ data: Tenant[] }>('/tenants').then((r) => r.data),
+  createTenant: (payload: { name: string; slug?: string }) =>
+    post<ApiEnvelope<Tenant>>('/tenants', payload).then((r) => r.data),
 
   // Accounts
   listAccounts: (
@@ -187,6 +205,10 @@ export const api = {
   deleteJournal: (id: string) => del(`/journals/${id}`),
   reverseJournal: (id: string) =>
     post<ApiEnvelope<Journal>>(`/journals/${id}/reverse`),
+  aiDraftJournal: (statement: string) =>
+    post<ApiEnvelope<JournalDraft>>('/journals/ai-draft', { statement }).then(
+      (r) => r.data,
+    ),
 
   // Journal lines
   listJournalLines: (params: { page?: number; per_page?: number } = {}) =>

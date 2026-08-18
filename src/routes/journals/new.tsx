@@ -8,6 +8,7 @@ import {
   createBlankLine,
   type LineDraft,
 } from '../../components/LineEditor'
+import { AiDraftPanel, type AiDraftResult } from '../../components/AiDraftPanel'
 import {
   Button,
   Card,
@@ -55,6 +56,28 @@ function NewJournalPage() {
     setTagIds((prev) =>
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
     )
+  }
+
+  const handleApplyDraft = (result: AiDraftResult) => {
+    if (result.transaction_date) {
+      setTransactionDate(result.transaction_date.slice(0, 10))
+    }
+    if (result.description) {
+      setDescription(result.description)
+    }
+    if (result.lines.length > 0) {
+      setLines(
+        result.lines.map((line) => ({
+          account_id: line.account_id,
+          debit: line.debit ?? '',
+          credit: line.credit ?? '',
+          description: line.description ?? '',
+        })),
+      )
+    }
+    if (result.tagIds.length > 0) {
+      setTagIds(result.tagIds)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -119,7 +142,13 @@ function NewJournalPage() {
       {accounts.loading || tags.loading ? (
         <Card className="p-4"><LoadingBox label="Loading accounts and tags…" /></Card>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <>
+          <AiDraftPanel
+            accounts={accounts.data?.data ?? []}
+            tags={tags.data?.data ?? []}
+            onApply={handleApplyDraft}
+          />
+          <form onSubmit={handleSubmit} className="space-y-4">
           <Card className="space-y-4 p-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
               <Field label="Transaction date" htmlFor="transaction_date">
@@ -210,7 +239,8 @@ function NewJournalPage() {
               Create journal
             </Button>
           </div>
-        </form>
+          </form>
+        </>
       )}
     </RequireAuth>
   )

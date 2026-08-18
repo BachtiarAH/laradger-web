@@ -27,7 +27,10 @@ function LoginComponent() {
     setError(null)
     try {
       const result = await api.login({ email, password, device_name: deviceName })
-      login(result.token, result.user)
+      login(result.token, result.user, {
+        tenants: result.user.tenants,
+        tenant: result.tenant,
+      })
       navigate({ to: '/' })
     } catch (err) {
       setError(err)
