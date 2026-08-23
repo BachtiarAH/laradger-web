@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Link, Outlet, createRootRoute } from '@tanstack/react-router'
+import { Link, Outlet, createRootRoute, useLocation } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import {
   Building2,
@@ -16,7 +16,10 @@ import {
   X,
 } from 'lucide-react'
 import { AuthProvider, useAuth } from '../lib/auth'
-import { api } from '../lib/api'
+import { api, onConnectionLost, onTenantNotFound, onForbidden } from '../lib/api'
+import { ConnectionDown } from '../components/ConnectionDown'
+import { TenantNotFound } from '../components/TenantNotFound'
+import { AccessDenied } from '../components/AccessDenied'
 import { Button } from '../components/ui'
 import { Button as UiButton } from '../components/ui/button'
 import { TenantSwitcher } from '../components/TenantSwitcher'
@@ -70,6 +73,9 @@ function SidebarNavLink({
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { token, user, logout } = useAuth()
   const [loggingOut, setLoggingOut] = React.useState(false)
+  const { pathname } = useLocation()
+  const onLogin = pathname === '/login'
+  const onRegister = pathname === '/register'
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -150,18 +156,45 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <div className="flex flex-col gap-2">
             <Link
               to="/login"
-              className="rounded-md px-3 py-1.5 text-center text-sm font-medium text-muted-foreground hover:text-foreground"
+              className={`rounded-md px-3 py-1.5 text-center text-sm font-medium ${
+                onLogin
+                  ? 'bg-primary/10 font-semibold text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
               Login
             </Link>
             <Link to="/register" onClick={onNavigate}>
-              <Button className="w-full">Register</Button>
+              <Button
+                variant={onRegister ? 'primary' : 'secondary'}
+                className="w-full"
+              >
+                Register
+              </Button>
             </Link>
           </div>
         )}
       </div>
     </div>
   )
+}
+
+function ApiGuard({ children }: { children: React.ReactNode }) {
+  const [status, setStatus] = React.useState<'ok' | 'down' | 'tenant' | 'forbidden'>('ok')
+
+  React.useEffect(() => {
+    const unsubs = [
+      onConnectionLost(() => setStatus('down')),
+      onTenantNotFound(() => setStatus('tenant')),
+      onForbidden(() => setStatus('forbidden')),
+    ]
+    return () => unsubs.forEach((unsub) => unsub())
+  }, [])
+
+  if (status === 'down') return <ConnectionDown />
+  if (status === 'tenant') return <TenantNotFound />
+  if (status === 'forbidden') return <AccessDenied />
+  return <>{children}</>
 }
 
 function RootComponent() {
@@ -214,7 +247,9 @@ function RootComponent() {
 
           <main className="px-4 py-8 lg:px-8">
             <div className="mx-auto max-w-7xl">
-              <Outlet />
+              <ApiGuard>
+                <Outlet />
+              </ApiGuard>
             </div>
           </main>
         </div>
