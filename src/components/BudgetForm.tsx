@@ -8,6 +8,7 @@ import {
   Field,
   Input,
 } from './ui'
+import { AccountMultiSelect } from './AccountMultiSelect'
 
 function ChipPicker({
   title,
@@ -81,7 +82,6 @@ export function BudgetForm({
   )
   const [error, setError] = React.useState<unknown>(null)
 
-  const accounts = useFetch(() => api.listAccounts({ per_page: 100 }), [])
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
 
   const set = (patch: Partial<typeof form>) =>
@@ -164,15 +164,13 @@ export function BudgetForm({
         </div>
       </div>
 
-      <ChipPicker
-        title="Linked accounts"
-        options={(accounts.data?.data ?? []).map((a) => ({
-          id: a.id,
-          label: `${a.code} — ${a.name}`,
-        }))}
-        selected={accountIds}
-        onToggle={toggle(accountIds, setAccountIds)}
-      />
+      <Field label="Linked accounts">
+        <AccountMultiSelect
+          selectedIds={accountIds}
+          onChange={setAccountIds}
+          placeholder="Search and add accounts…"
+        />
+      </Field>
       <ChipPicker
         title="Tags"
         options={(tags.data?.data ?? []).map((t) => ({

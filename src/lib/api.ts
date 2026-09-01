@@ -188,7 +188,7 @@ export const api = {
   register: (payload: RegisterPayload) => post<AuthResponse>('/register', payload),
   login: (payload: { email: string; password: string; device_name?: string }) =>
     post<AuthResponse>('/login', payload),
-  logout: () => post<{ message: string }>(tenantPath('/logout')),
+  logout: () => post<{ message: string }>('/logout'),
 
   // Tenants
   listTenants: () => get<{ data: Tenant[] }>('/tenants').then((r) => r.data),

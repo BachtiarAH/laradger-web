@@ -1,6 +1,7 @@
 import * as React from 'react'
 import type { Account } from '../lib/types'
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui'
+import { Button, Input } from './ui'
+import { AccountSelect } from './AccountSelect'
 
 export type LineDraft = {
   account_id: string
@@ -9,9 +10,9 @@ export type LineDraft = {
   description: string
 }
 
-export function createBlankLine(accounts: Account[]): LineDraft {
+export function createBlankLine(_accounts?: Account[]): LineDraft {
   return {
-    account_id: accounts[0]?.id ?? '',
+    account_id: '',
     debit: '',
     credit: '',
     description: '',
@@ -23,7 +24,7 @@ export function LineEditor({
   lines,
   onChange,
 }: {
-  accounts: Account[]
+  accounts?: Account[]
   lines: LineDraft[]
   onChange: (lines: LineDraft[]) => void
 }) {
@@ -38,7 +39,7 @@ export function LineEditor({
   }
 
   const addLine = () => {
-    onChange([...lines, createBlankLine(accounts)])
+    onChange([...lines, createBlankLine()])
   }
 
   return (
@@ -53,23 +54,11 @@ export function LineEditor({
       {lines.map((line, index) => (
         <div key={index} className="grid grid-cols-12 gap-2">
           <div className="col-span-4">
-            <Select
-              value={line.account_id || undefined}
-              onValueChange={(value) =>
-                updateLine(index, { account_id: value })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select account…" />
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.code} — {account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <AccountSelect
+              value={line.account_id || null}
+              onValueChange={(value) => updateLine(index, { account_id: value ?? '' })}
+              placeholder="Select account…"
+            />
           </div>
           <div className="col-span-2">
             <Input

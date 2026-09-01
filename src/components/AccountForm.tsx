@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { api } from '../lib/api'
 import type { Account, AccountStore, AccountType, AccountStatus } from '../lib/types'
 import {
   Button,
@@ -12,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui'
-import { useFetch } from '../lib/useFetch'
+import { AccountSelect } from './AccountSelect'
 
 export const ACCOUNT_TYPES: AccountType[] = [
   'asset',
@@ -21,8 +20,6 @@ export const ACCOUNT_TYPES: AccountType[] = [
   'income',
   'expense',
 ]
-
-const EMPTY_PARENT = '__none__'
 
 const emptyForm: AccountStore = {
   name: '',
@@ -61,8 +58,6 @@ export function AccountForm({
   const [error, setError] = React.useState<unknown>(null)
   const [saved, setSaved] = React.useState(false)
 
-  const accounts = useFetch(() => api.listAccounts({ per_page: 100 }), [])
-
   const set = (patch: Partial<AccountStore>) =>
     setForm((prev) => ({ ...prev, ...patch }))
 
@@ -95,7 +90,6 @@ export function AccountForm({
         currency: prev.currency,
         status: prev.status,
       }))
-      accounts.reload()
       setSaved(true)
     } catch (err) {
       setError(err)
@@ -131,26 +125,16 @@ export function AccountForm({
           </Select>
         </Field>
         <Field label="Parent account" htmlFor="parent_id">
-          <Select
-            value={form.parent_id ?? EMPTY_PARENT}
-            onValueChange={(value) =>
-              set({
-                parent_id: value === EMPTY_PARENT ? null : value,
-              })
-            }
-          >
-            <SelectTrigger id="parent_id" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={EMPTY_PARENT}>None</SelectItem>
-              {accounts.data?.data.map((account) => (
-                <SelectItem key={account.id} value={account.id}>
-                  {account.code} — {account.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <AccountSelect
+            value={form.parent_id ?? null}
+            onValueChange={(value) => set({ parent_id: value })}
+            excludeId={initial?.id ?? null}
+            placeholder="Select parent account…"
+            allowNone
+          />
+          {initial?.id && form.parent_id === initial.id && (
+            <p className="mt-1 text-xs text-destructive">An account cannot be its own parent.</p>
+          )}
         </Field>
         <Field label="Currency" htmlFor="currency">
           <Input

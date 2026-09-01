@@ -26,6 +26,7 @@ import {
   Th,
 } from '../../components/ui'
 import type { Budget } from '../../lib/types'
+import { AccountSelect } from '../../components/AccountSelect'
 
 export const Route = createFileRoute('/budgets/')({
   component: BudgetsPage,
@@ -61,7 +62,6 @@ function BudgetsPage() {
     [page, search, startsAt, endsAt, tagId, accountId],
   )
 
-  const accounts = useFetch(() => api.listAccounts({ per_page: 100 }), [])
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
 
   const setFilter = (
@@ -152,21 +152,13 @@ function BudgetsPage() {
             </Select>
           </Field>
           <Field label="Account">
-            <Select
-              value={accountId || undefined}
-              onValueChange={(value) => setFilter('account_id', value)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="All accounts" />
-              </SelectTrigger>
-              <SelectContent>
-                {(accounts.data?.data ?? []).map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.code} — {account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <AccountSelect
+              value={accountId || null}
+              onValueChange={(value) => setFilter('account_id', value ?? '')}
+              placeholder="All accounts"
+              allowNone
+              noneLabel="All accounts"
+            />
           </Field>
           <div className="flex items-end">
             <Button variant="secondary" className="w-full" onClick={resetFilters}>

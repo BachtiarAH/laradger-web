@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui'
+import { AccountSelect } from './AccountSelect'
 import {
   Dialog,
   DialogContent,
@@ -236,28 +237,26 @@ export function AiDraftPanel({
                     className="grid grid-cols-12 items-center gap-2 rounded-lg border border-border p-2"
                   >
                     <div className="col-span-4">
-                      <Select
-                        value={line.account_id || undefined}
-                        onValueChange={(value) =>
-                          handleAccountSelect(index, value)
-                        }
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select account…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {allAccounts.map((account) => (
-                            <SelectItem key={account.id} value={account.id}>
-                              {account.code} — {account.name}
-                            </SelectItem>
-                          ))}
-                          {line.suggested.account_name && (
-                            <SelectItem value={CREATE_ACCOUNT_VALUE}>
-                              Create new account
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
+                      <AccountSelect
+                        value={line.account_id}
+                        onValueChange={(value) => {
+                          if (value === CREATE_ACCOUNT_VALUE) {
+                            handleAccountSelect(index, CREATE_ACCOUNT_VALUE)
+                          } else {
+                            handleAccountSelect(index, value ?? '')
+                          }
+                        }}
+                        placeholder="Select account…"
+                      />
+                      {line.suggested.account_name && (
+                        <button
+                          type="button"
+                          className="mt-1 text-xs text-primary hover:underline"
+                          onClick={() => handleAccountSelect(index, CREATE_ACCOUNT_VALUE)}
+                        >
+                          + Create new account
+                        </button>
+                      )}
                       {line.suggested.account_name && (
                         <p className="mt-1 truncate text-xs text-muted-foreground">
                           suggested: {line.suggested.account_name}

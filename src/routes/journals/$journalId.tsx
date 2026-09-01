@@ -26,7 +26,8 @@ import {
   Th,
   formatDate,
 } from '../../components/ui'
-import type { Account, JournalLine, Tag } from '../../lib/types'
+import type { JournalLine, Tag } from '../../lib/types'
+import { AccountSelect } from '../../components/AccountSelect'
 
 export const Route = createFileRoute('/journals/$journalId')({
   component: JournalDetailPage,
@@ -46,7 +47,6 @@ function JournalDetailPage() {
   const isDraft = journal?.status === 'draft'
   const isPosted = journal?.status === 'posted'
 
-  const accounts = useFetch(() => api.listAccounts({ per_page: 100 }), [])
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
 
   const [actionError, setActionError] = React.useState<unknown>(null)
@@ -84,9 +84,38 @@ function JournalDetailPage() {
     }
   }, [journal])
 
+  const [accountLabels, setAccountLabels] = React.useState<Map<string, string>>(new Map())
+
+  React.useEffect(() => {
+    const ids = new Set<string>()
+    journal?.lines?.forEach((l) => {
+      if (l.account) {
+        setAccountLabels((prev) => {
+          const next = new Map(prev)
+          next.set(l.account_id, `${l.account!.code} — ${l.account!.name}`)
+          return next
+        })
+      } else if (!accountLabels.has(l.account_id)) {
+        ids.add(l.account_id)
+      }
+    })
+    ids.forEach((id) => {
+      api
+        .getAccount(id)
+        .then((res) => {
+          setAccountLabels((prev) => {
+            const next = new Map(prev)
+            next.set(id, `${res.data.code} — ${res.data.name}`)
+            return next
+          })
+        })
+        .catch(() => {})
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [journal?.lines])
+
   const accountName = (accountId: string) => {
-    const account = accounts.data?.data.find((a) => a.id === accountId)
-    return account ? `${account.code} — ${account.name}` : accountId
+    return accountLabels.get(accountId) ?? accountId
   }
 
   const runAction = async (action: () => Promise<unknown>) => {
@@ -102,13 +131,13 @@ function JournalDetailPage() {
     }
   }
 
-  const handleSaveJournal = () => {
+  const handleSaveJournal = (statusOverride?: 'draft' | 'posted') => {
     const original = journal!
     const payload = {
       transaction_date: formDate,
       description: formDescription,
       reference: formReference,
-      status: formStatus,
+      status: statusOverride ?? formStatus,
       source: original.source,
       lines: (original.lines ?? []).map((line) => ({
         account_id: line.account_id,
@@ -120,9 +149,12 @@ function JournalDetailPage() {
     }
     return runAction(async () => {
       await api.updateJournal(journalId, payload)
+      if (statusOverride) setFormStatus(statusOverride)
       setEditing(false)
     })
   }
+
+  const handlePost = () => handleSaveJournal('posted')
 
   const handleDelete = async () => {
     setActionError(null)
@@ -230,7 +262,7 @@ function JournalDetailPage() {
                 Back
               </Button>
               {isDraft && (
-                <Button variant="success" onClick={() => handleSaveJournal()} loading={busy}>
+                <Button variant="success" onClick={handlePost} loading={busy}>
                   Post
                 </Button>
               )}
@@ -339,7 +371,7 @@ function JournalDetailPage() {
               </Field>
               <div className="flex gap-2">
                 <Button
-                  onClick={handleSaveJournal}
+                  onClick={() => handleSaveJournal()}
                   loading={busy}
                   disabled={!isDraft}
                 >
@@ -380,7 +412,6 @@ function JournalDetailPage() {
                       <LineEditRow
                         key={line.id}
                         line={line}
-                        accounts={accounts.data?.data ?? []}
                         busy={busy}
                         onCancel={() => setEditingLineId(null)}
                         onSave={(patch) => handleUpdateLine(line, patch)}
@@ -426,23 +457,13 @@ function JournalDetailPage() {
                 <div className="grid grid-cols-12 items-end gap-2">
                   <div className="col-span-4">
                     <Field label="Account">
-                      <Select
-                        value={newLine.account_id || undefined}
+                      <AccountSelect
+                        value={newLine.account_id || null}
                         onValueChange={(value) =>
-                          setNewLine((prev) => ({ ...prev, account_id: value }))
+                          setNewLine((prev) => ({ ...prev, account_id: value ?? '' }))
                         }
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select account…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(accounts.data?.data ?? []).map((account) => (
-                            <SelectItem key={account.id} value={account.id}>
-                              {account.code} — {account.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Select account…"
+                      />
                     </Field>
                   </div>
                   <div className="col-span-2">
@@ -586,13 +607,11 @@ function JournalDetailPage() {
 
 function LineEditRow({
   line,
-  accounts,
   busy,
   onCancel,
   onSave,
 }: {
   line: JournalLine
-  accounts: Account[]
   busy: boolean
   onCancel: () => void
   onSave: (draft: {
@@ -610,18 +629,7 @@ function LineEditRow({
   return (
     <TableRow>
       <Td>
-        <Select value={accountId} onValueChange={setAccountId}>
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {accounts.map((account) => (
-              <SelectItem key={account.id} value={account.id}>
-                {account.code} — {account.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <AccountSelect value={accountId} onValueChange={(v) => setAccountId(v ?? '')} placeholder="Select account…" />
       </Td>
       <Td>
         <Input

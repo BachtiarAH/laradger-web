@@ -43,14 +43,14 @@ function NewJournalPage() {
   const [error, setError] = React.useState<unknown>(null)
   const [saving, setSaving] = React.useState(false)
 
-  const accounts = useFetch(() => api.listAccounts({ per_page: 100 }), [])
+  const accounts = useFetch(() => api.listAccounts({ per_page: 20 }), [])
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
 
   React.useEffect(() => {
-    if (accounts.data && lines.length === 0) {
-      setLines([createBlankLine(accounts.data.data)])
+    if (lines.length === 0) {
+      setLines([createBlankLine()])
     }
-  }, [accounts.data]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleTag = (id: string) => {
     setTagIds((prev) =>
@@ -139,8 +139,8 @@ function NewJournalPage() {
         }
       />
 
-      {accounts.loading || tags.loading ? (
-        <Card className="p-4"><LoadingBox label="Loading accounts and tags…" /></Card>
+      {tags.loading ? (
+        <Card className="p-4"><LoadingBox label="Loading tags…" /></Card>
       ) : (
         <>
           <AiDraftPanel
@@ -200,7 +200,7 @@ function NewJournalPage() {
             <h2 className="text-lg font-semibold text-foreground">
               Lines
             </h2>
-            <LineEditor accounts={accounts.data?.data ?? []} lines={lines} onChange={setLines} />
+            <LineEditor lines={lines} onChange={setLines} />
           </Card>
 
           <Card className="space-y-4 p-6">

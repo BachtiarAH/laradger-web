@@ -1,44 +1,84 @@
-# TanStack Router - File-Based Quickstart Example
+# Laradger Web — Frontend
 
-A quickstart example using file-based routing.
+React SPA untuk Laradger. Draft v1 — iterasi bareng setelah ini.
 
-- [TanStack Router Docs](https://tanstack.com/router)
+## Stack
 
-## Start a new project based on this example
+- **React** 19 + **React DOM** 19
+- **TanStack Router** ^1.170 (file-based routing) + Router Plugin Vite
+- **Vite** ^8 + **@vitejs/plugin-react**
+- **Tailwind CSS** v4 + **@tailwindcss/vite** + `tw-animate-css`
+- **shadcn/radix** (`radix-ui`, `class-variance-authority`, `clsx`, `tailwind-merge`)
+- **lucide-react** (icons), **zod** (validation)
+- **TypeScript** 7 (native preview)
 
-To start a new project based on this example, run:
-
-```sh
-npx gitpick TanStack/router/tree/main/examples/react/quickstart-file-based quickstart-file-based
-```
-
-## Getting Started
-
-Install dependencies:
+## Quick Start
 
 ```sh
-pnpm install
+npm install        # atau pnpm install
+npm run dev        # http://localhost:3000
 ```
 
-Start the development server:
+## Scripts
+
+| Command | Fungsi |
+|---------|--------|
+| `npm run dev` | Vite dev server di `:3000` |
+| `npm run build` | `vite build && tsc --noEmit` (cek type) |
+| `npm run preview` / `npm start` | preview build |
+| `tsc --noEmit` | validasi type manual |
+
+## Routing
+
+File-based di `src/routes/` — **jangan edit manual** `src/routeTree.gen.ts` (auto-generated).
+
+```
+src/
+├── routes/            # tambah file = tambah route
+├── components/        # UI primitives (shadcn/radix)
+├── lib/               # utils (cn, etc)
+├── styles.css
+├── main.tsx
+└── routeTree.gen.ts   # generated
+```
+
+Alias path: `@/*` → `./src/*` (lihat `vite.config.js` & `tsconfig.json`).
+
+Contoh tambah route:
 
 ```sh
-pnpm dev
+# src/routes/dashboard.tsx
+export const Route = createFileRoute('/dashboard')({ component: Dashboard })
 ```
 
-## Build
+## Styling
 
-Build for production:
+- Tailwind v4 via Vite plugin — tidak perlu `tailwind.config.js` terpisah
+- `components.json` untuk shadcn
+- `shadcn add button` untuk nambah komponen
+
+## Env
+
+Lihat `.env.example` (saat ini 109 byte). Duplikat ke `.env` untuk lokal:
 
 ```sh
-pnpm build
+cp .env.example .env
 ```
 
-## About This Example
+## Konvensi
 
-This example demonstrates:
+- Route tree jangan di-hand-edit
+- Validasi type sebelum push: `npm run build`
+- Ikuti konvensi file di `src/` yang sudah ada
+- Jangan tambah dependency tanpa approval
 
-- Quick setup with file-based routing
-- Automatic route generation
-- Minimal configuration
-- Type-safe routes
+## Roadmap
+
+- [ ] Deskripsi fitur frontend Laradger
+- [ ] Screenshot / demo GIF
+- [ ] Integrasi API backend (Sanctum)
+- [ ] Panduan kontribusi
+
+## Lisensi
+
+MIT
