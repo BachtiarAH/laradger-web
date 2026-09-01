@@ -20,6 +20,7 @@ import { api, onConnectionLost, onTenantNotFound, onForbidden } from '../lib/api
 import { ConnectionDown } from '../components/ConnectionDown'
 import { TenantNotFound } from '../components/TenantNotFound'
 import { AccessDenied } from '../components/AccessDenied'
+import { NotFound } from '../components/NotFound'
 import { Button } from '../components/ui'
 import { Button as UiButton } from '../components/ui/button'
 import { TenantSwitcher } from '../components/TenantSwitcher'
@@ -35,6 +36,14 @@ import {
 
 export const Route = createRootRoute({
   component: RootComponent,
+  notFoundComponent: () => (
+    <NotFound
+      title="Page not found"
+      description="The page you are looking for does not exist. Check the URL or return to dashboard."
+      backTo="/"
+      backLabel="Back to dashboard"
+    />
+  ),
 })
 
 const navItems: { to: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
