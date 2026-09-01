@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
-import { api } from '../../lib/api'
+import { ApiError, api } from '../../lib/api'
 import { BudgetForm } from '../../components/BudgetForm'
 import { RequireAuth } from '../../components/RequireAuth'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { NotFound } from '../../components/NotFound'
 import {
   Button,
   Card,
@@ -35,6 +36,7 @@ function BudgetDetailPage() {
     [budgetId],
   )
   const budget = data?.data
+  const isNotFound = error instanceof ApiError && error.status === 404
 
   const handleSubmit = async (payload: Parameters<typeof api.updateBudget>[1]) => {
     setSaving(true)
@@ -60,6 +62,19 @@ function BudgetDetailPage() {
     }
   }
 
+  if (isNotFound) {
+    return (
+      <RequireAuth>
+        <NotFound
+          title="Budget not found"
+          description={`No budget found with ID “${budgetId}”. It may have been deleted or does not exist.`}
+          backTo="/budgets"
+          backLabel="Back to budgets"
+        />
+      </RequireAuth>
+    )
+  }
+
   return (
     <RequireAuth>
       <PageHeader
@@ -80,7 +95,7 @@ function BudgetDetailPage() {
       />
 
       {actionError != null && <div className="mb-4"><ErrorBox error={actionError} /></div>}
-      {error != null && <div className="mb-4"><ErrorBox error={error} /></div>}
+      {error != null && !isNotFound && <div className="mb-4"><ErrorBox error={error} /></div>}
       {loading && <Card className="p-4"><LoadingBox label="Loading budget…" /></Card>}
 
       {budget && (

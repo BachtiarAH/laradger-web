@@ -32,12 +32,25 @@ function StatCard({
 }
 
 function Dashboard() {
-  const { token, user } = useAuth()
+  const { token, user, tenant, tenants, switchTenant } = useAuth()
 
-  const accounts = useFetch(() => api.listAccounts({ per_page: 1 }), [])
-  const journals = useFetch(() => api.listJournals({ per_page: 1 }), [])
-  const tags = useFetch(() => api.listTags({ per_page: 1 }), [])
-  const budgets = useFetch(() => api.listBudgets({ per_page: 1 }), [])
+  const shouldFetch = !!token && !!tenant
+  const accounts = useFetch(
+    () => (shouldFetch ? api.listAccounts({ per_page: 1 }) : Promise.resolve({ data: [], current_page: 1, last_page: 1, total: 0 })),
+    [shouldFetch],
+  )
+  const journals = useFetch(
+    () => (shouldFetch ? api.listJournals({ per_page: 1 }) : Promise.resolve({ data: [], current_page: 1, last_page: 1, total: 0 })),
+    [shouldFetch],
+  )
+  const tags = useFetch(
+    () => (shouldFetch ? api.listTags({ per_page: 1 }) : Promise.resolve({ data: [], current_page: 1, last_page: 1, total: 0 })),
+    [shouldFetch],
+  )
+  const budgets = useFetch(
+    () => (shouldFetch ? api.listBudgets({ per_page: 1 }) : Promise.resolve({ data: [], current_page: 1, last_page: 1, total: 0 })),
+    [shouldFetch],
+  )
 
   if (!token) {
     return (
@@ -58,6 +71,43 @@ function Dashboard() {
           </Link>
         </div>
       </div>
+    )
+  }
+
+  if (!tenant) {
+    return (
+      <Card className="mx-auto max-w-lg p-6">
+        <h1 className="text-lg font-bold text-foreground">
+          Select organization
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          You are logged in but no organization is selected. This happens when
+          you open Ledgify on a new domain (localStorage is per-origin) — e.g.
+          switching from workers.dev to bachtiarah.my.id.
+        </p>
+        {tenants.length > 0 ? (
+          <div className="mt-4 space-y-2">
+            {tenants.map((t) => (
+              <Button
+                key={t.id}
+                variant="secondary"
+                className="w-full justify-start"
+                onClick={() => switchTenant(t)}
+              >
+                <span className="truncate">{t.name}</span>
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {t.slug}
+                </span>
+              </Button>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-muted-foreground">
+            No organizations found. Create one from the sidebar or re-login to
+            sync.
+          </p>
+        )}
+      </Card>
     )
   }
 

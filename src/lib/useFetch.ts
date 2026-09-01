@@ -12,7 +12,8 @@ export function useFetch<T>(
   React.useEffect(() => {
     let active = true
     setLoading(true)
-    fetcher()
+    Promise.resolve()
+      .then(() => fetcher())
       .then((result) => {
         if (active) {
           setData(result)

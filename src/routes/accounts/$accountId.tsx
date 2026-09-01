@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
-import { api } from '../../lib/api'
+import { ApiError, api } from '../../lib/api'
 import { AccountForm } from '../../components/AccountForm'
 import { RequireAuth } from '../../components/RequireAuth'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { NotFound } from '../../components/NotFound'
 import {
   Badge,
   Button,
@@ -30,6 +31,7 @@ function AccountDetailPage() {
     [accountId],
   )
   const account = data?.data
+  const isNotFound = error instanceof ApiError && error.status === 404
 
   const handleSubmit = async (payload: Parameters<typeof api.updateAccount>[1]) => {
     setSaving(true)
@@ -55,6 +57,19 @@ function AccountDetailPage() {
     }
   }
 
+  if (isNotFound) {
+    return (
+      <RequireAuth>
+        <NotFound
+          title="Account not found"
+          description={`No account found with ID “${accountId}”. It may have been deleted or does not exist.`}
+          backTo="/accounts"
+          backLabel="Back to accounts"
+        />
+      </RequireAuth>
+    )
+  }
+
   return (
     <RequireAuth>
       <PageHeader
@@ -75,7 +90,7 @@ function AccountDetailPage() {
       />
 
       {actionError != null && <div className="mb-4"><ErrorBox error={actionError} /></div>}
-      {error != null && <div className="mb-4"><ErrorBox error={error} /></div>}
+      {error != null && !isNotFound && <div className="mb-4"><ErrorBox error={error} /></div>}
       {loading && <Card className="p-4"><LoadingBox label="Loading account…" /></Card>}
 
       {account && (

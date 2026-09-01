@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
-import { api } from '../../lib/api'
+import { ApiError, api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
 import { RequireAuth } from '../../components/RequireAuth'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { NotFound } from '../../components/NotFound'
 import {
   Badge,
   Button,
@@ -44,6 +45,7 @@ function JournalDetailPage() {
     [journalId],
   )
   const journal = data?.data
+  const isNotFound = error instanceof ApiError && error.status === 404
   const isDraft = journal?.status === 'draft'
   const isPosted = journal?.status === 'posted'
 
@@ -250,6 +252,19 @@ function JournalDetailPage() {
     .reduce((sum, line) => sum + (Number(line.credit) || 0), 0)
     .toFixed(2)
 
+  if (isNotFound) {
+    return (
+      <RequireAuth>
+        <NotFound
+          title="Journal not found"
+          description={`No journal found with ID “${journalId}”. It may have been deleted or does not exist.`}
+          backTo="/journals"
+          backLabel="Back to journals"
+        />
+      </RequireAuth>
+    )
+  }
+
   return (
     <RequireAuth>
       <PageHeader
@@ -286,7 +301,7 @@ function JournalDetailPage() {
         }
       />
 
-      {error != null && <div className="mb-4"><ErrorBox error={error} /></div>}
+      {error != null && !isNotFound && <div className="mb-4"><ErrorBox error={error} /></div>}
       {actionError != null && <div className="mb-4"><ErrorBox error={actionError} /></div>}
       {loading && <Card className="p-4"><LoadingBox label="Loading journal…" /></Card>}
 

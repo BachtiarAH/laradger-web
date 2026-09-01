@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
-import { api } from '../../lib/api'
+import { ApiError, api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
 import { RequireAuth } from '../../components/RequireAuth'
+import { NotFound } from '../../components/NotFound'
 import {
   Button,
   Card,
@@ -34,6 +35,20 @@ function AuditLogDetailPage() {
     [auditLogId],
   )
   const log = data?.data
+  const isNotFound = error instanceof ApiError && error.status === 404
+
+  if (isNotFound) {
+    return (
+      <RequireAuth>
+        <NotFound
+          title="Audit log not found"
+          description={`No audit log found with ID “${auditLogId}”. It may have been deleted or does not exist.`}
+          backTo="/audit-logs"
+          backLabel="Back to audit logs"
+        />
+      </RequireAuth>
+    )
+  }
 
   return (
     <RequireAuth>
@@ -47,7 +62,7 @@ function AuditLogDetailPage() {
         }
       />
 
-      {error != null && <div className="mb-4"><ErrorBox error={error} /></div>}
+      {error != null && !isNotFound && <div className="mb-4"><ErrorBox error={error} /></div>}
       {loading && <Card className="p-4"><LoadingBox label="Loading audit log…" /></Card>}
 
       {log && (

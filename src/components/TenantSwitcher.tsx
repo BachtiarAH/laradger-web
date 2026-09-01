@@ -28,7 +28,29 @@ export function TenantSwitcher({ className }: { className?: string }) {
   const [error, setError] = React.useState<unknown>(null)
   const [creating, setCreating] = React.useState(false)
 
-  if (!tenant) return null
+  if (!tenant) {
+    if (tenants.length === 0) return null
+    return (
+      <div className={cn('space-y-2', className)}>
+        <p className="text-xs text-muted-foreground">Select organization</p>
+        <div className="space-y-1">
+          {tenants.map((t) => (
+            <Button
+              key={t.id}
+              variant="secondary"
+              className="w-full justify-start"
+              onClick={() => switchTenant(t)}
+            >
+              <span className="truncate">{t.name}</span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {t.slug}
+              </span>
+            </Button>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
