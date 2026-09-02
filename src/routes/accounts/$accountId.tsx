@@ -352,13 +352,22 @@ function AccountDetailPage() {
                   </TableHeader>
                   <TableBody>
                     {jlFetch.data.data.map((line) => (
-                      <TableRow key={line.id}>
+                      <TableRow
+                        key={line.id}
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          const target = e.target as HTMLElement
+                          if (target.closest('a, button')) return
+                          navigate({ to: '/journals/$journalId', params: { journalId: line.journal_id } })
+                        }}
+                      >
                         <Td>
                           <Link
                             to="/journals/$journalId"
                             params={{ journalId: line.journal_id }}
                             className="font-medium text-primary hover:underline"
                             title="Buka journal preview/edit"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             {line.journal?.reference ?? line.journal_id.slice(0, 8) + '…'}
                           </Link>
@@ -373,6 +382,7 @@ function AccountDetailPage() {
                             to="/journals/$journalId"
                             params={{ journalId: line.journal_id }}
                             className="text-sm text-primary hover:underline"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             View
                           </Link>

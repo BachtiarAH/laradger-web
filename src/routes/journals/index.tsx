@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
@@ -31,6 +31,7 @@ export const Route = createFileRoute('/journals/')({
 })
 
 function JournalsPage() {
+  const navigate = useNavigate()
   const [page, setPage] = React.useState(1)
   const [status, setStatus] = React.useState('')
   const [source, setSource] = React.useState('')
@@ -161,8 +162,25 @@ function JournalsPage() {
                 </TableHeader>
                 <TableBody>
                   {data.data.map((journal) => (
-                    <TableRow key={journal.id}>
-                      <Td>{journal.reference || '—'}</Td>
+                    <TableRow
+                      key={journal.id}
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement
+                        if (target.closest('a, button')) return
+                        navigate({ to: '/journals/$journalId', params: { journalId: journal.id } })
+                      }}
+                    >
+                      <Td>
+                        <Link
+                          to="/journals/$journalId"
+                          params={{ journalId: journal.id }}
+                          className="font-medium text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {journal.reference || '—'}
+                        </Link>
+                      </Td>
                       <Td className="max-w-xs truncate">{journal.description}</Td>
                       <Td>{new Date(journal.transaction_date).toLocaleDateString()}</Td>
                       <Td><Badge value={journal.status} /></Td>
@@ -173,6 +191,7 @@ function JournalsPage() {
                           to="/journals/$journalId"
                           params={{ journalId: journal.id }}
                           className="text-sm text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           View
                         </Link>
