@@ -4,6 +4,10 @@ import { api } from '../lib/api'
 import { useFetch } from '../lib/useFetch'
 import { useAuth } from '../lib/auth'
 import { Button, Card, LoadingBox, ErrorBox } from '../components/ui'
+import { useWidgets } from '../hooks/useWidgets'
+import { WidgetGrid } from '../components/dashboard/WidgetGrid'
+import { AddWidgetDialog } from '../components/dashboard/AddWidgetDialog'
+import type { WidgetConfig } from '../lib/dashboardSchema'
 
 export const Route = createFileRoute('/')({
   component: HomeComponent,
@@ -33,6 +37,10 @@ function StatCard({
 
 function Dashboard() {
   const { token, user, tenant, tenants, switchTenant } = useAuth()
+  const { widgets, addWidget, removeWidget, moveWidget, updateWidget } = useWidgets()
+  const [isEditing, setIsEditing] = React.useState(false)
+  const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [editWidget, setEditWidget] = React.useState<WidgetConfig | null>(null)
 
   const shouldFetch = !!token && !!tenant
   const accounts = useFetch(
@@ -113,28 +121,42 @@ function Dashboard() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">
-          Welcome back{user?.name ? `, ${user.name}` : ''}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Overview of the ledger.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Welcome back{user?.name ? `, ${user.name}` : ''}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Overview of the ledger. Widget generik — label & logic bebas (scorecard/table/text/chart). 4 bawaan bisa dihapus.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => setIsEditing((v) => !v)}>{isEditing ? 'Selesai' : 'Atur widget'}</Button>
+          <Button onClick={() => { setEditWidget(null); setDialogOpen(true) }}>Tambah widget</Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Accounts"
-          value={accounts.data?.total}
-          to="/accounts"
-        />
-        <StatCard
-          label="Journals"
-          value={journals.data?.total}
-          to="/journals"
-        />
-        <StatCard label="Budgets" value={budgets.data?.total} to="/budgets" />
-        <StatCard label="Tags" value={tags.data?.total} to="/tags" />
+      <AddWidgetDialog open={dialogOpen} onOpenChange={setDialogOpen} onAdd={addWidget} initial={editWidget} mode={editWidget ? 'edit' : 'add'} onUpdate={(id, patch) => updateWidget(id, patch)} />
+
+      {/* Slot dashboard:top — generik, bisa diisi user */}
+      <div className="mb-4">
+        <WidgetGrid widgets={widgets} placement="dashboard:top" isEditing={isEditing} onRemove={removeWidget} onMove={moveWidget} onEdit={(id) => { const w = widgets.find((x) => x.id === id); if (w) { setEditWidget(w); setDialogOpen(true) } }} />
+      </div>
+
+      <WidgetGrid widgets={widgets} placement="dashboard:grid" isEditing={isEditing} onRemove={removeWidget} onMove={moveWidget} onEdit={(id) => { const w = widgets.find((x) => x.id === id); if (w) { setEditWidget(w); setDialogOpen(true) } }} />
+
+      {/* Fallback legacy StatCard jika widget grid kosong — tetap tampilkan 4 count untuk UX awal */}
+      {widgets.filter((w) => w.placement === 'dashboard:grid').length === 0 && (
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Accounts" value={accounts.data?.total} to="/accounts" />
+          <StatCard label="Journals" value={journals.data?.total} to="/journals" />
+          <StatCard label="Budgets" value={budgets.data?.total} to="/budgets" />
+          <StatCard label="Tags" value={tags.data?.total} to="/tags" />
+        </div>
+      )}
+
+      <div className="mt-4">
+        <WidgetGrid widgets={widgets} placement="dashboard:bottom" isEditing={isEditing} onRemove={removeWidget} onMove={moveWidget} onEdit={(id) => { const w = widgets.find((x) => x.id === id); if (w) { setEditWidget(w); setDialogOpen(true) } }} />
       </div>
 
       {accounts.error != null && (

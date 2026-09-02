@@ -37,6 +37,9 @@ export function BudgetForm({
   submitLabel?: string
   loading?: boolean
 }) {
+  const [budgetType, setBudgetType] = React.useState<'income' | 'expense'>(
+    () => (initial?.budget_type as 'income' | 'expense') ?? 'expense',
+  )
   const [periodType, setPeriodType] = React.useState<'custom' | 'monthly'>(
     () => (initial?.period_type as 'custom' | 'monthly') ?? 'custom',
   )
@@ -69,6 +72,7 @@ export function BudgetForm({
       name: form.name,
       ...(form.description ? { description: form.description } : {}),
       amount: Number(form.amount),
+      budget_type: budgetType,
       period_type: periodType,
       is_recurring: isRecurring,
       ...(accountIds.length > 0 ? { account_ids: accountIds } : {}),
@@ -115,6 +119,15 @@ export function BudgetForm({
             value={form.amount}
             onChange={(e) => set({ amount: e.target.value })}
           />
+        </Field>
+        <Field label="Tipe anggaran" htmlFor="budget_type">
+          <Select value={budgetType} onValueChange={(v) => { setBudgetType(v as 'income' | 'expense'); setAccountIds([]) }}>
+            <SelectTrigger id="budget_type" className="w-full min-w-0"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="expense">Pengeluaran (Belanja)</SelectItem>
+              <SelectItem value="income">Pemasukan (Pendapatan)</SelectItem>
+            </SelectContent>
+          </Select>
         </Field>
         <Field label="Tipe periode" htmlFor="period_type">
           <Select value={periodType} onValueChange={(v) => setPeriodType(v as 'custom' | 'monthly')}>
@@ -179,7 +192,8 @@ export function BudgetForm({
         <AccountMultiSelect
           selectedIds={accountIds}
           onChange={setAccountIds}
-          placeholder="Search and add accounts…"
+          placeholder={budgetType === 'income' ? 'Pilih akun pendapatan (income)…' : 'Pilih akun belanja (expense)…'}
+          filterType={budgetType}
         />
       </Field>
       <Field label="Tags">

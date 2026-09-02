@@ -238,6 +238,7 @@ export const api = {
       period?: 'today' | 'this_week' | 'this_month' | string
       period_type?: string
       is_recurring?: boolean
+      budget_type?: 'income' | 'expense' | string
       tag_id?: string
       account_id?: string
     } = {},
@@ -317,6 +318,8 @@ type RawList<T> = {
     current_page?: number
     last_page?: number
     total?: number
+    total_amount?: string
+    summary?: import('./types').BudgetSummary
   }
   current_page?: number
   last_page?: number
@@ -330,5 +333,7 @@ function asList<T>(raw: RawList<T>): Paginated<T> {
     current_page: meta.current_page ?? raw.current_page ?? 1,
     last_page: meta.last_page ?? raw.last_page ?? 1,
     total: meta.total ?? raw.total ?? raw.data?.length ?? 0,
+    total_amount: meta.total_amount,
+    summary: meta.summary,
   }
 }

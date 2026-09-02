@@ -139,6 +139,7 @@ export type Budget = {
   name: string
   description: string | null
   amount: string
+  budget_type: 'income' | 'expense'
   period_type: 'custom' | 'monthly'
   is_recurring: boolean
   starts_at: string
@@ -153,6 +154,7 @@ export type BudgetStore = {
   name: string
   description?: string | null
   amount: number
+  budget_type?: 'income' | 'expense'
   period_type?: 'custom' | 'monthly'
   is_recurring?: boolean
   budget_month?: string
@@ -197,11 +199,24 @@ export type AccountAnalytics = {
   recent: JournalLine[]
 }
 
+export type BudgetSummary = {
+  income_budgeted: string
+  expense_budgeted: string
+  total_budgeted: string
+  income_actual: string
+  expense_actual: string
+  unbudgeted_income: string
+  remaining_expense: string
+  net_budgeted: string
+}
+
 export type Paginated<T> = {
   data: T[]
   current_page: number
   last_page: number
   total: number
+  total_amount?: string
+  summary?: BudgetSummary
 }
 
 export type ApiEnvelope<T> = {

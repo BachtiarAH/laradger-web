@@ -27,6 +27,10 @@ import {
 } from '../../components/ui'
 import type { Budget } from '../../lib/types'
 import { AccountSelect } from '../../components/AccountSelect'
+import { useWidgets } from '../../hooks/useWidgets'
+import { WidgetGrid } from '../../components/dashboard/WidgetGrid'
+import { AddWidgetDialog } from '../../components/dashboard/AddWidgetDialog'
+import type { WidgetConfig } from '../../lib/dashboardSchema'
 
 export const Route = createFileRoute('/budgets/')({
   component: BudgetsPage,
@@ -45,10 +49,15 @@ function BudgetsPage() {
   const [startsAt, setStartsAt] = React.useState('')
   const [endsAt, setEndsAt] = React.useState('')
   const [period, setPeriod] = React.useState('')
+  const [budgetType, setBudgetType] = React.useState('')
   const [tagId, setTagId] = React.useState('')
   const [accountId, setAccountId] = React.useState('')
   const [confirmBudget, setConfirmBudget] = React.useState<Budget | null>(null)
   const [actionError, setActionError] = React.useState<unknown>(null)
+  const { widgets, addWidget, removeWidget, moveWidget, updateWidget } = useWidgets()
+  const [isEditingWidgets, setIsEditingWidgets] = React.useState(false)
+  const [widgetDialogOpen, setWidgetDialogOpen] = React.useState(false)
+  const [editWidget, setEditWidget] = React.useState<WidgetConfig | null>(null)
 
   const { data, error, loading, reload } = useFetch(
     () =>
@@ -59,22 +68,24 @@ function BudgetsPage() {
         starts_at: startsAt || undefined,
         ends_at: endsAt || undefined,
         period: period || undefined,
+        budget_type: budgetType || undefined,
         tag_id: tagId || undefined,
         account_id: accountId || undefined,
       }),
-    [page, search, startsAt, endsAt, period, tagId, accountId],
+    [page, search, startsAt, endsAt, period, budgetType, tagId, accountId],
   )
 
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
 
   const setFilter = (
-    name: 'search' | 'starts_at' | 'ends_at' | 'period' | 'tag_id' | 'account_id',
+    name: 'search' | 'starts_at' | 'ends_at' | 'period' | 'budget_type' | 'tag_id' | 'account_id',
     value: string,
   ) => {
     if (name === 'search') setSearch(value)
     if (name === 'starts_at') setStartsAt(value)
     if (name === 'ends_at') setEndsAt(value)
     if (name === 'period') setPeriod(value)
+    if (name === 'budget_type') setBudgetType(value)
     if (name === 'tag_id') setTagId(value)
     if (name === 'account_id') setAccountId(value)
     setPage(1)
@@ -85,6 +96,7 @@ function BudgetsPage() {
     setStartsAt('')
     setEndsAt('')
     setPeriod('')
+    setBudgetType('')
     setTagId('')
     setAccountId('')
     setPage(1)
@@ -105,16 +117,26 @@ function BudgetsPage() {
     <RequireAuth>
       <PageHeader
         title="Budgets"
-        subtitle="Spending budgets linked to accounts and tags"
+        subtitle="Budgets generik — widget bisa di atas/bawah fitur, label & logic bebas"
         actions={
-          <Link to="/budgets/new">
-            <Button>New budget</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setIsEditingWidgets((v) => !v)}>{isEditingWidgets ? 'Selesai' : 'Atur widget'}</Button>
+            <Button variant="secondary" onClick={() => { setEditWidget(null); setWidgetDialogOpen(true) }}>Tambah widget</Button>
+            <Link to="/budgets/new">
+              <Button>New budget</Button>
+            </Link>
+          </div>
         }
       />
 
       {actionError != null && <div className="mb-4"><ErrorBox error={actionError} /></div>}
       {error != null && <div className="mb-4"><ErrorBox error={error} /></div>}
+
+      <AddWidgetDialog open={widgetDialogOpen} onOpenChange={setWidgetDialogOpen} onAdd={addWidget} initial={editWidget} mode={editWidget ? 'edit' : 'add'} onUpdate={(id, patch) => updateWidget(id, patch)} />
+
+      <div className="mb-4">
+        <WidgetGrid widgets={widgets} placement="budgets:above_filters" isEditing={isEditingWidgets} onRemove={removeWidget} onMove={moveWidget} onEdit={(id) => { const w = widgets.find((x) => x.id === id); if (w) { setEditWidget(w); setWidgetDialogOpen(true) } }} />
+      </div>
 
       <Card className="mb-4 p-4">
         <div className="flex flex-wrap gap-2 mb-3">
@@ -122,6 +144,12 @@ function BudgetsPage() {
           <Button variant={period === 'today' ? 'primary' : 'secondary'} onClick={() => setFilter('period', 'today')}>Hari ini</Button>
           <Button variant={period === 'this_week' ? 'primary' : 'secondary'} onClick={() => setFilter('period', 'this_week')}>Minggu ini</Button>
           <Button variant={period === 'this_month' ? 'primary' : 'secondary'} onClick={() => setFilter('period', 'this_month')}>Bulan ini</Button>
+        </div>
+        <div className="flex flex-wrap gap-2 mb-3">
+          <span className="self-center text-xs text-muted-foreground mr-1">Tipe:</span>
+          <Button variant={budgetType === '' ? 'primary' : 'secondary'} onClick={() => setFilter('budget_type', '')}>Semua tipe</Button>
+          <Button variant={budgetType === 'income' ? 'primary' : 'secondary'} onClick={() => setFilter('budget_type', 'income')}>Pemasukan</Button>
+          <Button variant={budgetType === 'expense' ? 'primary' : 'secondary'} onClick={() => setFilter('budget_type', 'expense')}>Pengeluaran</Button>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
           <Field label="Search name">
@@ -177,6 +205,33 @@ function BudgetsPage() {
             </Button>
           </div>
         </div>
+        <div className="mt-3">
+          <WidgetGrid widgets={widgets} placement="budgets:summary" isEditing={isEditingWidgets} onRemove={removeWidget} onMove={moveWidget} onEdit={(id) => { const w = widgets.find((x) => x.id === id); if (w) { setEditWidget(w); setWidgetDialogOpen(true) } }} />
+        </div>
+        {(() => {
+          const s = data?.summary
+          return (
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <div className="rounded-lg bg-emerald-50 px-3 py-3 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:ring-emerald-800">
+                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Pemasukan (Ekspektasi)</p>
+                <p className="mt-1 text-sm text-muted-foreground">Dianggarkan: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.income_budgeted ?? '0')}</span></p>
+                <p className="text-sm text-muted-foreground">Realisasi: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.income_actual ?? '0')}</span></p>
+                <p className="mt-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">Belum dianggarkan: {loading ? '…' : formatAmount(s?.unbudgeted_income ?? '0')} <span className="font-normal text-muted-foreground">({Number(s?.unbudgeted_income ?? 0) >= 0 ? 'surplus' : 'defisit'})</span></p>
+              </div>
+              <div className="rounded-lg bg-red-50 px-3 py-3 ring-1 ring-red-200 dark:bg-red-950/30 dark:ring-red-800">
+                <p className="text-xs font-medium text-red-700 dark:text-red-300">Pengeluaran (Anggaran)</p>
+                <p className="mt-1 text-sm text-muted-foreground">Dianggarkan: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.expense_budgeted ?? '0')}</span></p>
+                <p className="text-sm text-muted-foreground">Realisasi: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.expense_actual ?? '0')}</span></p>
+                <p className="mt-1 text-xs font-semibold text-red-700 dark:text-red-400">Sisa anggaran: {loading ? '…' : formatAmount(s?.remaining_expense ?? '0')} <span className="font-normal text-muted-foreground">({Number(s?.remaining_expense ?? 0) >= 0 ? 'tersisa' : 'over budget'})</span></p>
+              </div>
+              <div className="rounded-lg bg-muted px-3 py-3 ring-1 ring-border">
+                <p className="text-xs font-medium text-foreground">Ringkasan</p>
+                <p className="mt-1 text-sm text-muted-foreground">Total budget: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.total_budgeted ?? data?.total_amount ?? '0')}</span> <span className="text-xs">({data?.total ?? 0} budget)</span></p>
+                <p className="text-sm text-muted-foreground">Net dianggarkan: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.net_budgeted ?? '0')}</span> <span className="text-xs">(pemasukan - pengeluaran)</span></p>
+              </div>
+            </div>
+          )
+        })()}
       </Card>
 
       <Card>
@@ -197,6 +252,7 @@ function BudgetsPage() {
                   <TableRow>
                     <Th>Name</Th>
                     <Th>Amount</Th>
+                    <Th>Tipe anggaran</Th>
                     <Th>Period</Th>
                     <Th>Tipe</Th>
                     <Th>Accounts</Th>
@@ -226,6 +282,11 @@ function BudgetsPage() {
                         </Link>
                       </Td>
                       <Td>{formatAmount(budget.amount)}</Td>
+                      <Td>
+                        <span className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${budget.budget_type === 'income' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200'}`}>
+                          {budget.budget_type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
+                        </span>
+                      </Td>
                       <Td>
                         {new Date(budget.starts_at).toLocaleDateString()} —{' '}
                         {new Date(budget.ends_at).toLocaleDateString()}
@@ -276,6 +337,10 @@ function BudgetsPage() {
           </>
         )}
       </Card>
+
+      <div className="mt-4">
+        <WidgetGrid widgets={widgets} placement="budgets:bottom" isEditing={isEditingWidgets} onRemove={removeWidget} onMove={moveWidget} onEdit={(id) => { const w = widgets.find((x) => x.id === id); if (w) { setEditWidget(w); setWidgetDialogOpen(true) } }} />
+      </div>
 
       <ConfirmDialog
         open={confirmBudget !== null}

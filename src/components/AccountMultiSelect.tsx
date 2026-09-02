@@ -27,9 +27,10 @@ type Props = {
   selectedIds: string[]
   onChange: (ids: string[]) => void
   placeholder?: string
+  filterType?: 'income' | 'expense' | string
 }
 
-export function AccountMultiSelect({ selectedIds, onChange, placeholder = 'Search accounts…' }: Props) {
+export function AccountMultiSelect({ selectedIds, onChange, placeholder = 'Search accounts…', filterType }: Props) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
   const debouncedQuery = useDebounce(query, 300)
@@ -41,7 +42,7 @@ export function AccountMultiSelect({ selectedIds, onChange, placeholder = 'Searc
     let active = true
     setLoading(true)
     api
-      .listAccounts({ search: debouncedQuery || undefined, per_page: 20 })
+      .listAccounts({ search: debouncedQuery || undefined, per_page: 20, type: filterType || undefined })
       .then((result) => {
         if (active) setAccounts(result.data)
       })
@@ -54,7 +55,7 @@ export function AccountMultiSelect({ selectedIds, onChange, placeholder = 'Searc
     return () => {
       active = false
     }
-  }, [debouncedQuery, open])
+  }, [debouncedQuery, open, filterType])
 
   React.useEffect(() => {
     if (selectedIds.length === 0) {
