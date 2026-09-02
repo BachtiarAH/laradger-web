@@ -347,29 +347,36 @@ function AccountDetailPage() {
                       <Th>Credit</Th>
                       <Th>Description</Th>
                       <Th>Status</Th>
+                      <Th className="text-right">Action</Th>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {jlFetch.data.data.map((line) => (
                       <TableRow key={line.id}>
                         <Td>
-                          {line.journal ? (
-                            <Link
-                              to="/journals/$journalId"
-                              params={{ journalId: line.journal.id }}
-                              className="font-medium text-primary hover:underline"
-                            >
-                              {line.journal.reference}
-                            </Link>
-                          ) : (
-                            <span className="font-mono text-xs">{line.journal_id.slice(0, 8)}…</span>
-                          )}
+                          <Link
+                            to="/journals/$journalId"
+                            params={{ journalId: line.journal_id }}
+                            className="font-medium text-primary hover:underline"
+                            title="Buka journal preview/edit"
+                          >
+                            {line.journal?.reference ?? line.journal_id.slice(0, 8) + '…'}
+                          </Link>
                         </Td>
                         <Td className="text-xs">{line.journal ? formatDate(line.journal.transaction_date) : formatDate(line.created_at)}</Td>
                         <Td>{line.debit && Number(line.debit) !== 0 ? fmtCurrency(line.debit) : '—'}</Td>
                         <Td>{line.credit && Number(line.credit) !== 0 ? fmtCurrency(line.credit) : '—'}</Td>
-                        <Td className="max-w-[200px] truncate">{line.description || '—'}</Td>
+                        <Td className="max-w-[200px] truncate">{line.description || line.journal?.description || '—'}</Td>
                         <Td>{line.journal ? <Badge value={line.journal.status} /> : '—'}</Td>
+                        <Td className="text-right">
+                          <Link
+                            to="/journals/$journalId"
+                            params={{ journalId: line.journal_id }}
+                            className="text-sm text-primary hover:underline"
+                          >
+                            View
+                          </Link>
+                        </Td>
                       </TableRow>
                     ))}
                   </TableBody>
