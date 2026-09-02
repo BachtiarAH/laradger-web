@@ -118,6 +118,10 @@ function BudgetDetailPage() {
                   {new Date(budget.ends_at).toLocaleDateString()}
                 </dd>
               </div>
+              <div>
+                <dt className="text-muted-foreground">Tipe</dt>
+                <dd className="mt-1">{budget.period_type === 'monthly' ? 'Bulanan' : 'Custom'}{budget.is_recurring ? ' • Otomatis' : ''}</dd>
+              </div>
               <div className="col-span-2">
                 <dt className="text-muted-foreground">Description</dt>
                 <dd className="mt-1">{budget.description || '—'}</dd>

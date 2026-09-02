@@ -1,59 +1,29 @@
 import * as React from 'react'
 import { api } from '../lib/api'
 import { useFetch } from '../lib/useFetch'
-import type { Budget, BudgetStore } from '../lib/types'
+import type { Budget, BudgetStore, Tag } from '../lib/types'
 import {
   Button,
   ErrorBox,
   Field,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from './ui'
 import { AccountMultiSelect } from './AccountMultiSelect'
-
-function ChipPicker({
-  title,
-  options,
-  selected,
-  onToggle,
-}: {
-  title: string
-  options: { id: string; label: string }[]
-  selected: string[]
-  onToggle: (id: string) => void
-}) {
-  return (
-    <Field label={title}>
-      {options.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No options available.</p>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {options.map((option) => (
-            <label
-              key={option.id}
-              className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-sm transition-colors ${
-                selected.includes(option.id)
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-input text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-            >
-              <input
-                type="checkbox"
-                className="sr-only"
-                checked={selected.includes(option.id)}
-                onChange={() => onToggle(option.id)}
-              />
-              {option.label}
-            </label>
-          ))}
-        </div>
-      )}
-    </Field>
-  )
-}
+import { TagInput } from './TagInput'
 
 function toDateInput(value: string | null | undefined): string {
   if (!value) return ''
   return value.slice(0, 10)
+}
+
+function toMonthInput(dateStr: string): string {
+  if (!dateStr) return new Date().toISOString().slice(0, 7)
+  return dateStr.slice(0, 7)
 }
 
 export function BudgetForm({
@@ -67,6 +37,11 @@ export function BudgetForm({
   submitLabel?: string
   loading?: boolean
 }) {
+  const [periodType, setPeriodType] = React.useState<'custom' | 'monthly'>(
+    () => (initial?.period_type as 'custom' | 'monthly') ?? 'custom',
+  )
+  const [isRecurring, setIsRecurring] = React.useState(() => initial?.is_recurring ?? false)
+  const [budgetMonth, setBudgetMonth] = React.useState(() => toMonthInput(toDateInput(initial?.starts_at)))
   const [form, setForm] = React.useState({
     name: initial?.name ?? '',
     description: initial?.description ?? '',
@@ -83,22 +58,29 @@ export function BudgetForm({
   const [error, setError] = React.useState<unknown>(null)
 
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
+  const [extraTags, setExtraTags] = React.useState<Tag[]>([])
+  const allTags = React.useMemo(() => [...(tags.data?.data ?? []), ...extraTags], [tags.data, extraTags])
 
   const set = (patch: Partial<typeof form>) =>
     setForm((prev) => ({ ...prev, ...patch }))
 
-  const toggle = (list: string[], setter: (v: string[]) => void) => (id: string) =>
-    setter(list.includes(id) ? list.filter((t) => t !== id) : [...list, id])
+  const buildPayload = (): BudgetStore => {
+    const base: BudgetStore = {
+      name: form.name,
+      ...(form.description ? { description: form.description } : {}),
+      amount: Number(form.amount),
+      period_type: periodType,
+      is_recurring: isRecurring,
+      ...(accountIds.length > 0 ? { account_ids: accountIds } : {}),
+      ...(tagIds.length > 0 ? { tag_ids: tagIds } : {}),
+    }
 
-  const buildPayload = (): BudgetStore => ({
-    name: form.name,
-    ...(form.description ? { description: form.description } : {}),
-    amount: Number(form.amount),
-    starts_at: form.starts_at,
-    ends_at: form.ends_at,
-    ...(accountIds.length > 0 ? { account_ids: accountIds } : {}),
-    ...(tagIds.length > 0 ? { tag_ids: tagIds } : {}),
-  })
+    if (periodType === 'monthly') {
+      return { ...base, budget_month: budgetMonth }
+    }
+
+    return { ...base, starts_at: form.starts_at, ends_at: form.ends_at }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -134,24 +116,53 @@ export function BudgetForm({
             onChange={(e) => set({ amount: e.target.value })}
           />
         </Field>
-        <Field label="Start date" htmlFor="starts_at">
-          <Input
-            id="starts_at"
-            type="date"
-            required
-            value={form.starts_at}
-            onChange={(e) => set({ starts_at: e.target.value })}
-          />
+        <Field label="Tipe periode" htmlFor="period_type">
+          <Select value={periodType} onValueChange={(v) => setPeriodType(v as 'custom' | 'monthly')}>
+            <SelectTrigger id="period_type" className="w-full min-w-0"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="custom">Custom (otomatis — pilih tanggal)</SelectItem>
+              <SelectItem value="monthly">Bulanan</SelectItem>
+            </SelectContent>
+          </Select>
         </Field>
-        <Field label="End date" htmlFor="ends_at">
-          <Input
-            id="ends_at"
-            type="date"
-            required
-            value={form.ends_at}
-            onChange={(e) => set({ ends_at: e.target.value })}
-          />
-        </Field>
+        <div className="flex min-w-0 items-end pb-2">
+          <label className="flex min-w-0 cursor-pointer items-center gap-2 text-sm">
+            <input type="checkbox" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} className="h-4 w-4 shrink-0 rounded border-input" />
+            <span className="min-w-0 break-words leading-tight">Perpanjang otomatis tiap periode</span>
+          </label>
+        </div>
+        {periodType === 'monthly' ? (
+          <Field label="Bulan" htmlFor="budget_month">
+            <Input
+              id="budget_month"
+              type="month"
+              required
+              value={budgetMonth}
+              onChange={(e) => setBudgetMonth(e.target.value)}
+            />
+          </Field>
+        ) : (
+          <>
+            <Field label="Start date" htmlFor="starts_at">
+              <Input
+                id="starts_at"
+                type="date"
+                required
+                value={form.starts_at}
+                onChange={(e) => set({ starts_at: e.target.value })}
+              />
+            </Field>
+            <Field label="End date" htmlFor="ends_at">
+              <Input
+                id="ends_at"
+                type="date"
+                required
+                value={form.ends_at}
+                onChange={(e) => set({ ends_at: e.target.value })}
+              />
+            </Field>
+          </>
+        )}
         <div className="sm:col-span-2">
           <Field label="Description" htmlFor="description">
             <Input
@@ -171,15 +182,9 @@ export function BudgetForm({
           placeholder="Search and add accounts…"
         />
       </Field>
-      <ChipPicker
-        title="Tags"
-        options={(tags.data?.data ?? []).map((t) => ({
-          id: t.id,
-          label: t.name,
-        }))}
-        selected={tagIds}
-        onToggle={toggle(tagIds, setTagIds)}
-      />
+      <Field label="Tags">
+        <TagInput tags={allTags} selectedIds={tagIds} onChange={setTagIds} onTagCreated={(t) => setExtraTags((prev) => [...prev, t])} />
+      </Field>
 
       {error != null && <ErrorBox error={error} />}
       <div className="flex gap-2">

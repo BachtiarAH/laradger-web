@@ -139,6 +139,8 @@ export type Budget = {
   name: string
   description: string | null
   amount: string
+  period_type: 'custom' | 'monthly'
+  is_recurring: boolean
   starts_at: string
   ends_at: string
   created_at: string
@@ -151,8 +153,11 @@ export type BudgetStore = {
   name: string
   description?: string | null
   amount: number
-  starts_at: string
-  ends_at: string
+  period_type?: 'custom' | 'monthly'
+  is_recurring?: boolean
+  budget_month?: string
+  starts_at?: string
+  ends_at?: string
   account_ids?: string[]
   tag_ids?: string[]
 }

@@ -23,7 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui'
-import type { JournalSource, JournalStatus } from '../../lib/types'
+import type { JournalSource, JournalStatus, Tag } from '../../lib/types'
+import { TagInput } from '../../components/TagInput'
 
 export const Route = createFileRoute('/journals/new')({
   component: NewJournalPage,
@@ -45,18 +46,14 @@ function NewJournalPage() {
 
   const accounts = useFetch(() => api.listAccounts({ per_page: 20 }), [])
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
+  const [extraTags, setExtraTags] = React.useState<Tag[]>([])
+  const allTags = React.useMemo(() => [...(tags.data?.data ?? []), ...extraTags], [tags.data, extraTags])
 
   React.useEffect(() => {
     if (lines.length === 0) {
       setLines([createBlankLine()])
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const toggleTag = (id: string) => {
-    setTagIds((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
-    )
-  }
 
   const handleApplyDraft = (result: AiDraftResult) => {
     if (result.transaction_date) {
@@ -145,7 +142,7 @@ function NewJournalPage() {
         <>
           <AiDraftPanel
             accounts={accounts.data?.data ?? []}
-            tags={tags.data?.data ?? []}
+            tags={allTags}
             onApply={handleApplyDraft}
           />
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -207,30 +204,7 @@ function NewJournalPage() {
             <h2 className="text-lg font-semibold text-foreground">
               Tags
             </h2>
-            {tags.data?.data.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No tags available.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {tags.data?.data.map((tag) => (
-                  <label
-                    key={tag.id}
-                    className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-sm transition-colors ${
-                      tagIds.includes(tag.id)
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-input text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      className="sr-only"
-                      checked={tagIds.includes(tag.id)}
-                      onChange={() => toggleTag(tag.id)}
-                    />
-                    {tag.name}
-                  </label>
-                ))}
-              </div>
-            )}
+            <TagInput tags={allTags} selectedIds={tagIds} onChange={setTagIds} onTagCreated={(t) => setExtraTags((prev) => [...prev, t])} />
           </Card>
 
           {error != null && <ErrorBox error={error} />}

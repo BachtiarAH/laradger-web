@@ -27,7 +27,7 @@ import {
   Th,
   formatDate,
 } from '../../components/ui'
-import type { JournalLine, Tag } from '../../lib/types'
+import type { JournalLine, Tag, TagType } from '../../lib/types'
 import { AccountSelect } from '../../components/AccountSelect'
 
 export const Route = createFileRoute('/journals/$journalId')({
@@ -76,6 +76,9 @@ function JournalDetailPage() {
 
   // Attach tag
   const [attachTagId, setAttachTagId] = React.useState('')
+  const [freeTagName, setFreeTagName] = React.useState('')
+  const [freeTagType, setFreeTagType] = React.useState<TagType>('vendor')
+  const [freeTagBusy, setFreeTagBusy] = React.useState(false)
 
   React.useEffect(() => {
     if (journal) {
@@ -237,6 +240,36 @@ function JournalDetailPage() {
       await api.attachJournalTag(journalId, attachTagId)
       setAttachTagId('')
     })
+  }
+
+  const handleCreateAndAttachTag = async () => {
+    const name = freeTagName.trim()
+    if (!name) return
+    setActionError(null)
+    setFreeTagBusy(true)
+    try {
+      const existing = (tags.data?.data ?? []).find((t) => t.name.toLowerCase() === name.toLowerCase())
+      let tagId: string
+      if (existing) {
+        if (attachedTagIds.has(existing.id)) {
+          setActionError(new Error(`Tag "${existing.name}" sudah terpasang.`))
+          return
+        }
+        tagId = existing.id
+      } else {
+        const res = await api.createTag({ name, type: freeTagType })
+        tagId = res.data.id
+        // refresh tags list so new tag appears in Select
+        tags.reload()
+      }
+      await api.attachJournalTag(journalId, tagId)
+      setFreeTagName('')
+      reload()
+    } catch (err) {
+      setActionError(err)
+    } finally {
+      setFreeTagBusy(false)
+    }
   }
 
   const attachedTagIds = new Set((journal?.tags ?? []).map((tag) => tag.id))
@@ -554,32 +587,71 @@ function JournalDetailPage() {
               </div>
             )}
             {isDraft && (
-              <div className="flex max-w-md items-end gap-2">
-                <Field label="Attach tag">
-                  <Select
-                    value={attachTagId || undefined}
-                    onValueChange={setAttachTagId}
+              <div className="space-y-3">
+                <div className="flex max-w-md items-end gap-2">
+                  <Field label="Attach tag">
+                    <Select
+                      value={attachTagId || undefined}
+                      onValueChange={setAttachTagId}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select tag…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTags.map((tag: Tag) => (
+                          <SelectItem key={tag.id} value={tag.id}>
+                            {tag.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Button
+                    variant="secondary"
+                    onClick={handleAttachTag}
+                    loading={busy}
+                    disabled={!attachTagId}
                   >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select tag…" />
+                    Attach
+                  </Button>
+                </div>
+                <div className="flex max-w-md items-end gap-2">
+                  <Field label="Atau buat tag baru">
+                    <Input
+                      placeholder="Ketik nama tag…"
+                      value={freeTagName}
+                      onChange={(e) => setFreeTagName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          void handleCreateAndAttachTag()
+                        }
+                      }}
+                      maxLength={255}
+                    />
+                  </Field>
+                  <Select value={freeTagType} onValueChange={(v) => setFreeTagType(v as TagType)}>
+                    <SelectTrigger className="w-[130px]">
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableTags.map((tag: Tag) => (
-                        <SelectItem key={tag.id} value={tag.id}>
-                          {tag.name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="priority">priority</SelectItem>
+                      <SelectItem value="recurring">recurring</SelectItem>
+                      <SelectItem value="vendor">vendor</SelectItem>
+                      <SelectItem value="tax">tax</SelectItem>
+                      <SelectItem value="transfer">transfer</SelectItem>
                     </SelectContent>
                   </Select>
-                </Field>
-                <Button
-                  variant="secondary"
-                  onClick={handleAttachTag}
-                  loading={busy}
-                  disabled={!attachTagId}
-                >
-                  Attach
-                </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={handleCreateAndAttachTag}
+                    loading={freeTagBusy || busy}
+                    disabled={!freeTagName.trim()}
+                  >
+                    Buat &amp; Attach
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Ketik bebas — kalau tag belum ada akan otomatis dibuat dengan tipe terpilih lalu dipasang ke journal.</p>
               </div>
             )}
           </Card>

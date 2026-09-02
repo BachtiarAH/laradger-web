@@ -221,10 +221,13 @@ export const api = {
       search?: string
       starts_at?: string
       ends_at?: string
+      period?: 'today' | 'this_week' | 'this_month' | string
+      period_type?: string
+      is_recurring?: boolean
       tag_id?: string
       account_id?: string
     } = {},
-  ) => get<RawList<Budget>>(tenantPath(`/budgets${toQuery(params)}`)).then(asList),
+  ) => get<RawList<Budget>>(tenantPath(`/budgets${toQuery(params as Record<string, string | number | null | undefined>)}`)).then(asList),
   getBudget: (id: string) => get<ApiEnvelope<Budget>>(tenantPath(`/budgets/${id}`)),
   createBudget: (payload: BudgetStore) =>
     post<ApiEnvelope<Budget>>(tenantPath('/budgets'), payload),

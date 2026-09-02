@@ -43,6 +43,7 @@ function BudgetsPage() {
   const [search, setSearch] = React.useState('')
   const [startsAt, setStartsAt] = React.useState('')
   const [endsAt, setEndsAt] = React.useState('')
+  const [period, setPeriod] = React.useState('')
   const [tagId, setTagId] = React.useState('')
   const [accountId, setAccountId] = React.useState('')
   const [confirmBudget, setConfirmBudget] = React.useState<Budget | null>(null)
@@ -56,21 +57,23 @@ function BudgetsPage() {
         search: search || undefined,
         starts_at: startsAt || undefined,
         ends_at: endsAt || undefined,
+        period: period || undefined,
         tag_id: tagId || undefined,
         account_id: accountId || undefined,
       }),
-    [page, search, startsAt, endsAt, tagId, accountId],
+    [page, search, startsAt, endsAt, period, tagId, accountId],
   )
 
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
 
   const setFilter = (
-    name: 'search' | 'starts_at' | 'ends_at' | 'tag_id' | 'account_id',
+    name: 'search' | 'starts_at' | 'ends_at' | 'period' | 'tag_id' | 'account_id',
     value: string,
   ) => {
     if (name === 'search') setSearch(value)
     if (name === 'starts_at') setStartsAt(value)
     if (name === 'ends_at') setEndsAt(value)
+    if (name === 'period') setPeriod(value)
     if (name === 'tag_id') setTagId(value)
     if (name === 'account_id') setAccountId(value)
     setPage(1)
@@ -80,6 +83,7 @@ function BudgetsPage() {
     setSearch('')
     setStartsAt('')
     setEndsAt('')
+    setPeriod('')
     setTagId('')
     setAccountId('')
     setPage(1)
@@ -112,6 +116,12 @@ function BudgetsPage() {
       {error != null && <div className="mb-4"><ErrorBox error={error} /></div>}
 
       <Card className="mb-4 p-4">
+        <div className="flex flex-wrap gap-2 mb-3">
+          <Button variant={period === '' ? 'primary' : 'secondary'} onClick={() => setFilter('period', '')}>Semua</Button>
+          <Button variant={period === 'today' ? 'primary' : 'secondary'} onClick={() => setFilter('period', 'today')}>Hari ini</Button>
+          <Button variant={period === 'this_week' ? 'primary' : 'secondary'} onClick={() => setFilter('period', 'this_week')}>Minggu ini</Button>
+          <Button variant={period === 'this_month' ? 'primary' : 'secondary'} onClick={() => setFilter('period', 'this_month')}>Bulan ini</Button>
+        </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
           <Field label="Search name">
             <Input
@@ -187,6 +197,7 @@ function BudgetsPage() {
                     <Th>Name</Th>
                     <Th>Amount</Th>
                     <Th>Period</Th>
+                    <Th>Tipe</Th>
                     <Th>Accounts</Th>
                     <Th>Tags</Th>
                     <Th className="text-right">Actions</Th>
@@ -208,6 +219,12 @@ function BudgetsPage() {
                       <Td>
                         {new Date(budget.starts_at).toLocaleDateString()} —{' '}
                         {new Date(budget.ends_at).toLocaleDateString()}
+                      </Td>
+                      <Td>
+                        <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-xs">
+                          {budget.period_type === 'monthly' ? 'Bulanan' : 'Custom'}
+                          {budget.is_recurring ? ' • Otomatis' : ''}
+                        </span>
                       </Td>
                       <Td>{(budget.accounts?.length ?? 0) || '—'}</Td>
                       <Td>{(budget.tags?.length ?? 0) || '—'}</Td>
