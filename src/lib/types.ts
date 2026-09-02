@@ -210,6 +210,30 @@ export type BudgetSummary = {
   net_budgeted: string
 }
 
+export type Overview = {
+  period: 'today' | 'this_week' | 'this_month'
+  date_range: {
+    from: string
+    to: string
+  }
+  income: {
+    actual: string
+    budgeted: string
+  }
+  expense: {
+    actual: string
+    budgeted: string
+    remaining: string
+    overspend: string
+  }
+  unbudgeted_income: string
+  net_budgeted: string
+  safe_money: string
+  liabilities: {
+    balance: string
+  }
+}
+
 export type Paginated<T> = {
   data: T[]
   current_page: number

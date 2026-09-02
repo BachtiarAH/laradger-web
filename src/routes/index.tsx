@@ -1,13 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import * as React from 'react'
-import { api } from '../lib/api'
-import { useFetch } from '../lib/useFetch'
 import { useAuth } from '../lib/auth'
-import { Button, Card, LoadingBox, ErrorBox } from '../components/ui'
-import { useWidgets } from '../hooks/useWidgets'
-import { WidgetGrid } from '../components/dashboard/WidgetGrid'
-import { AddWidgetDialog } from '../components/dashboard/AddWidgetDialog'
-import type { WidgetConfig } from '../lib/dashboardSchema'
+import { Button, Card } from '../components/ui'
+import OverviewPage from './overview'
 
 export const Route = createFileRoute('/')({
   component: HomeComponent,
@@ -36,29 +31,7 @@ function StatCard({
 }
 
 function Dashboard() {
-  const { token, user, tenant, tenants, switchTenant } = useAuth()
-  const { widgets, addWidget, removeWidget, moveWidget, updateWidget } = useWidgets()
-  const [isEditing, setIsEditing] = React.useState(false)
-  const [dialogOpen, setDialogOpen] = React.useState(false)
-  const [editWidget, setEditWidget] = React.useState<WidgetConfig | null>(null)
-
-  const shouldFetch = !!token && !!tenant
-  const accounts = useFetch(
-    () => (shouldFetch ? api.listAccounts({ per_page: 1 }) : Promise.resolve({ data: [], current_page: 1, last_page: 1, total: 0 })),
-    [shouldFetch],
-  )
-  const journals = useFetch(
-    () => (shouldFetch ? api.listJournals({ per_page: 1 }) : Promise.resolve({ data: [], current_page: 1, last_page: 1, total: 0 })),
-    [shouldFetch],
-  )
-  const tags = useFetch(
-    () => (shouldFetch ? api.listTags({ per_page: 1 }) : Promise.resolve({ data: [], current_page: 1, last_page: 1, total: 0 })),
-    [shouldFetch],
-  )
-  const budgets = useFetch(
-    () => (shouldFetch ? api.listBudgets({ per_page: 1 }) : Promise.resolve({ data: [], current_page: 1, last_page: 1, total: 0 })),
-    [shouldFetch],
-  )
+  const { token, tenant } = useAuth()
 
   if (!token) {
     return (
@@ -93,87 +66,11 @@ function Dashboard() {
           you open Ledgify on a new domain (localStorage is per-origin) — e.g.
           switching from workers.dev to bachtiarah.my.id.
         </p>
-        {tenants.length > 0 ? (
-          <div className="mt-4 space-y-2">
-            {tenants.map((t) => (
-              <Button
-                key={t.id}
-                variant="secondary"
-                className="w-full justify-start"
-                onClick={() => switchTenant(t)}
-              >
-                <span className="truncate">{t.name}</span>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {t.slug}
-                </span>
-              </Button>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-4 text-sm text-muted-foreground">
-            No organizations found. Create one from the sidebar or re-login to
-            sync.
-          </p>
-        )}
       </Card>
     )
   }
 
-  return (
-    <div>
-      <div className="mb-6 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Welcome back{user?.name ? `, ${user.name}` : ''}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Overview of the ledger. Widget generik — label & logic bebas (scorecard/table/text/chart). 4 bawaan bisa dihapus.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => setIsEditing((v) => !v)}>{isEditing ? 'Selesai' : 'Atur widget'}</Button>
-          <Button onClick={() => { setEditWidget(null); setDialogOpen(true) }}>Tambah widget</Button>
-        </div>
-      </div>
-
-      <AddWidgetDialog open={dialogOpen} onOpenChange={setDialogOpen} onAdd={addWidget} initial={editWidget} mode={editWidget ? 'edit' : 'add'} onUpdate={(id, patch) => updateWidget(id, patch)} />
-
-      {/* Slot dashboard:top — generik, bisa diisi user */}
-      <div className="mb-4">
-        <WidgetGrid widgets={widgets} placement="dashboard:top" isEditing={isEditing} onRemove={removeWidget} onMove={moveWidget} onEdit={(id) => { const w = widgets.find((x) => x.id === id); if (w) { setEditWidget(w); setDialogOpen(true) } }} />
-      </div>
-
-      <WidgetGrid widgets={widgets} placement="dashboard:grid" isEditing={isEditing} onRemove={removeWidget} onMove={moveWidget} onEdit={(id) => { const w = widgets.find((x) => x.id === id); if (w) { setEditWidget(w); setDialogOpen(true) } }} />
-
-      {/* Fallback legacy StatCard jika widget grid kosong — tetap tampilkan 4 count untuk UX awal */}
-      {widgets.filter((w) => w.placement === 'dashboard:grid').length === 0 && (
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Accounts" value={accounts.data?.total} to="/accounts" />
-          <StatCard label="Journals" value={journals.data?.total} to="/journals" />
-          <StatCard label="Budgets" value={budgets.data?.total} to="/budgets" />
-          <StatCard label="Tags" value={tags.data?.total} to="/tags" />
-        </div>
-      )}
-
-      <div className="mt-4">
-        <WidgetGrid widgets={widgets} placement="dashboard:bottom" isEditing={isEditing} onRemove={removeWidget} onMove={moveWidget} onEdit={(id) => { const w = widgets.find((x) => x.id === id); if (w) { setEditWidget(w); setDialogOpen(true) } }} />
-      </div>
-
-      {accounts.error != null && (
-        <div className="mt-6">
-          <ErrorBox error={accounts.error} />
-        </div>
-      )}
-      {(accounts.loading ||
-        journals.loading ||
-        budgets.loading ||
-        tags.loading) && (
-        <Card className="mt-6 p-4">
-          <LoadingBox label="Loading overview…" />
-        </Card>
-      )}
-    </div>
-  )
+  return <OverviewPage />
 }
 
 function HomeComponent() {

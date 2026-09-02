@@ -14,6 +14,7 @@ import type {
   JournalLineStore,
   JournalStore,
   JournalTag,
+  Overview,
   Paginated,
   RegisterPayload,
   Tag,
@@ -249,6 +250,8 @@ export const api = {
   updateBudget: (id: string, payload: BudgetUpdate) =>
     put<ApiEnvelope<Budget>>(tenantPath(`/budgets/${id}`), payload),
   deleteBudget: (id: string) => del(tenantPath(`/budgets/${id}`)),
+  getOverview: (params: { period?: 'today' | 'this_week' | 'this_month' } = {}) =>
+    get<ApiEnvelope<Overview>>(tenantPath(`/overview${toQuery(params as Record<string, string | number | null | undefined>)}`)).then((r) => r.data),
 
   // Journals
   listJournals: (
