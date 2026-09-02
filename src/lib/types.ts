@@ -178,6 +178,25 @@ export type AuditLog = {
   journal?: Journal | null
 }
 
+export type AccountAnalytics = {
+  account_id: string
+  account_type: AccountType
+  totals: {
+    debit: string
+    credit: string
+    net: string
+    balance: string
+    balance_side: 'debit' | 'credit'
+  }
+  counts: {
+    lines: number
+    journals: number
+  }
+  by_status: Record<string, { status: string; debit: string; credit: string; count: number | string }>
+  monthly: Array<{ month: string; debit: string; credit: string; count: number | string }>
+  recent: JournalLine[]
+}
+
 export type Paginated<T> = {
   data: T[]
   current_page: number

@@ -1,17 +1,32 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { ApiError, api } from '../../lib/api'
 import { AccountForm } from '../../components/AccountForm'
 import { RequireAuth } from '../../components/RequireAuth'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { NotFound } from '../../components/NotFound'
+import { Pagination } from '../../components/Pagination'
 import {
   Badge,
   Button,
   Card,
   ErrorBox,
+  Field,
+  Input,
   LoadingBox,
   PageHeader,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Table,
+  TableBody,
+  TableHeader,
+  TableRow,
+  Td,
+  Th,
+  formatDate,
 } from '../../components/ui'
 import { useFetch } from '../../lib/useFetch'
 
@@ -33,12 +48,36 @@ function AccountDetailPage() {
   const account = data?.data
   const isNotFound = error instanceof ApiError && error.status === 404
 
+  // analytics
+  const analyticsFetch = useFetch(
+    () => api.getAccountAnalytics(accountId),
+    [accountId],
+  )
+
+  // journal lines
+  const [jlPage, setJlPage] = React.useState(1)
+  const [jlSearch, setJlSearch] = React.useState('')
+  const [jlStatus, setJlStatus] = React.useState('')
+
+  const jlFetch = useFetch(
+    () =>
+      api.listAccountJournalLines(accountId, {
+        page: jlPage,
+        per_page: 10,
+        search: jlSearch || undefined,
+        status: jlStatus || undefined,
+      }),
+    [accountId, jlPage, jlSearch, jlStatus],
+  )
+
   const handleSubmit = async (payload: Parameters<typeof api.updateAccount>[1]) => {
     setSaving(true)
     setActionError(null)
     try {
       await api.updateAccount(accountId, payload)
       await reload()
+      await analyticsFetch.reload()
+      await jlFetch.reload()
     } catch (err) {
       setActionError(err)
     } finally {
@@ -68,6 +107,14 @@ function AccountDetailPage() {
         />
       </RequireAuth>
     )
+  }
+
+  const analytics = analyticsFetch.data
+  const fmtCurrency = (value: string | number | null | undefined) => {
+    if (value == null || value === '') return '—'
+    const n = Number(value)
+    if (Number.isNaN(n)) return String(value)
+    return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
 
   return (
@@ -116,9 +163,13 @@ function AccountDetailPage() {
                 <dt className="text-muted-foreground">Parent</dt>
                 <dd>
                   {account.parent ? (
-                    <span className="text-primary">
+                    <Link
+                      to="/accounts/$accountId"
+                      params={{ accountId: account.parent.id }}
+                      className="text-primary hover:underline"
+                    >
                       {account.parent.code} — {account.parent.name}
-                    </span>
+                    </Link>
                   ) : (
                     '—'
                   )}
@@ -148,6 +199,193 @@ function AccountDetailPage() {
             />
           </Card>
         </div>
+      )}
+
+      {/* Analytics */}
+      {account && (
+        <Card className="mt-4 p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">Analytics</h2>
+            {analyticsFetch.loading && <span className="text-xs text-muted-foreground">Refreshing…</span>}
+          </div>
+          {analyticsFetch.error != null && <div className="mb-4"><ErrorBox error={analyticsFetch.error} /></div>}
+          {analyticsFetch.loading && !analytics && <LoadingBox label="Loading analytics…" />}
+          {analytics && (
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="rounded-lg border border-border p-3">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Total Debit</div>
+                  <div className="mt-1 text-lg font-semibold text-foreground">{fmtCurrency(analytics.totals.debit)} <span className="text-xs font-normal text-muted-foreground">{account.currency}</span></div>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Total Credit</div>
+                  <div className="mt-1 text-lg font-semibold text-foreground">{fmtCurrency(analytics.totals.credit)} <span className="text-xs font-normal text-muted-foreground">{account.currency}</span></div>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Net / Balance</div>
+                  <div className="mt-1 text-lg font-semibold text-foreground">{fmtCurrency(analytics.totals.net)}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {analytics.totals.balance} {analytics.totals.balance_side}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Counts</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{analytics.counts.lines} lines</div>
+                  <div className="text-sm font-medium text-foreground">{analytics.counts.journals} journals</div>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">By journal status</h3>
+                  {Object.keys(analytics.by_status).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No data</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(analytics.by_status).map(([status, row]: [string, any]) => (
+                        <div key={status} className="rounded-full border border-input px-3 py-1 text-sm">
+                          <Badge value={status} /> <span className="ml-2">{fmtCurrency(row.debit)} / {fmtCurrency(row.credit)}</span> <span className="text-muted-foreground">({row.count})</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Monthly (last 6)</h3>
+                  {analytics.monthly.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No monthly data</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <Th>Month</Th>
+                          <Th>Debit</Th>
+                          <Th>Credit</Th>
+                          <Th>Count</Th>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {analytics.monthly.map((m: any) => (
+                          <TableRow key={m.month}>
+                            <Td className="font-mono text-sm">{m.month}</Td>
+                            <Td>{fmtCurrency(m.debit)}</Td>
+                            <Td>{fmtCurrency(m.credit)}</Td>
+                            <Td>{m.count}</Td>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </Card>
+      )}
+
+      {/* Journal Lines */}
+      {account && (
+        <Card className="mt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
+            <h2 className="text-lg font-semibold text-foreground">
+              Journal lines <span className="ml-2 text-sm font-normal text-muted-foreground">({jlFetch.data?.total ?? 0})</span>
+            </h2>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={() => { jlFetch.reload(); analyticsFetch.reload() }}>Refresh</Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 px-6 py-4 sm:grid-cols-3">
+            <Field label="Search">
+              <Input
+                placeholder="Ref / desc…"
+                value={jlSearch}
+                onChange={(e) => { setJlSearch(e.target.value); setJlPage(1) }}
+              />
+            </Field>
+            <Field label="Journal status">
+              <Select
+                value={jlStatus || undefined}
+                onValueChange={(v) => { setJlStatus(v === 'all' ? '' : v); setJlPage(1) }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="draft">draft</SelectItem>
+                  <SelectItem value="posted">posted</SelectItem>
+                  <SelectItem value="archived">archived</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <div className="flex items-end">
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => { setJlSearch(''); setJlStatus(''); setJlPage(1) }}
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+
+          {jlFetch.error != null && <div className="px-6 pb-4"><ErrorBox error={jlFetch.error} /></div>}
+          {jlFetch.loading && <div className="px-6 pb-4"><LoadingBox label="Loading journal lines…" /></div>}
+
+          {!jlFetch.loading && jlFetch.data && (
+            <>
+              {jlFetch.data.data.length === 0 ? (
+                <p className="px-6 pb-6 text-sm text-muted-foreground">No journal lines for this account.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <Th>Journal</Th>
+                      <Th>Date</Th>
+                      <Th>Debit</Th>
+                      <Th>Credit</Th>
+                      <Th>Description</Th>
+                      <Th>Status</Th>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {jlFetch.data.data.map((line) => (
+                      <TableRow key={line.id}>
+                        <Td>
+                          {line.journal ? (
+                            <Link
+                              to="/journals/$journalId"
+                              params={{ journalId: line.journal.id }}
+                              className="font-medium text-primary hover:underline"
+                            >
+                              {line.journal.reference}
+                            </Link>
+                          ) : (
+                            <span className="font-mono text-xs">{line.journal_id.slice(0, 8)}…</span>
+                          )}
+                        </Td>
+                        <Td className="text-xs">{line.journal ? formatDate(line.journal.transaction_date) : formatDate(line.created_at)}</Td>
+                        <Td>{line.debit && Number(line.debit) !== 0 ? fmtCurrency(line.debit) : '—'}</Td>
+                        <Td>{line.credit && Number(line.credit) !== 0 ? fmtCurrency(line.credit) : '—'}</Td>
+                        <Td className="max-w-[200px] truncate">{line.description || '—'}</Td>
+                        <Td>{line.journal ? <Badge value={line.journal.status} /> : '—'}</Td>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              <div className="border-t border-border px-4 py-3">
+                <Pagination
+                  page={jlFetch.data.current_page}
+                  lastPage={jlFetch.data.last_page}
+                  total={jlFetch.data.total}
+                  onPageChange={setJlPage}
+                />
+              </div>
+            </>
+          )}
+        </Card>
       )}
 
       <ConfirmDialog

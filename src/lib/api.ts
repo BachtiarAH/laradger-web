@@ -1,5 +1,6 @@
 import type {
   Account,
+  AccountAnalytics,
   AccountStore,
   ApiEnvelope,
   AuditLog,
@@ -212,6 +213,19 @@ export const api = {
   updateAccount: (id: string, payload: AccountStore) =>
     put<ApiEnvelope<Account>>(tenantPath(`/accounts/${id}`), payload),
   deleteAccount: (id: string) => del(tenantPath(`/accounts/${id}`)),
+  getAccountAnalytics: (id: string) =>
+    get<ApiEnvelope<AccountAnalytics>>(tenantPath(`/accounts/${id}/analytics`)).then((r) => r.data),
+  listAccountJournalLines: (
+    id: string,
+    params: {
+      page?: number
+      per_page?: number
+      status?: string
+      from?: string
+      to?: string
+      search?: string
+    } = {},
+  ) => get<RawList<JournalLine>>(tenantPath(`/accounts/${id}/journal-lines${toQuery(params)}`)).then(asList),
 
   // Budgets
   listBudgets: (
@@ -260,8 +274,18 @@ export const api = {
     ),
 
   // Journal lines
-  listJournalLines: (params: { page?: number; per_page?: number } = {}) =>
-    get<RawList<JournalLine>>(tenantPath(`/journal-lines${toQuery(params)}`)).then(asList),
+  listJournalLines: (
+    params: {
+      page?: number
+      per_page?: number
+      account_id?: string
+      journal_id?: string
+      status?: string
+      from?: string
+      to?: string
+      search?: string
+    } = {},
+  ) => get<RawList<JournalLine>>(tenantPath(`/journal-lines${toQuery(params as Record<string, string | number | null | undefined>)}`)).then(asList),
   createJournalLine: (payload: JournalLineStore) =>
     post<ApiEnvelope<JournalLine>>(tenantPath('/journal-lines'), payload),
   updateJournalLine: (id: string, payload: JournalLineStore) =>
