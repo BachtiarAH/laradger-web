@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
@@ -23,6 +23,7 @@ export const Route = createFileRoute('/audit-logs/')({
 })
 
 function AuditLogsPage() {
+  const navigate = useNavigate()
   const [page, setPage] = React.useState(1)
 
   const { data, error, loading } = useFetch(
@@ -55,7 +56,15 @@ function AuditLogsPage() {
                 </TableHeader>
                 <TableBody>
                   {data.data.map((log) => (
-                    <TableRow key={log.id}>
+                    <TableRow
+                      key={log.id}
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement
+                        if (target.closest('a, button')) return
+                        navigate({ to: '/audit-logs/$auditLogId', params: { auditLogId: log.id } })
+                      }}
+                    >
                       <Td>
                         <span className="font-mono text-xs">{log.action}</span>
                       </Td>
@@ -67,6 +76,7 @@ function AuditLogsPage() {
                           to="/audit-logs/$auditLogId"
                           params={{ auditLogId: log.id }}
                           className="text-sm text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           View
                         </Link>

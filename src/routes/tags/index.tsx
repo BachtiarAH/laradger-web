@@ -168,7 +168,16 @@ function TagsPage() {
                 </TableHeader>
                 <TableBody>
                   {data.data.map((tag) => (
-                    <TableRow key={tag.id}>
+                    <TableRow
+                      key={tag.id}
+                      className={editing?.id === tag.id ? '' : 'cursor-pointer'}
+                      onClick={(e) => {
+                        if (editing?.id === tag.id) return
+                        const target = e.target as HTMLElement
+                        if (target.closest('a, button, input, select')) return
+                        startEdit(tag)
+                      }}
+                    >
                       {editing?.id === tag.id ? (
                         <>
                           <Td>

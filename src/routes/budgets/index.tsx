@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
@@ -39,6 +39,7 @@ function formatAmount(value: string | null | undefined): string {
 }
 
 function BudgetsPage() {
+  const navigate = useNavigate()
   const [page, setPage] = React.useState(1)
   const [search, setSearch] = React.useState('')
   const [startsAt, setStartsAt] = React.useState('')
@@ -205,12 +206,21 @@ function BudgetsPage() {
                 </TableHeader>
                 <TableBody>
                   {data.data.map((budget) => (
-                    <TableRow key={budget.id}>
+                    <TableRow
+                      key={budget.id}
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement
+                        if (target.closest('a, button')) return
+                        navigate({ to: '/budgets/$budgetId', params: { budgetId: budget.id } })
+                      }}
+                    >
                       <Td>
                         <Link
                           to="/budgets/$budgetId"
                           params={{ budgetId: budget.id }}
                           className="font-medium text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {budget.name}
                         </Link>
@@ -234,12 +244,16 @@ function BudgetsPage() {
                             to="/budgets/$budgetId"
                             params={{ budgetId: budget.id }}
                             className="text-sm text-primary hover:underline"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             Edit
                           </Link>
                           <button
                             type="button"
-                            onClick={() => setConfirmBudget(budget)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setConfirmBudget(budget)
+                            }}
                             className="text-sm text-destructive hover:underline"
                           >
                             Delete

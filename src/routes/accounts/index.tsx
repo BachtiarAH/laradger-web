@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
@@ -34,6 +34,7 @@ export const Route = createFileRoute('/accounts/')({
 })
 
 function AccountsPage() {
+  const navigate = useNavigate()
   const [page, setPage] = React.useState(1)
   const [search, setSearch] = React.useState('')
   const [type, setType] = React.useState('')
@@ -184,13 +185,22 @@ function AccountsPage() {
                 </TableHeader>
                 <TableBody>
                   {data.data.map((account) => (
-                    <TableRow key={account.id}>
+                    <TableRow
+                      key={account.id}
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement
+                        if (target.closest('a, button')) return
+                        navigate({ to: '/accounts/$accountId', params: { accountId: account.id } })
+                      }}
+                    >
                       <Td>{account.code}</Td>
                       <Td>
                         <Link
                           to="/accounts/$accountId"
                           params={{ accountId: account.id }}
                           className="font-medium text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {account.name}
                         </Link>
@@ -204,12 +214,16 @@ function AccountsPage() {
                             to="/accounts/$accountId"
                             params={{ accountId: account.id }}
                             className="text-sm text-primary hover:underline"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             Edit
                           </Link>
                           <button
                             type="button"
-                            onClick={() => setConfirmAccount(account)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setConfirmAccount(account)
+                            }}
                             className="text-sm text-destructive hover:underline"
                           >
                             Delete
