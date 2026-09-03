@@ -227,6 +227,10 @@ export const api = {
       search?: string
     } = {},
   ) => get<RawList<JournalLine>>(tenantPath(`/accounts/${id}/journal-lines${toQuery(params)}`)).then(asList),
+  nextAccountCode: (type: string) =>
+    get<ApiEnvelope<{ code: string }>>(tenantPath(`/accounts/next-code${toQuery({ type })}`)).then(
+      (r) => r.data.code,
+    ),
 
   // Budgets
   listBudgets: (
@@ -275,6 +279,10 @@ export const api = {
   aiDraftJournal: (statement: string) =>
     post<ApiEnvelope<JournalDraft>>(tenantPath('/journals/ai-draft'), { statement }).then(
       (r) => r.data,
+    ),
+  nextJournalReference: () =>
+    get<ApiEnvelope<{ reference: string }>>(tenantPath('/journals/next-reference')).then(
+      (r) => r.data.reference,
     ),
 
   // Journal lines

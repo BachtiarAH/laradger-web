@@ -44,6 +44,7 @@ export type Account = {
 }
 
 export type AccountStore = {
+  code?: string
   name: string
   type: AccountType
   parent_id?: string | null

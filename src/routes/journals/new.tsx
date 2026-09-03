@@ -46,8 +46,15 @@ function NewJournalPage() {
 
   const accounts = useFetch(() => api.listAccounts({ per_page: 20 }), [])
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
+  const nextRef = useFetch(() => api.nextJournalReference(), [])
   const [extraTags, setExtraTags] = React.useState<Tag[]>([])
   const allTags = React.useMemo(() => [...(tags.data?.data ?? []), ...extraTags], [tags.data, extraTags])
+
+  React.useEffect(() => {
+    if (nextRef.data && !reference) {
+      setReference(nextRef.data)
+    }
+  }, [nextRef.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
   React.useEffect(() => {
     if (lines.length === 0) {

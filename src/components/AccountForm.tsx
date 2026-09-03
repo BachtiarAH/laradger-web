@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from './ui'
 import { AccountSelect } from './AccountSelect'
+import { api } from '../lib/api'
 
 export const ACCOUNT_TYPES: AccountType[] = [
   'asset',
@@ -57,14 +58,41 @@ export function AccountForm({
   )
   const [error, setError] = React.useState<unknown>(null)
   const [saved, setSaved] = React.useState(false)
+  const isEditing = Boolean(initial)
+  const [nextCode, setNextCode] = React.useState<string>('')
+  const [codeEditable, setCodeEditable] = React.useState(false)
+  const [customCode, setCustomCode] = React.useState('')
 
   const set = (patch: Partial<AccountStore>) =>
     setForm((prev) => ({ ...prev, ...patch }))
 
-  const buildPayload = (): AccountStore => ({
-    ...form,
-    parent_id: form.parent_id === '' ? null : form.parent_id,
-  })
+  React.useEffect(() => {
+    if (isEditing) return
+    setCodeEditable(false)
+    setCustomCode('')
+    let active = true
+    setNextCode('')
+    api
+      .nextAccountCode(form.type)
+      .then((code) => {
+        if (active) setNextCode(code)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [form.type, isEditing])
+
+  const buildPayload = (): AccountStore => {
+    const payload: AccountStore = {
+      ...form,
+      parent_id: form.parent_id === '' ? null : form.parent_id,
+    }
+    if (!isEditing && codeEditable && customCode.trim()) {
+      payload.code = customCode.trim()
+    }
+    return payload
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -107,6 +135,38 @@ export function AccountForm({
             onChange={(e) => set({ name: e.target.value })}
           />
         </Field>
+        {isEditing ? (
+          <Field label="Code" htmlFor="code">
+            <Input id="code" disabled value={initial?.code ?? ''} />
+          </Field>
+        ) : codeEditable ? (
+          <Field label="Code" htmlFor="code">
+            <Input
+              id="code"
+              value={customCode}
+              onChange={(e) => setCustomCode(e.target.value)}
+              placeholder={nextCode ? `Auto: ${nextCode}` : undefined}
+            />
+          </Field>
+        ) : (
+          <Field label="Code">
+            <div className="flex items-center gap-2">
+              <Input
+                disabled
+                value={nextCode || 'Loading…'}
+                className="font-mono"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                className="h-8 px-2.5"
+                onClick={() => setCodeEditable(true)}
+              >
+                Custom
+              </Button>
+            </div>
+          </Field>
+        )}
         <Field label="Type" htmlFor="type">
           <Select
             value={form.type}
