@@ -17,6 +17,9 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AccountsIndexRouteImport } from './routes/accounts/index'
 import { Route as AccountsAccountIdRouteImport } from './routes/accounts/$accountId'
 import { Route as AccountsNewRouteImport } from './routes/accounts/new'
+import { Route as AllocationsIndexRouteImport } from './routes/allocations/index'
+import { Route as AllocationsAllocationIdRouteImport } from './routes/allocations/$allocationId'
+import { Route as AllocationsNewRouteImport } from './routes/allocations/new'
 import { Route as AuditLogsIndexRouteImport } from './routes/audit-logs/index'
 import { Route as AuditLogsAuditLogIdRouteImport } from './routes/audit-logs/$auditLogId'
 import { Route as BudgetsIndexRouteImport } from './routes/budgets/index'
@@ -68,6 +71,21 @@ const AccountsAccountIdRoute = AccountsAccountIdRouteImport.update({
 const AccountsNewRoute = AccountsNewRouteImport.update({
   id: '/accounts/new',
   path: '/accounts/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AllocationsIndexRoute = AllocationsIndexRouteImport.update({
+  id: '/allocations/',
+  path: '/allocations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AllocationsAllocationIdRoute = AllocationsAllocationIdRouteImport.update({
+  id: '/allocations/$allocationId',
+  path: '/allocations/$allocationId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AllocationsNewRoute = AllocationsNewRouteImport.update({
+  id: '/allocations/new',
+  path: '/allocations/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuditLogsIndexRoute = AuditLogsIndexRouteImport.update({
@@ -139,6 +157,8 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/accounts/new': typeof AccountsNewRoute
+  '/allocations/$allocationId': typeof AllocationsAllocationIdRoute
+  '/allocations/new': typeof AllocationsNewRoute
   '/audit-logs/$auditLogId': typeof AuditLogsAuditLogIdRoute
   '/budgets/$budgetId': typeof BudgetsBudgetIdRoute
   '/budgets/new': typeof BudgetsNewRoute
@@ -147,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
   '/templates/new': typeof TemplatesNewRoute
   '/accounts/': typeof AccountsIndexRoute
+  '/allocations/': typeof AllocationsIndexRoute
   '/audit-logs/': typeof AuditLogsIndexRoute
   '/budgets/': typeof BudgetsIndexRoute
   '/journals/': typeof JournalsIndexRoute
@@ -161,6 +182,8 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/accounts/new': typeof AccountsNewRoute
+  '/allocations/$allocationId': typeof AllocationsAllocationIdRoute
+  '/allocations/new': typeof AllocationsNewRoute
   '/audit-logs/$auditLogId': typeof AuditLogsAuditLogIdRoute
   '/budgets/$budgetId': typeof BudgetsBudgetIdRoute
   '/budgets/new': typeof BudgetsNewRoute
@@ -169,6 +192,7 @@ export interface FileRoutesByTo {
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
   '/templates/new': typeof TemplatesNewRoute
   '/accounts': typeof AccountsIndexRoute
+  '/allocations': typeof AllocationsIndexRoute
   '/audit-logs': typeof AuditLogsIndexRoute
   '/budgets': typeof BudgetsIndexRoute
   '/journals': typeof JournalsIndexRoute
@@ -184,6 +208,8 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/accounts/new': typeof AccountsNewRoute
+  '/allocations/$allocationId': typeof AllocationsAllocationIdRoute
+  '/allocations/new': typeof AllocationsNewRoute
   '/audit-logs/$auditLogId': typeof AuditLogsAuditLogIdRoute
   '/budgets/$budgetId': typeof BudgetsBudgetIdRoute
   '/budgets/new': typeof BudgetsNewRoute
@@ -192,6 +218,7 @@ export interface FileRoutesById {
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
   '/templates/new': typeof TemplatesNewRoute
   '/accounts/': typeof AccountsIndexRoute
+  '/allocations/': typeof AllocationsIndexRoute
   '/audit-logs/': typeof AuditLogsIndexRoute
   '/budgets/': typeof BudgetsIndexRoute
   '/journals/': typeof JournalsIndexRoute
@@ -208,6 +235,8 @@ export interface FileRouteTypes {
     | '/register'
     | '/accounts/$accountId'
     | '/accounts/new'
+    | '/allocations/$allocationId'
+    | '/allocations/new'
     | '/audit-logs/$auditLogId'
     | '/budgets/$budgetId'
     | '/budgets/new'
@@ -216,6 +245,7 @@ export interface FileRouteTypes {
     | '/templates/$templateId'
     | '/templates/new'
     | '/accounts/'
+    | '/allocations/'
     | '/audit-logs/'
     | '/budgets/'
     | '/journals/'
@@ -230,6 +260,8 @@ export interface FileRouteTypes {
     | '/register'
     | '/accounts/$accountId'
     | '/accounts/new'
+    | '/allocations/$allocationId'
+    | '/allocations/new'
     | '/audit-logs/$auditLogId'
     | '/budgets/$budgetId'
     | '/budgets/new'
@@ -238,6 +270,7 @@ export interface FileRouteTypes {
     | '/templates/$templateId'
     | '/templates/new'
     | '/accounts'
+    | '/allocations'
     | '/audit-logs'
     | '/budgets'
     | '/journals'
@@ -252,6 +285,8 @@ export interface FileRouteTypes {
     | '/register'
     | '/accounts/$accountId'
     | '/accounts/new'
+    | '/allocations/$allocationId'
+    | '/allocations/new'
     | '/audit-logs/$auditLogId'
     | '/budgets/$budgetId'
     | '/budgets/new'
@@ -260,6 +295,7 @@ export interface FileRouteTypes {
     | '/templates/$templateId'
     | '/templates/new'
     | '/accounts/'
+    | '/allocations/'
     | '/audit-logs/'
     | '/budgets/'
     | '/journals/'
@@ -275,6 +311,8 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   AccountsAccountIdRoute: typeof AccountsAccountIdRoute
   AccountsNewRoute: typeof AccountsNewRoute
+  AllocationsAllocationIdRoute: typeof AllocationsAllocationIdRoute
+  AllocationsNewRoute: typeof AllocationsNewRoute
   AuditLogsAuditLogIdRoute: typeof AuditLogsAuditLogIdRoute
   BudgetsBudgetIdRoute: typeof BudgetsBudgetIdRoute
   BudgetsNewRoute: typeof BudgetsNewRoute
@@ -283,6 +321,7 @@ export interface RootRouteChildren {
   TemplatesTemplateIdRoute: typeof TemplatesTemplateIdRoute
   TemplatesNewRoute: typeof TemplatesNewRoute
   AccountsIndexRoute: typeof AccountsIndexRoute
+  AllocationsIndexRoute: typeof AllocationsIndexRoute
   AuditLogsIndexRoute: typeof AuditLogsIndexRoute
   BudgetsIndexRoute: typeof BudgetsIndexRoute
   JournalsIndexRoute: typeof JournalsIndexRoute
@@ -346,6 +385,27 @@ declare module '@tanstack/react-router' {
       path: '/accounts/new'
       fullPath: '/accounts/new'
       preLoaderRoute: typeof AccountsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/allocations/': {
+      id: '/allocations/'
+      path: '/allocations'
+      fullPath: '/allocations/'
+      preLoaderRoute: typeof AllocationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/allocations/$allocationId': {
+      id: '/allocations/$allocationId'
+      path: '/allocations/$allocationId'
+      fullPath: '/allocations/$allocationId'
+      preLoaderRoute: typeof AllocationsAllocationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/allocations/new': {
+      id: '/allocations/new'
+      path: '/allocations/new'
+      fullPath: '/allocations/new'
+      preLoaderRoute: typeof AllocationsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/audit-logs/': {
@@ -443,6 +503,8 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   AccountsAccountIdRoute: AccountsAccountIdRoute,
   AccountsNewRoute: AccountsNewRoute,
+  AllocationsAllocationIdRoute: AllocationsAllocationIdRoute,
+  AllocationsNewRoute: AllocationsNewRoute,
   AuditLogsAuditLogIdRoute: AuditLogsAuditLogIdRoute,
   BudgetsBudgetIdRoute: BudgetsBudgetIdRoute,
   BudgetsNewRoute: BudgetsNewRoute,
@@ -451,6 +513,7 @@ const rootRouteChildren: RootRouteChildren = {
   TemplatesTemplateIdRoute: TemplatesTemplateIdRoute,
   TemplatesNewRoute: TemplatesNewRoute,
   AccountsIndexRoute: AccountsIndexRoute,
+  AllocationsIndexRoute: AllocationsIndexRoute,
   AuditLogsIndexRoute: AuditLogsIndexRoute,
   BudgetsIndexRoute: BudgetsIndexRoute,
   JournalsIndexRoute: JournalsIndexRoute,

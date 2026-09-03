@@ -1,7 +1,12 @@
 import type {
   Account,
+  AccountAllocations,
   AccountAnalytics,
   AccountStore,
+  Allocation,
+  AllocationAdjust,
+  AllocationStore,
+  AllocationUpdate,
   ApiEnvelope,
   AuditLog,
   AuthResponse,
@@ -340,6 +345,29 @@ export const api = {
   updateTag: (id: string, payload: { name: string; type: Tag['type'] }) =>
     put<ApiEnvelope<Tag>>(tenantPath(`/tags/${id}`), payload),
   deleteTag: (id: string) => del(tenantPath(`/tags/${id}`)),
+
+  // Allocations
+  listAllocations: (
+    params: {
+      page?: number
+      per_page?: number
+      search?: string
+    } = {},
+  ) => get<RawList<Allocation>>(tenantPath(`/allocations${toQuery(params)}`)).then(asList),
+  getAllocation: (id: string) => get<ApiEnvelope<Allocation>>(tenantPath(`/allocations/${id}`)),
+  createAllocation: (payload: AllocationStore) =>
+    post<ApiEnvelope<Allocation>>(tenantPath('/allocations'), payload),
+  updateAllocation: (id: string, payload: AllocationUpdate) =>
+    put<ApiEnvelope<Allocation>>(tenantPath(`/allocations/${id}`), payload),
+  deleteAllocation: (id: string) => del(tenantPath(`/allocations/${id}`)),
+  allocateOnAllocation: (id: string, payload: AllocationAdjust) =>
+    post<ApiEnvelope<Allocation>>(tenantPath(`/allocations/${id}/allocate`), payload),
+  releaseOnAllocation: (id: string, payload: AllocationAdjust) =>
+    post<ApiEnvelope<Allocation>>(tenantPath(`/allocations/${id}/release`), payload),
+  getAccountAllocations: (accountId: string) =>
+    get<ApiEnvelope<AccountAllocations>>(tenantPath(`/accounts/${accountId}/allocations`)).then(
+      (r) => r.data,
+    ),
 
   // Audit logs
   listAuditLogs: (params: { page?: number; per_page?: number } = {}) =>

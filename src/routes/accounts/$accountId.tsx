@@ -2,9 +2,11 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { ApiError, api } from '../../lib/api'
 import { AccountForm } from '../../components/AccountForm'
+import { AllocationAdjustDialog } from '../../components/AllocationAdjustDialog'
 import { RequireAuth } from '../../components/RequireAuth'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { NotFound } from '../../components/NotFound'
+import type { AccountAllocationItem } from '../../lib/types'
 import { Pagination } from '../../components/Pagination'
 import {
   Badge,
@@ -54,6 +56,16 @@ function AccountDetailPage() {
     [accountId],
   )
 
+  // allocation summary
+  const [allocateOpen, setAllocateOpen] = React.useState(false)
+  const [releaseItem, setReleaseItem] = React.useState<AccountAllocationItem | null>(null)
+
+  const allocFetch = useFetch(
+    () => api.getAccountAllocations(accountId),
+    [accountId, account?.type === 'asset'],
+  )
+  const allocations = allocFetch.data
+
   // journal lines
   const [jlPage, setJlPage] = React.useState(1)
   const [jlSearch, setJlSearch] = React.useState('')
@@ -69,6 +81,10 @@ function AccountDetailPage() {
       }),
     [accountId, jlPage, jlSearch, jlStatus],
   )
+
+  const handleAllocationsChanged = async () => {
+    await allocFetch.reload()
+  }
 
   const handleSubmit = async (payload: Parameters<typeof api.updateAccount>[1]) => {
     setSaving(true)
@@ -199,6 +215,109 @@ function AccountDetailPage() {
             />
           </Card>
         </div>
+      )}
+
+      {/* Allocations */}
+      {account && account.type === 'asset' && (
+        <Card className="mt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Allocations</h2>
+              <p className="text-xs text-muted-foreground">
+                Reservations never move money — the ledger balance is unchanged.
+              </p>
+            </div>
+            <Button onClick={() => setAllocateOpen(true)} disabled={loading || allocFetch.loading}>
+              Allocate money
+            </Button>
+          </div>
+
+          {allocFetch.error != null && <div className="px-6 pb-4"><ErrorBox error={allocFetch.error} /></div>}
+          {allocFetch.loading && !allocations && <div className="px-6 pb-4"><LoadingBox label="Loading allocations…" /></div>}
+
+          {allocations && (
+            <>
+              {allocations.over_allocated && (
+                <div className="mx-6 mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200 dark:bg-red-950/30 dark:text-red-300 dark:ring-red-800">
+                  This account holds more reservations than its available balance. Release or
+                  reallocate money to fix the over-allocation.
+                </div>
+              )}
+              <div className="grid grid-cols-1 gap-3 px-6 py-4 sm:grid-cols-3">
+                <div className="rounded-lg border border-border p-3">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Balance (posted)</div>
+                  <div className="mt-1 text-lg font-semibold text-foreground">
+                    {fmtCurrency(allocations.available)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Available to allocate, excludes draft journals
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Allocated</div>
+                  <div className="mt-1 text-lg font-semibold text-foreground">
+                    {fmtCurrency(allocations.total_allocated)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Reserved for a purpose</div>
+                </div>
+                <div className={`rounded-lg border p-3 ${allocations.over_allocated ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30' : 'border-border'}`}>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Unallocated</div>
+                  <div className={`mt-1 text-lg font-semibold ${allocations.over_allocated ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>
+                    {fmtCurrency(allocations.unallocated)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {allocations.over_allocated ? 'Over-allocated' : 'Free to allocate'}
+                  </div>
+                </div>
+              </div>
+
+              {allocations.items.length === 0 ? (
+                <p className="px-6 pb-6 text-sm text-muted-foreground">
+                  No money reserved on this account yet.{' '}
+                  <Link to="/allocations/new" className="font-medium text-primary hover:underline">
+                    Create an allocation
+                  </Link>{' '}
+                  then allocate part of this balance.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <Th>Allocation</Th>
+                      <Th>Amount</Th>
+                      <Th className="text-right">Actions</Th>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allocations.items.map((item) => (
+                      <TableRow key={item.allocation_id}>
+                        <Td>
+                          <Link
+                            to="/allocations/$allocationId"
+                            params={{ allocationId: item.allocation_id }}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {item.name}
+                          </Link>
+                        </Td>
+                        <Td>{fmtCurrency(item.amount)}</Td>
+                        <Td className="text-right">
+                          <button
+                            type="button"
+                            onClick={() => setReleaseItem(item)}
+                            className="text-sm text-destructive hover:underline"
+                          >
+                            Release
+                          </button>
+                        </Td>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </>
+          )}
+        </Card>
       )}
 
       {/* Analytics */}
@@ -404,6 +523,26 @@ function AccountDetailPage() {
           )}
         </Card>
       )}
+
+      <AllocationAdjustDialog
+        open={allocateOpen}
+        onOpenChange={setAllocateOpen}
+        mode="allocate"
+        allocationId={null}
+        accountId={accountId}
+        limitAmount={allocations?.available ?? null}
+        onSubmitted={handleAllocationsChanged}
+      />
+
+      <AllocationAdjustDialog
+        open={releaseItem !== null}
+        onOpenChange={(open) => !open && setReleaseItem(null)}
+        mode="release"
+        allocationId={releaseItem?.allocation_id ?? null}
+        accountId={accountId}
+        limitAmount={releaseItem?.amount ?? null}
+        onSubmitted={handleAllocationsChanged}
+      />
 
       <ConfirmDialog
         open={confirmDelete}

@@ -10,6 +10,10 @@ import {
 } from '../../components/LineEditor'
 import { AiDraftPanel, type AiDraftResult } from '../../components/AiDraftPanel'
 import {
+  AllocationAdjustmentsPanel,
+  type AdjustmentDraft,
+} from '../../components/AllocationAdjustmentsPanel'
+import {
   Button,
   Card,
   ErrorBox,
@@ -39,6 +43,7 @@ function NewJournalPage() {
   const [source] = React.useState<JournalSource>('manual')
   const [lines, setLines] = React.useState<LineDraft[]>([])
   const [tagIds, setTagIds] = React.useState<string[]>([])
+  const [adjustments, setAdjustments] = React.useState<AdjustmentDraft[]>([])
   const [error, setError] = React.useState<unknown>(null)
   const [saving, setSaving] = React.useState(false)
 
@@ -98,6 +103,16 @@ function NewJournalPage() {
         ...(line.description ? { description: line.description } : {}),
       })),
       ...(tagIds.length > 0 ? { tags: tagIds } : {}),
+      ...(status === 'posted' && adjustments.length > 0
+        ? {
+            allocation_adjustments: adjustments.map((adj) => ({
+              action: adj.action,
+              allocation_id: adj.allocation_id,
+              account_id: adj.account_id,
+              amount: Number(adj.amount),
+            })),
+          }
+        : {}),
     }
 
     if (!payload.lines[0]?.account_id) {
@@ -109,6 +124,16 @@ function NewJournalPage() {
     )
     if (!hasAmount) {
       setError(new Error('At least one line must have a debit or credit amount.'))
+      return
+    }
+    const incompleteAdjustment = adjustments.find(
+      (adj) =>
+        !adj.account_id ||
+        !adj.allocation_id ||
+        !(Number(adj.amount) > 0),
+    )
+    if (incompleteAdjustment) {
+      setError(new Error('Every allocation adjustment needs an account, an allocation, and a positive amount.'))
       return
     }
 
@@ -203,6 +228,15 @@ function NewJournalPage() {
               Lines
             </h2>
             <LineEditor lines={lines} onChange={setLines} />
+          </Card>
+
+          <Card className="p-6">
+            <AllocationAdjustmentsPanel
+              status={status}
+              lineAccountIds={lines.map((line) => line.account_id).filter(Boolean)}
+              adjustments={adjustments}
+              onChange={setAdjustments}
+            />
           </Card>
 
           <Card className="space-y-4 p-6">

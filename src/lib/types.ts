@@ -109,6 +109,13 @@ export type JournalStoreLine = {
   description?: string
 }
 
+export type JournalAllocationAdjustment = {
+  action: 'allocate' | 'release'
+  allocation_id: string
+  account_id: string
+  amount: number
+}
+
 export type JournalStore = {
   transaction_date: string
   description: string
@@ -118,6 +125,7 @@ export type JournalStore = {
   reverse_from_id?: string | null
   lines: JournalStoreLine[]
   tags?: string[]
+  allocation_adjustments?: JournalAllocationAdjustment[]
 }
 
 export type JournalTag = {
@@ -230,6 +238,55 @@ export type BudgetStore = {
 }
 
 export type BudgetUpdate = Partial<BudgetStore>
+
+export type Allocation = {
+  id: string
+  name: string
+  description: string | null
+  target_amount: string | null
+  total_allocated: string | null
+  created_at: string
+  updated_at: string
+  accounts?: AllocationAccount[]
+}
+
+export type AllocationAccount = {
+  account_id: string
+  code: string
+  name: string
+  currency: string
+  amount: string
+}
+
+export type AllocationStore = {
+  name: string
+  description?: string | null
+  target_amount?: number | null
+}
+
+export type AllocationUpdate = Partial<AllocationStore>
+
+export type AllocationAdjust = {
+  account_id: string
+  amount: number
+}
+
+export type AccountAllocationItem = {
+  allocation_id: string
+  name: string
+  amount: string
+}
+
+export type AccountAllocations = {
+  account_id: string
+  currency: string
+  balance: string
+  available: string
+  total_allocated: string
+  unallocated: string
+  over_allocated: boolean
+  items: AccountAllocationItem[]
+}
 
 export type AuditLog = {
   id: string

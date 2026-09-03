@@ -39,6 +39,7 @@ type Props = {
   noneLabel?: string
   disabled?: boolean
   allowCreate?: boolean
+  type?: string
 }
 
 export function AccountSelect({
@@ -50,6 +51,7 @@ export function AccountSelect({
   noneLabel = 'None',
   disabled = false,
   allowCreate = false,
+  type,
 }: Props) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
@@ -63,7 +65,7 @@ export function AccountSelect({
     let active = true
     setLoading(true)
     api
-      .listAccounts({ search: debouncedQuery || undefined, per_page: 20 })
+      .listAccounts({ search: debouncedQuery || undefined, per_page: 20, type: type || undefined })
       .then((result) => {
         if (active) setAccounts(result.data)
       })
@@ -76,7 +78,7 @@ export function AccountSelect({
     return () => {
       active = false
     }
-  }, [debouncedQuery, open])
+  }, [debouncedQuery, open, type])
 
   React.useEffect(() => {
     if (!value) {

@@ -10,6 +10,7 @@ import {
   Menu,
   NotebookPen,
   PiggyBank,
+  Target,
   Tags,
   User,
   Wallet,
@@ -54,6 +55,7 @@ const navItems: { to: string; label: string; icon: React.ComponentType<{ classNa
   { to: '/journals', label: 'Journals', icon: NotebookPen },
   { to: '/templates', label: 'Templates', icon: FileClock },
   { to: '/budgets', label: 'Budgets', icon: PiggyBank },
+  { to: '/allocations', label: 'Allocations', icon: Target },
   { to: '/tags', label: 'Tags', icon: Tags },
   { to: '/audit-logs', label: 'Audit Logs', icon: History },
 ]
