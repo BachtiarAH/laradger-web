@@ -43,6 +43,7 @@ export type Account = {
   parent_id: string | null
   currency: string
   status: AccountStatus
+  depth: number
   total_debit?: string | null
   total_credit?: string | null
   net?: string | null

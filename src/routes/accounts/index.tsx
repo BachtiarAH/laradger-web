@@ -30,6 +30,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip'
 import { ACCOUNT_TYPES } from '../../components/AccountForm'
 import { cn } from '../../lib/utils'
+import { ChevronRight } from 'lucide-react'
 import type { Account } from '../../lib/types'
 
 function formatAmount(value: string | null | undefined): string {
@@ -252,14 +253,22 @@ function AccountsPage() {
                     >
                       <Td>{account.code}</Td>
                       <Td>
-                        <Link
-                          to="/accounts/$accountId"
-                          params={{ accountId: account.id }}
-                          className="font-medium text-primary hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {account.name}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          {account.depth > 0 && (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          )}
+                          <Link
+                            to="/accounts/$accountId"
+                            params={{ accountId: account.id }}
+                            className={cn(
+                              "font-medium text-primary hover:underline",
+                              account.depth > 0 && "ml-2"
+                            )}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {account.name}
+                          </Link>
+                        </div>
                       </Td>
                       <Td><Badge value={account.type} /></Td>
                       <Td>{account.currency}</Td>
