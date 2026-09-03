@@ -14,6 +14,9 @@ import type {
   JournalLineStore,
   JournalStore,
   JournalTag,
+  JournalTemplate,
+  JournalTemplateGenerate,
+  JournalTemplateStore,
   Overview,
   Paginated,
   RegisterPayload,
@@ -284,6 +287,27 @@ export const api = {
     get<ApiEnvelope<{ reference: string }>>(tenantPath('/journals/next-reference')).then(
       (r) => r.data.reference,
     ),
+
+  // Journal templates
+  listJournalTemplates: (
+    params: {
+      page?: number
+      per_page?: number
+      period_type?: string
+      is_active?: boolean
+      search?: string
+    } = {},
+  ) =>
+    get<RawList<JournalTemplate>>(tenantPath(`/journal-templates${toQuery(params as Record<string, string | number | null | undefined>)}`)).then(asList),
+  getJournalTemplate: (id: string) =>
+    get<ApiEnvelope<JournalTemplate>>(tenantPath(`/journal-templates/${id}`)),
+  createJournalTemplate: (payload: JournalTemplateStore) =>
+    post<ApiEnvelope<JournalTemplate>>(tenantPath('/journal-templates'), payload),
+  updateJournalTemplate: (id: string, payload: Partial<JournalTemplateStore>) =>
+    put<ApiEnvelope<JournalTemplate>>(tenantPath(`/journal-templates/${id}`), payload),
+  deleteJournalTemplate: (id: string) => del(tenantPath(`/journal-templates/${id}`)),
+  generateJournalFromTemplate: (id: string, payload: JournalTemplateGenerate) =>
+    post<ApiEnvelope<Journal>>(tenantPath(`/journal-templates/${id}/generate`), payload),
 
   // Journal lines
   listJournalLines: (

@@ -14,6 +14,7 @@ import {
   User,
   Wallet,
   X,
+  FileClock,
 } from 'lucide-react'
 import { AuthProvider, useAuth } from '../lib/auth'
 import { api, onConnectionLost, onTenantNotFound, onForbidden } from '../lib/api'
@@ -51,6 +52,7 @@ const navItems: { to: string; label: string; icon: React.ComponentType<{ classNa
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/accounts', label: 'Accounts', icon: Wallet },
   { to: '/journals', label: 'Journals', icon: NotebookPen },
+  { to: '/templates', label: 'Templates', icon: FileClock },
   { to: '/budgets', label: 'Budgets', icon: PiggyBank },
   { to: '/tags', label: 'Tags', icon: Tags },
   { to: '/audit-logs', label: 'Audit Logs', icon: History },

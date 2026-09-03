@@ -144,6 +144,61 @@ export type JournalDraft = {
   tags?: string[]
 }
 
+export type JournalTemplatePeriod = 'daily' | 'weekly' | 'monthly'
+
+export type JournalTemplate = {
+  id: string
+  name: string
+  description: string | null
+  period_type: JournalTemplatePeriod
+  is_active: boolean
+  day_of_week: number | null
+  day_of_month: number | null
+  next_run_at: string | null
+  last_run_at: string | null
+  created_at: string
+  updated_at: string
+  lines?: JournalTemplateLine[]
+  tags?: Tag[]
+  lines_count?: number
+}
+
+export type JournalTemplateLine = {
+  id: string
+  journal_template_id: string
+  account_id: string
+  line_number?: number
+  debit: string | null
+  credit: string | null
+  description: string | null
+  created_at: string
+  updated_at: string
+  account?: Account | null
+}
+
+export type JournalTemplateStoreLine = {
+  account_id: string
+  debit?: number
+  credit?: number
+  description?: string
+}
+
+export type JournalTemplateStore = {
+  name: string
+  description?: string | null
+  period_type: JournalTemplatePeriod
+  is_active?: boolean
+  day_of_week?: number | null
+  day_of_month?: number | null
+  lines: JournalTemplateStoreLine[]
+  tags?: string[]
+}
+
+export type JournalTemplateGenerate = {
+  transaction_date?: string
+  lines?: JournalTemplateStoreLine[]
+}
+
 export type Budget = {
   id: string
   name: string

@@ -26,6 +26,9 @@ import { Route as JournalsIndexRouteImport } from './routes/journals/index'
 import { Route as JournalsJournalIdRouteImport } from './routes/journals/$journalId'
 import { Route as JournalsNewRouteImport } from './routes/journals/new'
 import { Route as TagsIndexRouteImport } from './routes/tags/index'
+import { Route as TemplatesIndexRouteImport } from './routes/templates/index'
+import { Route as TemplatesTemplateIdRouteImport } from './routes/templates/$templateId'
+import { Route as TemplatesNewRouteImport } from './routes/templates/new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -112,6 +115,21 @@ const TagsIndexRoute = TagsIndexRouteImport.update({
   path: '/tags/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TemplatesIndexRoute = TemplatesIndexRouteImport.update({
+  id: '/templates/',
+  path: '/templates/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TemplatesTemplateIdRoute = TemplatesTemplateIdRouteImport.update({
+  id: '/templates/$templateId',
+  path: '/templates/$templateId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TemplatesNewRoute = TemplatesNewRouteImport.update({
+  id: '/templates/new',
+  path: '/templates/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -126,11 +144,14 @@ export interface FileRoutesByFullPath {
   '/budgets/new': typeof BudgetsNewRoute
   '/journals/$journalId': typeof JournalsJournalIdRoute
   '/journals/new': typeof JournalsNewRoute
+  '/templates/$templateId': typeof TemplatesTemplateIdRoute
+  '/templates/new': typeof TemplatesNewRoute
   '/accounts/': typeof AccountsIndexRoute
   '/audit-logs/': typeof AuditLogsIndexRoute
   '/budgets/': typeof BudgetsIndexRoute
   '/journals/': typeof JournalsIndexRoute
   '/tags/': typeof TagsIndexRoute
+  '/templates/': typeof TemplatesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -145,11 +166,14 @@ export interface FileRoutesByTo {
   '/budgets/new': typeof BudgetsNewRoute
   '/journals/$journalId': typeof JournalsJournalIdRoute
   '/journals/new': typeof JournalsNewRoute
+  '/templates/$templateId': typeof TemplatesTemplateIdRoute
+  '/templates/new': typeof TemplatesNewRoute
   '/accounts': typeof AccountsIndexRoute
   '/audit-logs': typeof AuditLogsIndexRoute
   '/budgets': typeof BudgetsIndexRoute
   '/journals': typeof JournalsIndexRoute
   '/tags': typeof TagsIndexRoute
+  '/templates': typeof TemplatesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -165,11 +189,14 @@ export interface FileRoutesById {
   '/budgets/new': typeof BudgetsNewRoute
   '/journals/$journalId': typeof JournalsJournalIdRoute
   '/journals/new': typeof JournalsNewRoute
+  '/templates/$templateId': typeof TemplatesTemplateIdRoute
+  '/templates/new': typeof TemplatesNewRoute
   '/accounts/': typeof AccountsIndexRoute
   '/audit-logs/': typeof AuditLogsIndexRoute
   '/budgets/': typeof BudgetsIndexRoute
   '/journals/': typeof JournalsIndexRoute
   '/tags/': typeof TagsIndexRoute
+  '/templates/': typeof TemplatesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -186,11 +213,14 @@ export interface FileRouteTypes {
     | '/budgets/new'
     | '/journals/$journalId'
     | '/journals/new'
+    | '/templates/$templateId'
+    | '/templates/new'
     | '/accounts/'
     | '/audit-logs/'
     | '/budgets/'
     | '/journals/'
     | '/tags/'
+    | '/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -205,11 +235,14 @@ export interface FileRouteTypes {
     | '/budgets/new'
     | '/journals/$journalId'
     | '/journals/new'
+    | '/templates/$templateId'
+    | '/templates/new'
     | '/accounts'
     | '/audit-logs'
     | '/budgets'
     | '/journals'
     | '/tags'
+    | '/templates'
   id:
     | '__root__'
     | '/'
@@ -224,11 +257,14 @@ export interface FileRouteTypes {
     | '/budgets/new'
     | '/journals/$journalId'
     | '/journals/new'
+    | '/templates/$templateId'
+    | '/templates/new'
     | '/accounts/'
     | '/audit-logs/'
     | '/budgets/'
     | '/journals/'
     | '/tags/'
+    | '/templates/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -244,11 +280,14 @@ export interface RootRouteChildren {
   BudgetsNewRoute: typeof BudgetsNewRoute
   JournalsJournalIdRoute: typeof JournalsJournalIdRoute
   JournalsNewRoute: typeof JournalsNewRoute
+  TemplatesTemplateIdRoute: typeof TemplatesTemplateIdRoute
+  TemplatesNewRoute: typeof TemplatesNewRoute
   AccountsIndexRoute: typeof AccountsIndexRoute
   AuditLogsIndexRoute: typeof AuditLogsIndexRoute
   BudgetsIndexRoute: typeof BudgetsIndexRoute
   JournalsIndexRoute: typeof JournalsIndexRoute
   TagsIndexRoute: typeof TagsIndexRoute
+  TemplatesIndexRoute: typeof TemplatesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -372,6 +411,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TagsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/templates/': {
+      id: '/templates/'
+      path: '/templates'
+      fullPath: '/templates/'
+      preLoaderRoute: typeof TemplatesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/templates/$templateId': {
+      id: '/templates/$templateId'
+      path: '/templates/$templateId'
+      fullPath: '/templates/$templateId'
+      preLoaderRoute: typeof TemplatesTemplateIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/templates/new': {
+      id: '/templates/new'
+      path: '/templates/new'
+      fullPath: '/templates/new'
+      preLoaderRoute: typeof TemplatesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -388,11 +448,14 @@ const rootRouteChildren: RootRouteChildren = {
   BudgetsNewRoute: BudgetsNewRoute,
   JournalsJournalIdRoute: JournalsJournalIdRoute,
   JournalsNewRoute: JournalsNewRoute,
+  TemplatesTemplateIdRoute: TemplatesTemplateIdRoute,
+  TemplatesNewRoute: TemplatesNewRoute,
   AccountsIndexRoute: AccountsIndexRoute,
   AuditLogsIndexRoute: AuditLogsIndexRoute,
   BudgetsIndexRoute: BudgetsIndexRoute,
   JournalsIndexRoute: JournalsIndexRoute,
   TagsIndexRoute: TagsIndexRoute,
+  TemplatesIndexRoute: TemplatesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
