@@ -127,6 +127,7 @@ export function LineEditor({
               placeholder="0.00"
               value={line.debit}
               onChange={(e) => updateLine(index, { debit: e.target.value })}
+              className="text-green-600"
             />
           </div>
           <div className="col-span-2">
@@ -137,6 +138,7 @@ export function LineEditor({
               placeholder="0.00"
               value={line.credit}
               onChange={(e) => updateLine(index, { credit: e.target.value })}
+              className="text-red-600"
             />
           </div>
           <div className="col-span-2">

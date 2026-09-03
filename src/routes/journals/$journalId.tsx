@@ -517,10 +517,10 @@ function JournalDetailPage() {
                   </Button>
                 )}
                 <div className="text-sm text-muted-foreground">
-                  Debit <span className="font-medium text-foreground">{totalDebit}</span>
+                  Debit <span className="font-medium text-green-600">{totalDebit}</span>
                   <span className="mx-2">/</span>
                   Credit{' '}
-                  <span className="font-medium text-foreground">{totalCredit}</span>
+                  <span className="font-medium text-red-600">{totalCredit}</span>
                 </div>
               </div>
             </div>
@@ -572,8 +572,8 @@ function JournalDetailPage() {
                           </Td>
                         )}
                         <Td>{accountName(line.account_id)}</Td>
-                        <Td>{line.debit ? Number(line.debit).toLocaleString() : '—'}</Td>
-                        <Td>{line.credit ? Number(line.credit).toLocaleString() : '—'}</Td>
+                        <Td className={line.debit ? 'text-green-600' : ''}>{line.debit ? Number(line.debit).toLocaleString() : '—'}</Td>
+                        <Td className={line.credit ? 'text-red-600' : ''}>{line.credit ? Number(line.credit).toLocaleString() : '—'}</Td>
                         <Td>{line.description || '—'}</Td>
                         {isDraft && (
                           <Td className="text-right">
@@ -630,6 +630,7 @@ function JournalDetailPage() {
                         onChange={(e) =>
                           setNewLine((prev) => ({ ...prev, debit: e.target.value }))
                         }
+                        className="text-green-600"
                       />
                     </Field>
                   </div>
@@ -643,6 +644,7 @@ function JournalDetailPage() {
                         onChange={(e) =>
                           setNewLine((prev) => ({ ...prev, credit: e.target.value }))
                         }
+                        className="text-red-600"
                       />
                     </Field>
                   </div>
@@ -832,6 +834,7 @@ function LineEditRow({
           min="0"
           value={debit}
           onChange={(e) => setDebit(e.target.value)}
+          className="text-green-600"
         />
       </Td>
       <Td>
@@ -841,6 +844,7 @@ function LineEditRow({
           min="0"
           value={credit}
           onChange={(e) => setCredit(e.target.value)}
+          className="text-red-600"
         />
       </Td>
       <Td>
