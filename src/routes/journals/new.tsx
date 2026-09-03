@@ -32,9 +32,7 @@ export const Route = createFileRoute('/journals/new')({
 
 function NewJournalPage() {
   const navigate = useNavigate()
-  const [transactionDate, setTransactionDate] = React.useState(
-    () => new Date().toISOString().slice(0, 10),
-  )
+  const [transactionDate, setTransactionDate] = React.useState('')
   const [description, setDescription] = React.useState('')
   const [reference, setReference] = React.useState('')
   const [status, setStatus] = React.useState<JournalStatus>('draft')
