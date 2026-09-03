@@ -27,6 +27,9 @@ import type {
   RegisterPayload,
   Tag,
   Tenant,
+  User,
+  UserAdminStore,
+  UserStatus,
 } from './types'
 
 export const BASE_URL =
@@ -204,6 +207,20 @@ export const api = {
   listTenants: () => get<{ data: Tenant[] }>('/tenants').then((r) => r.data),
   createTenant: (payload: { name: string; slug?: string }) =>
     post<ApiEnvelope<Tenant>>('/tenants', payload).then((r) => r.data),
+
+  // Platform admin (no tenant in the URL; requires is_admin)
+  listAdminUsers: (
+    params: {
+      page?: number
+      per_page?: number
+      search?: string
+      status?: UserStatus
+    } = {},
+  ) => get<RawList<User>>(`/admin/users${toQuery(params)}`).then(asList),
+  createAdminUser: (payload: UserAdminStore) =>
+    post<ApiEnvelope<User>>('/admin/users', payload),
+  updateAdminUser: (id: string, payload: Partial<UserAdminStore>) =>
+    put<ApiEnvelope<User>>(`/admin/users/${id}`, payload),
 
   // Accounts
   listAccounts: (

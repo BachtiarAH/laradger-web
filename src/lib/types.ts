@@ -4,6 +4,7 @@ export type JournalStatus = 'draft' | 'posted' | 'archived'
 export type JournalSource = 'manual' | 'imported' | 'system'
 export type TagType = 'priority' | 'recurring' | 'vendor' | 'tax' | 'transfer'
 export type TenantRole = 'owner' | 'member'
+export type UserStatus = 'active' | 'suspended' | 'terminated'
 
 export type Tenant = {
   id: string
@@ -19,9 +20,19 @@ export type User = {
   name: string
   email: string
   email_verified_at: string | null
+  is_admin?: boolean
+  status?: UserStatus
   tenants?: Tenant[]
   created_at: string
   updated_at: string
+}
+
+export type UserAdminStore = {
+  name: string
+  email: string
+  password?: string
+  is_admin?: boolean
+  status?: UserStatus
 }
 
 export type Account = {

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Link, Outlet, createRootRoute, useLocation } from '@tanstack/react-router'
+import { Link, Navigate, Outlet, createRootRoute, useLocation } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import {
   Building2,
@@ -13,6 +13,7 @@ import {
   Target,
   Tags,
   User,
+  Users,
   Wallet,
   X,
   FileClock,
@@ -85,11 +86,12 @@ function SidebarNavLink({
 }
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { token, user, logout } = useAuth()
+  const { token, user, tenants, logout } = useAuth()
   const [loggingOut, setLoggingOut] = React.useState(false)
   const { pathname } = useLocation()
   const onLogin = pathname === '/login'
   const onRegister = pathname === '/register'
+  const canUseTenants = (user?.tenants?.length ?? 0) > 0 || tenants.length > 0
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -112,23 +114,40 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </Link>
       </div>
 
-      {token && (
+      {token && canUseTenants && (
         <div className="border-b border-border px-3 py-3">
           <TenantSwitcher />
         </div>
       )}
 
-      {token && (
+      {token && (canUseTenants || user?.is_admin) && (
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
-          {navItems.map((item) => (
-            <SidebarNavLink
-              key={item.to}
-              to={item.to}
-              label={item.label}
-              icon={item.icon}
-              onNavigate={onNavigate}
-            />
-          ))}
+          {canUseTenants &&
+            navItems.map((item) => (
+              <SidebarNavLink
+                key={item.to}
+                to={item.to}
+                label={item.label}
+                icon={item.icon}
+                onNavigate={onNavigate}
+              />
+            ))}
+
+          {user?.is_admin && (
+            <>
+              {canUseTenants && (
+                <div className="mt-4 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Admin
+                </div>
+              )}
+              <SidebarNavLink
+                to="/admin/users"
+                label="Users"
+                icon={Users}
+                onNavigate={onNavigate}
+              />
+            </>
+          )}
         </nav>
       )}
 
@@ -211,6 +230,25 @@ function ApiGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function TenantlessAdminRedirect({ children }: { children: React.ReactNode }) {
+  const { token, user, tenants } = useAuth()
+  const { pathname } = useLocation()
+
+  // Dedicated platform admins have no tenant, so the tenant-scoped pages
+  // (dashboard, accounts, journals, …) do not apply to them.
+  if (
+    token &&
+    user?.is_admin &&
+    (user?.tenants?.length ?? 0) === 0 &&
+    tenants.length === 0 &&
+    !pathname.startsWith('/admin')
+  ) {
+    return <Navigate to="/admin/users" replace />
+  }
+
+  return <>{children}</>
+}
+
 function RootComponent() {
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const closeMobile = React.useCallback(() => setMobileOpen(false), [])
@@ -263,7 +301,9 @@ function RootComponent() {
           <main className="px-4 py-8 lg:px-8">
             <div className="mx-auto max-w-7xl">
               <ApiGuard>
-                <Outlet />
+                <TenantlessAdminRedirect>
+                  <Outlet />
+                </TenantlessAdminRedirect>
               </ApiGuard>
             </div>
           </main>

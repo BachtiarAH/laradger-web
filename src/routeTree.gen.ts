@@ -32,6 +32,7 @@ import { Route as TagsIndexRouteImport } from './routes/tags/index'
 import { Route as TemplatesIndexRouteImport } from './routes/templates/index'
 import { Route as TemplatesTemplateIdRouteImport } from './routes/templates/$templateId'
 import { Route as TemplatesNewRouteImport } from './routes/templates/new'
+import { Route as AdminUsersIndexRouteImport } from './routes/admin/users/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -148,6 +149,11 @@ const TemplatesNewRoute = TemplatesNewRouteImport.update({
   path: '/templates/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
+  id: '/admin/users/',
+  path: '/admin/users/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/journals/': typeof JournalsIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/templates/': typeof TemplatesIndexRoute
+  '/admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/journals': typeof JournalsIndexRoute
   '/tags': typeof TagsIndexRoute
   '/templates': typeof TemplatesIndexRoute
+  '/admin/users': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/journals/': typeof JournalsIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/templates/': typeof TemplatesIndexRoute
+  '/admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/journals/'
     | '/tags/'
     | '/templates/'
+    | '/admin/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -276,6 +286,7 @@ export interface FileRouteTypes {
     | '/journals'
     | '/tags'
     | '/templates'
+    | '/admin/users'
   id:
     | '__root__'
     | '/'
@@ -301,6 +312,7 @@ export interface FileRouteTypes {
     | '/journals/'
     | '/tags/'
     | '/templates/'
+    | '/admin/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -327,6 +339,7 @@ export interface RootRouteChildren {
   JournalsIndexRoute: typeof JournalsIndexRoute
   TagsIndexRoute: typeof TagsIndexRoute
   TemplatesIndexRoute: typeof TemplatesIndexRoute
+  AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -492,6 +505,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TemplatesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users/': {
+      id: '/admin/users/'
+      path: '/admin/users'
+      fullPath: '/admin/users/'
+      preLoaderRoute: typeof AdminUsersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -519,6 +539,7 @@ const rootRouteChildren: RootRouteChildren = {
   JournalsIndexRoute: JournalsIndexRoute,
   TagsIndexRoute: TagsIndexRoute,
   TemplatesIndexRoute: TemplatesIndexRoute,
+  AdminUsersIndexRoute: AdminUsersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
