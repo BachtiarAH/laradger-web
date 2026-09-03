@@ -23,6 +23,7 @@ import { AccessDenied } from '../components/AccessDenied'
 import { NotFound } from '../components/NotFound'
 import { Button } from '../components/ui'
 import { Button as UiButton } from '../components/ui/button'
+import { TooltipProvider } from '../components/ui/tooltip'
 import { TenantSwitcher } from '../components/TenantSwitcher'
 import { ThemeToggle } from '../components/ThemeToggle'
 import {
@@ -211,8 +212,9 @@ function RootComponent() {
   const closeMobile = React.useCallback(() => setMobileOpen(false), [])
 
   return (
-    <AuthProvider>
-      <div className="min-h-screen lg:flex">
+    <TooltipProvider>
+      <AuthProvider>
+        <div className="min-h-screen lg:flex">
         <aside className="hidden w-64 shrink-0 border-r border-border lg:block">
           <div className="sticky top-0 h-screen">
             <SidebarContent />
@@ -264,6 +266,7 @@ function RootComponent() {
         </div>
       </div>
       <TanStackRouterDevtools position="bottom-right" />
-    </AuthProvider>
+      </AuthProvider>
+    </TooltipProvider>
   )
 }

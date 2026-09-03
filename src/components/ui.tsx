@@ -6,6 +6,7 @@ import { Button as ShadcnButton } from './ui/button'
 import { Input as ShadcnInput } from './ui/input'
 import { Label as ShadcnLabel } from './ui/label'
 import { Badge as ShadcnBadge } from './ui/badge'
+import { Skeleton as ShadcnSkeleton } from './ui/skeleton'
 import {
   Table as ShadcnTable,
   TableHead,
@@ -245,6 +246,7 @@ export function Td({
 }
 
 export { TableBody, TableHeader, TableRow } from './ui/table'
+export { Skeleton } from './ui/skeleton'
 
 export function formatDate(value: string | null | undefined): string {
   if (!value) return '—'

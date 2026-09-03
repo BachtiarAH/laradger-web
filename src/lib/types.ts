@@ -32,6 +32,11 @@ export type Account = {
   parent_id: string | null
   currency: string
   status: AccountStatus
+  total_debit?: string | null
+  total_credit?: string | null
+  net?: string | null
+  balance?: string | null
+  balance_side?: 'debit' | 'credit'
   created_at: string
   updated_at: string
   parent?: Account | null
@@ -87,6 +92,9 @@ export type Journal = {
   reverse_from_id: string | null
   created_at: string
   updated_at: string
+  total_debit?: string | null
+  total_credit?: string | null
+  lines_count?: number
   user?: User | null
   lines?: JournalLine[]
   tags?: Tag[]

@@ -8,27 +8,9 @@ import type {
   JournalDraftLine,
   Tag,
 } from '../lib/types'
-import {
-  Button,
-  Card,
-  ErrorBox,
-  Field,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui'
+import { Button, Card, ErrorBox } from '../components/ui'
 import { AccountSelect } from './AccountSelect'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog'
+import { CreateAccountDialog } from './CreateAccountDialog'
 import { cn } from '../lib/utils'
 
 export type AiDraftResultLine = {
@@ -339,139 +321,17 @@ export function AiDraftPanel({
       <CreateAccountDialog
         open={createForIndex != null}
         onOpenChange={(open) => !open && setCreateForIndex(null)}
-        suggested={createForIndex != null ? resolved?.[createForIndex]?.suggested : undefined}
+        suggested={
+          createForIndex != null
+            ? {
+                name: resolved?.[createForIndex]?.suggested.account_name,
+                type: resolved?.[createForIndex]?.suggested.account_type,
+              }
+            : undefined
+        }
+        description="The AI suggested an account that is not in this organization yet."
         onCreated={handleCreatedAccount}
       />
     </Card>
-  )
-}
-
-function CreateAccountDialog({
-  open,
-  onOpenChange,
-  suggested,
-  onCreated,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  suggested?: JournalDraftLine
-  onCreated: (account: Account) => void
-}) {
-  const [name, setName] = React.useState('')
-  const [type, setType] = React.useState<AccountType>('asset')
-  const [currency, setCurrency] = React.useState('IDR')
-  const [status, setStatus] = React.useState<'active' | 'inactive'>('active')
-  const [error, setError] = React.useState<unknown>(null)
-  const [creating, setCreating] = React.useState(false)
-
-  React.useEffect(() => {
-    if (open) {
-      setName(suggested?.account_name ?? '')
-      setType(suggested?.account_type ?? 'asset')
-      setCurrency('IDR')
-      setStatus('active')
-      setError(null)
-    }
-  }, [open, suggested])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setCreating(true)
-    try {
-      const result = await api.createAccount({
-        name,
-        type,
-        currency,
-        status,
-      })
-      onCreated(result.data)
-    } catch (err) {
-      setError(err)
-    } finally {
-      setCreating(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create new account</DialogTitle>
-          <DialogDescription>
-            The AI suggested an account that is not in this organization yet.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Field label="Name" htmlFor="ai_account_name">
-            <Input
-              id="ai_account_name"
-              required
-              maxLength={255}
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </Field>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="Type">
-              <Select
-                value={type}
-                onValueChange={(value) => setType(value as AccountType)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="asset">asset</SelectItem>
-                  <SelectItem value="liability">liability</SelectItem>
-                  <SelectItem value="equity">equity</SelectItem>
-                  <SelectItem value="income">income</SelectItem>
-                  <SelectItem value="expense">expense</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Currency" htmlFor="ai_account_currency">
-              <Input
-                id="ai_account_currency"
-                required
-                maxLength={3}
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-              />
-            </Field>
-            <Field label="Status">
-              <Select
-                value={status}
-                onValueChange={(value) =>
-                  setStatus(value as 'active' | 'inactive')
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">active</SelectItem>
-                  <SelectItem value="inactive">inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-          </div>
-          {error != null && <ErrorBox error={error} />}
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" loading={creating}>
-              Create account
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   )
 }

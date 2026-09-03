@@ -12,13 +12,13 @@ import {
   ErrorBox,
   Field,
   Input,
-  LoadingBox,
   PageHeader,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
   Table,
   TableBody,
   TableHeader,
@@ -26,8 +26,59 @@ import {
   Td,
   Th,
 } from '../../components/ui'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip'
 import { ACCOUNT_TYPES } from '../../components/AccountForm'
+import { cn } from '../../lib/utils'
 import type { Account } from '../../lib/types'
+
+function formatAmount(value: string | null | undefined): string {
+  if (!value) return '—'
+  const n = Number(value)
+  return Number.isNaN(n) ? value : n.toLocaleString()
+}
+
+function balanceColor(side: Account['balance_side'], hasBalance: boolean): string {
+  if (!hasBalance) return 'text-muted-foreground'
+  return side === 'credit'
+    ? 'text-destructive'
+    : 'text-emerald-600 dark:text-emerald-400'
+}
+
+function SkeletonTable({ rows = 3 }: { rows?: number }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <Th>Code</Th>
+          <Th>Name</Th>
+          <Th>Type</Th>
+          <Th>Currency</Th>
+          <Th>Status</Th>
+          <Th>Balance</Th>
+          <Th className="text-right">Actions</Th>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {Array.from({ length: rows }).map((_, i) => (
+          <TableRow key={i}>
+            <Td><Skeleton className="h-4 w-12" /></Td>
+            <Td><Skeleton className="h-4 w-32" /></Td>
+            <Td><Skeleton className="h-4 w-16" /></Td>
+            <Td><Skeleton className="h-4 w-10" /></Td>
+            <Td><Skeleton className="h-4 w-16" /></Td>
+            <Td><Skeleton className="h-4 w-16" /></Td>
+            <Td className="text-right">
+              <div className="flex justify-end gap-3">
+                <Skeleton className="h-4 w-8" />
+                <Skeleton className="h-4 w-10" />
+              </div>
+            </Td>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+}
 
 export const Route = createFileRoute('/accounts/')({
   component: AccountsPage,
@@ -160,7 +211,9 @@ function AccountsPage() {
       </Card>
 
       <Card>
-        {loading && <LoadingBox label="Loading accounts…" />}
+        {loading && (
+          <SkeletonTable rows={3} />
+        )}
         {!loading && data && (
           <>
             {data.data.length === 0 ? (
@@ -180,6 +233,7 @@ function AccountsPage() {
                     <Th>Type</Th>
                     <Th>Currency</Th>
                     <Th>Status</Th>
+                    <Th>Balance</Th>
                     <Th className="text-right">Actions</Th>
                   </TableRow>
                 </TableHeader>
@@ -208,6 +262,42 @@ function AccountsPage() {
                       <Td><Badge value={account.type} /></Td>
                       <Td>{account.currency}</Td>
                       <Td><Badge value={account.status} /></Td>
+                      <Td className="font-medium">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              className={cn(
+                                balanceColor(
+                                  account.balance_side,
+                                  !!account.balance,
+                                ),
+                              )}
+                            >
+                              {formatAmount(account.balance)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent align="start" side="top" className="space-y-1">
+                            <div className="flex justify-between gap-4">
+                              <span className="text-muted-foreground">Debit</span>
+                              <span className="text-emerald-600 dark:text-emerald-400">
+                                {formatAmount(account.total_debit)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-4">
+                              <span className="text-muted-foreground">Credit</span>
+                              <span className="text-destructive">
+                                {formatAmount(account.total_credit)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-4 font-semibold">
+                              <span className="text-muted-foreground">Balance</span>
+                              <span className={balanceColor(account.balance_side, !!account.balance)}>
+                                {formatAmount(account.balance)} {account.balance_side ?? ''}
+                              </span>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </Td>
                       <Td className="text-right">
                         <div className="flex justify-end gap-3">
                           <Link

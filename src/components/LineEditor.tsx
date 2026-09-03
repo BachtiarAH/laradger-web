@@ -58,6 +58,7 @@ export function LineEditor({
               value={line.account_id || null}
               onValueChange={(value) => updateLine(index, { account_id: value ?? '' })}
               placeholder="Select account…"
+              allowCreate
             />
           </div>
           <div className="col-span-2">

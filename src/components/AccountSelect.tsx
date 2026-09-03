@@ -1,9 +1,10 @@
 import * as React from 'react'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown, Plus } from 'lucide-react'
 import { api } from '../lib/api'
 import type { Account } from '../lib/types'
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
+import { CreateAccountDialog } from './CreateAccountDialog'
 import {
   Command,
   CommandEmpty,
@@ -27,6 +28,8 @@ function useDebounce<T>(value: T, delay = 300): T {
   return debounced
 }
 
+const CREATE_ACCOUNT_VALUE = '__create__'
+
 type Props = {
   value: string | null
   onValueChange: (value: string | null) => void
@@ -35,6 +38,7 @@ type Props = {
   allowNone?: boolean
   noneLabel?: string
   disabled?: boolean
+  allowCreate?: boolean
 }
 
 export function AccountSelect({
@@ -45,6 +49,7 @@ export function AccountSelect({
   allowNone = false,
   noneLabel = 'None',
   disabled = false,
+  allowCreate = false,
 }: Props) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
@@ -52,6 +57,7 @@ export function AccountSelect({
   const [accounts, setAccounts] = React.useState<Account[]>([])
   const [loading, setLoading] = React.useState(false)
   const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(null)
+  const [createOpen, setCreateOpen] = React.useState(false)
 
   React.useEffect(() => {
     let active = true
@@ -97,6 +103,12 @@ export function AccountSelect({
   }, [value, accounts])
 
   const handleSelect = (id: string | null) => {
+    if (id === CREATE_ACCOUNT_VALUE) {
+      setOpen(false)
+      setQuery('')
+      setCreateOpen(true)
+      return
+    }
     onValueChange(id)
     setOpen(false)
     setQuery('')
@@ -132,6 +144,18 @@ export function AccountSelect({
             {loading && <div className="py-6 text-center text-sm text-muted-foreground">Loading…</div>}
             {!loading && accounts.length === 0 && <CommandEmpty>No accounts found.</CommandEmpty>}
             <CommandGroup>
+              {allowCreate && (
+                <CommandItem
+                  value={CREATE_ACCOUNT_VALUE}
+                  onSelect={() => handleSelect(CREATE_ACCOUNT_VALUE)}
+                  className="justify-between text-primary"
+                >
+                  <span className="flex items-center gap-2">
+                    <Plus className="size-4" />
+                    Create new account…
+                  </span>
+                </CommandItem>
+              )}
               {allowNone && (
                 <CommandItem
                   value="__none__"
@@ -174,6 +198,15 @@ export function AccountSelect({
           </CommandList>
         </Command>
       </PopoverContent>
+
+      <CreateAccountDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={(account) => {
+          onValueChange(account.id)
+          setCreateOpen(false)
+        }}
+      />
     </Popover>
   )
 }

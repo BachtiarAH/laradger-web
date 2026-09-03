@@ -48,6 +48,7 @@ function JournalDetailPage() {
   const isNotFound = error instanceof ApiError && error.status === 404
   const isDraft = journal?.status === 'draft'
   const isPosted = journal?.status === 'posted'
+  const isArchived = journal?.status === 'archived'
 
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
 
@@ -586,7 +587,7 @@ function JournalDetailPage() {
                 ))}
               </div>
             )}
-            {isDraft && (
+            {!isArchived && (
               <div className="space-y-3">
                 <div className="flex max-w-md items-end gap-2">
                   <Field label="Attach tag">

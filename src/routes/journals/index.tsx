@@ -32,6 +32,14 @@ export const Route = createFileRoute('/journals/')({
 
 function JournalsPage() {
   const navigate = useNavigate()
+
+  const fmtAmount = (value?: string | null) => {
+    if (value == null || value === '') return '—'
+    const n = Number(value)
+    return Number.isNaN(n)
+      ? value
+      : n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }
   const [page, setPage] = React.useState(1)
   const [status, setStatus] = React.useState('')
   const [source, setSource] = React.useState('')
@@ -156,6 +164,7 @@ function JournalsPage() {
                     <Th>Date</Th>
                     <Th>Status</Th>
                     <Th>Source</Th>
+                    <Th className="text-right">Amount</Th>
                     <Th>Lines</Th>
                     <Th className="text-right">Actions</Th>
                   </TableRow>
@@ -185,7 +194,8 @@ function JournalsPage() {
                       <Td>{new Date(journal.transaction_date).toLocaleDateString()}</Td>
                       <Td><Badge value={journal.status} /></Td>
                       <Td><Badge value={journal.source} /></Td>
-                      <Td>{journal.lines?.length ?? '—'}</Td>
+                      <Td className="text-right">{fmtAmount(journal.total_debit)}</Td>
+                      <Td>{journal.lines_count ?? journal.lines?.length ?? '—'}</Td>
                       <Td className="text-right">
                         <Link
                           to="/journals/$journalId"
