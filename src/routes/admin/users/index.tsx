@@ -3,6 +3,7 @@ import * as React from 'react'
 import { MoreHorizontal, ShieldAlert, UserPlus } from 'lucide-react'
 import { api } from '../../../lib/api'
 import { useFetch } from '../../../lib/useFetch'
+import { useDebounce } from '../../../hooks/useDebounce'
 import { useAuth } from '../../../lib/auth'
 import { RequireAuth } from '../../../components/RequireAuth'
 import { Pagination } from '../../../components/Pagination'
@@ -79,6 +80,7 @@ function AdminUsersPage() {
   const { user } = useAuth()
   const [page, setPage] = React.useState(1)
   const [search, setSearch] = React.useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [status, setStatus] = React.useState<UserStatus | ''>('')
   const [dialogUser, setDialogUser] = React.useState<User | null>(null)
   const [dialogOpen, setDialogOpen] = React.useState(false)
@@ -95,11 +97,11 @@ function AdminUsersPage() {
         ? api.listAdminUsers({
             page,
             per_page: 15,
-            search: search || undefined,
+            search: debouncedSearch || undefined,
             status: status || undefined,
           })
         : Promise.resolve(EMPTY_PAGE),
-    [page, search, status, isAllowed],
+    [page, debouncedSearch, status, isAllowed],
   )
 
   const runUpdate = async (
@@ -204,8 +206,8 @@ function AdminUsersPage() {
       </Card>
 
       <Card>
-        {loading && <LoadingBox label="Loading users…" />}
-        {!loading && data && (
+        {loading && !data && <LoadingBox label="Loading users…" />}
+        {data && (
           <>
             {data.data.length === 0 ? (
               <p className="p-6 text-sm text-muted-foreground">No users found.</p>

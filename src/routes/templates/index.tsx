@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
+import { useDebounce } from '../../hooks/useDebounce'
 import { RequireAuth } from '../../components/RequireAuth'
 import { Pagination } from '../../components/Pagination'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
@@ -52,6 +53,7 @@ function TemplatesPage() {
   const [page, setPage] = React.useState(1)
   const [periodType, setPeriodType] = React.useState('')
   const [search, setSearch] = React.useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [confirmDelete, setConfirmDelete] = React.useState<JournalTemplate | null>(null)
   const [genTemplate, setGenTemplate] = React.useState<JournalTemplate | null>(null)
   const [genDate, setGenDate] = React.useState(() => new Date().toISOString().slice(0, 10))
@@ -65,9 +67,9 @@ function TemplatesPage() {
         page,
         per_page: 15,
         period_type: periodType || undefined,
-        search: search || undefined,
+        search: debouncedSearch || undefined,
       }),
-    [page, periodType, search],
+    [page, periodType, debouncedSearch],
   )
 
   const handleDelete = async (template: JournalTemplate) => {
@@ -153,8 +155,8 @@ function TemplatesPage() {
       {actionError != null && <div className="mb-4"><ErrorBox error={actionError} /></div>}
 
       <Card>
-        {loading && <LoadingBox label="Loading templates…" />}
-        {!loading && data && (
+        {loading && !data && <LoadingBox label="Loading templates…" />}
+        {data && (
           <>
             {data.data.length === 0 ? (
               <p className="p-6 text-sm text-muted-foreground">

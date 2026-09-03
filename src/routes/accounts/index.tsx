@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
+import { useDebounce } from '../../hooks/useDebounce'
 import { RequireAuth } from '../../components/RequireAuth'
 import { Pagination } from '../../components/Pagination'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
@@ -88,6 +89,7 @@ function AccountsPage() {
   const navigate = useNavigate()
   const [page, setPage] = React.useState(1)
   const [search, setSearch] = React.useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [type, setType] = React.useState('')
   const [currency, setCurrency] = React.useState('')
   const [status, setStatus] = React.useState('')
@@ -101,12 +103,12 @@ function AccountsPage() {
       api.listAccounts({
         page,
         per_page: 15,
-        search: search || undefined,
+        search: debouncedSearch || undefined,
         type: type || undefined,
         currency: currency || undefined,
         status: status || undefined,
       }),
-    [page, search, type, currency, status],
+    [page, debouncedSearch, type, currency, status],
   )
 
   const setFilter = (
@@ -211,10 +213,10 @@ function AccountsPage() {
       </Card>
 
       <Card>
-        {loading && (
+        {loading && !data && (
           <SkeletonTable rows={3} />
         )}
-        {!loading && data && (
+        {data && (
           <>
             {data.data.length === 0 ? (
               <p className="p-6 text-sm text-muted-foreground">

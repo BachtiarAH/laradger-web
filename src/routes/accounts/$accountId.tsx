@@ -31,6 +31,7 @@ import {
   formatDate,
 } from '../../components/ui'
 import { useFetch } from '../../lib/useFetch'
+import { useDebounce } from '../../hooks/useDebounce'
 
 export const Route = createFileRoute('/accounts/$accountId')({
   component: AccountDetailPage,
@@ -69,6 +70,7 @@ function AccountDetailPage() {
   // journal lines
   const [jlPage, setJlPage] = React.useState(1)
   const [jlSearch, setJlSearch] = React.useState('')
+  const debouncedJlSearch = useDebounce(jlSearch, 300)
   const [jlStatus, setJlStatus] = React.useState('')
 
   const jlFetch = useFetch(
@@ -76,10 +78,10 @@ function AccountDetailPage() {
       api.listAccountJournalLines(accountId, {
         page: jlPage,
         per_page: 10,
-        search: jlSearch || undefined,
+        search: debouncedJlSearch || undefined,
         status: jlStatus || undefined,
       }),
-    [accountId, jlPage, jlSearch, jlStatus],
+    [accountId, jlPage, debouncedJlSearch, jlStatus],
   )
 
   const handleAllocationsChanged = async () => {
@@ -450,9 +452,9 @@ function AccountDetailPage() {
           </div>
 
           {jlFetch.error != null && <div className="px-6 pb-4"><ErrorBox error={jlFetch.error} /></div>}
-          {jlFetch.loading && <div className="px-6 pb-4"><LoadingBox label="Loading journal lines…" /></div>}
+          {jlFetch.loading && !jlFetch.data && <div className="px-6 pb-4"><LoadingBox label="Loading journal lines…" /></div>}
 
-          {!jlFetch.loading && jlFetch.data && (
+          {jlFetch.data && (
             <>
               {jlFetch.data.data.length === 0 ? (
                 <p className="px-6 pb-6 text-sm text-muted-foreground">No journal lines for this account.</p>

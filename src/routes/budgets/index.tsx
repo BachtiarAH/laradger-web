@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
+import { useDebounce } from '../../hooks/useDebounce'
 import { RequireAuth } from '../../components/RequireAuth'
 import { Pagination } from '../../components/Pagination'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
@@ -46,6 +47,7 @@ function BudgetsPage() {
   const navigate = useNavigate()
   const [page, setPage] = React.useState(1)
   const [search, setSearch] = React.useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [startsAt, setStartsAt] = React.useState('')
   const [endsAt, setEndsAt] = React.useState('')
   const [period, setPeriod] = React.useState('')
@@ -64,7 +66,7 @@ function BudgetsPage() {
       api.listBudgets({
         page,
         per_page: 15,
-        search: search || undefined,
+        search: debouncedSearch || undefined,
         starts_at: startsAt || undefined,
         ends_at: endsAt || undefined,
         period: period || undefined,
@@ -72,7 +74,7 @@ function BudgetsPage() {
         tag_id: tagId || undefined,
         account_id: accountId || undefined,
       }),
-    [page, search, startsAt, endsAt, period, budgetType, tagId, accountId],
+    [page, debouncedSearch, startsAt, endsAt, period, budgetType, tagId, accountId],
   )
 
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])

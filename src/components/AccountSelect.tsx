@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import type { Account } from '../lib/types'
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
+import { useDebounce } from '../hooks/useDebounce'
 import { CreateAccountDialog } from './CreateAccountDialog'
 import {
   Command,
@@ -18,15 +19,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from './ui/popover'
-
-function useDebounce<T>(value: T, delay = 300): T {
-  const [debounced, setDebounced] = React.useState(value)
-  React.useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(id)
-  }, [value, delay])
-  return debounced
-}
 
 const CREATE_ACCOUNT_VALUE = '__create__'
 

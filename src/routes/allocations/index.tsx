@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
+import { useDebounce } from '../../hooks/useDebounce'
 import { RequireAuth } from '../../components/RequireAuth'
 import { Pagination } from '../../components/Pagination'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
@@ -36,6 +37,7 @@ function AllocationsPage() {
   const navigate = useNavigate()
   const [page, setPage] = React.useState(1)
   const [search, setSearch] = React.useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [confirmDelete, setConfirmDelete] = React.useState<Allocation | null>(null)
   const [actionError, setActionError] = React.useState<unknown>(null)
 
@@ -44,9 +46,9 @@ function AllocationsPage() {
       api.listAllocations({
         page,
         per_page: 15,
-        search: search || undefined,
+        search: debouncedSearch || undefined,
       }),
-    [page, search],
+    [page, debouncedSearch],
   )
 
   const handleDelete = async (allocation: Allocation) => {
@@ -86,8 +88,8 @@ function AllocationsPage() {
       </Card>
 
       <Card>
-        {loading && <LoadingBox label="Loading allocations…" />}
-        {!loading && data && (
+        {loading && !data && <LoadingBox label="Loading allocations…" />}
+        {data && (
           <>
             {data.data.length === 0 ? (
               <p className="p-6 text-sm text-muted-foreground">
