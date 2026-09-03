@@ -334,6 +334,13 @@ export type BudgetSummary = {
   net_budgeted: string
 }
 
+export type WealthPoint = {
+  month: string
+  assets: string
+  liabilities: string
+  net_worth: string
+}
+
 export type Overview = {
   period: 'today' | 'this_week' | 'this_month'
   date_range: {
@@ -353,9 +360,14 @@ export type Overview = {
   unbudgeted_income: string
   net_budgeted: string
   safe_money: string
+  assets: {
+    balance: string
+  }
   liabilities: {
     balance: string
   }
+  net_worth: string
+  wealth_history: WealthPoint[]
 }
 
 export type Paginated<T> = {

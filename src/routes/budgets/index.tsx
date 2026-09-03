@@ -210,6 +210,8 @@ function BudgetsPage() {
         </div>
         {(() => {
           const s = data?.summary
+          const overspend = s ? Math.max(0, Number(s.expense_actual ?? 0) - Number(s.expense_budgeted ?? 0)) : 0
+          const safeMoney = s ? Number(s.income_actual ?? 0) - Number(s.expense_budgeted ?? 0) - overspend : 0
           return (
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg bg-emerald-50 px-3 py-3 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:ring-emerald-800">
@@ -217,12 +219,16 @@ function BudgetsPage() {
                 <p className="mt-1 text-sm text-muted-foreground">Dianggarkan: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.income_budgeted ?? '0')}</span></p>
                 <p className="text-sm text-muted-foreground">Realisasi: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.income_actual ?? '0')}</span></p>
                 <p className="mt-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">Belum dianggarkan: {loading ? '…' : formatAmount(s?.unbudgeted_income ?? '0')} <span className="font-normal text-muted-foreground">({Number(s?.unbudgeted_income ?? 0) >= 0 ? 'surplus' : 'defisit'})</span></p>
+                <p className="mt-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">Uang Dingin: {loading ? '…' : formatAmount(String(safeMoney))} <span className="font-normal text-muted-foreground">(pemasukan - budget - overspend)</span></p>
               </div>
               <div className="rounded-lg bg-red-50 px-3 py-3 ring-1 ring-red-200 dark:bg-red-950/30 dark:ring-red-800">
                 <p className="text-xs font-medium text-red-700 dark:text-red-300">Pengeluaran (Anggaran)</p>
                 <p className="mt-1 text-sm text-muted-foreground">Dianggarkan: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.expense_budgeted ?? '0')}</span></p>
                 <p className="text-sm text-muted-foreground">Realisasi: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.expense_actual ?? '0')}</span></p>
                 <p className="mt-1 text-xs font-semibold text-red-700 dark:text-red-400">Sisa anggaran: {loading ? '…' : formatAmount(s?.remaining_expense ?? '0')} <span className="font-normal text-muted-foreground">({Number(s?.remaining_expense ?? 0) >= 0 ? 'tersisa' : 'over budget'})</span></p>
+                {overspend > 0 && (
+                  <p className="mt-1 text-xs font-semibold text-red-700 dark:text-red-400">Overspend: {loading ? '…' : formatAmount(String(overspend))}</p>
+                )}
               </div>
               <div className="rounded-lg bg-sky-50 px-3 py-3 ring-1 ring-sky-200 dark:bg-sky-950/30 dark:ring-sky-800">
                 <p className="text-xs font-medium text-sky-700 dark:text-sky-300">Akun lain (saldo)</p>
