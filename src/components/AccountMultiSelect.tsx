@@ -1,9 +1,10 @@
 import * as React from 'react'
-import { Check, ChevronsUpDown, X } from 'lucide-react'
+import { Check, ChevronsUpDown, Plus, X } from 'lucide-react'
 import { api } from '../lib/api'
-import type { Account } from '../lib/types'
+import type { Account, AccountType } from '../lib/types'
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
+import { CreateAccountDialog } from './CreateAccountDialog'
 import {
   Command,
   CommandEmpty,
@@ -23,20 +24,26 @@ function useDebounce<T>(value: T, delay = 300): T {
   return debounced
 }
 
+const CREATE_ACCOUNT_VALUE = '__create__'
+
 type Props = {
   selectedIds: string[]
   onChange: (ids: string[]) => void
   placeholder?: string
   filterType?: 'income' | 'expense' | string
+  allowCreate?: boolean
 }
 
-export function AccountMultiSelect({ selectedIds, onChange, placeholder = 'Search accounts…', filterType }: Props) {
+export function AccountMultiSelect({ selectedIds, onChange, placeholder = 'Search accounts…', filterType, allowCreate = false }: Props) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
   const debouncedQuery = useDebounce(query, 300)
   const [accounts, setAccounts] = React.useState<Account[]>([])
   const [loading, setLoading] = React.useState(false)
   const [selectedAccounts, setSelectedAccounts] = React.useState<Map<string, Account>>(new Map())
+  const [createOpen, setCreateOpen] = React.useState(false)
+
+  const accountType = (filterType === 'income' || filterType === 'expense' ? filterType : undefined) as AccountType | undefined
 
   React.useEffect(() => {
     let active = true
@@ -98,6 +105,12 @@ export function AccountMultiSelect({ selectedIds, onChange, placeholder = 'Searc
     onChange(selectedIds.filter((v) => v !== id))
   }
 
+  const handleCreate = (account: Account) => {
+    onChange([...selectedIds, account.id])
+    setCreateOpen(false)
+    setQuery('')
+  }
+
   return (
     <div className="space-y-2">
       {selectedIds.length > 0 && (
@@ -138,6 +151,22 @@ export function AccountMultiSelect({ selectedIds, onChange, placeholder = 'Searc
               {loading && <div className="py-6 text-center text-sm text-muted-foreground">Loading…</div>}
               {!loading && accounts.length === 0 && <CommandEmpty>No accounts found.</CommandEmpty>}
               <CommandGroup>
+                {allowCreate && (
+                  <CommandItem
+                    value={CREATE_ACCOUNT_VALUE}
+                    onSelect={() => {
+                      setOpen(false)
+                      setQuery('')
+                      setCreateOpen(true)
+                    }}
+                    className="justify-between text-primary"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Plus className="size-4" />
+                      Create new account…
+                    </span>
+                  </CommandItem>
+                )}
                 {accounts.map((account) => {
                   const isSelected = selectedIds.includes(account.id)
                   return (
@@ -158,7 +187,20 @@ export function AccountMultiSelect({ selectedIds, onChange, placeholder = 'Searc
             </CommandList>
           </Command>
         </PopoverContent>
-      </Popover>
+        </Popover>
+      {allowCreate && (
+        <CreateAccountDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          suggested={{ type: accountType }}
+          description={
+            filterType === 'income' || filterType === 'expense'
+              ? `Create a new ${filterType} account to link to this budget.`
+              : undefined
+          }
+          onCreated={handleCreate}
+        />
+      )}
     </div>
   )
 }

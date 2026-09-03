@@ -211,7 +211,7 @@ function BudgetsPage() {
         {(() => {
           const s = data?.summary
           return (
-            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg bg-emerald-50 px-3 py-3 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:ring-emerald-800">
                 <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Pemasukan (Ekspektasi)</p>
                 <p className="mt-1 text-sm text-muted-foreground">Dianggarkan: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.income_budgeted ?? '0')}</span></p>
@@ -224,9 +224,15 @@ function BudgetsPage() {
                 <p className="text-sm text-muted-foreground">Realisasi: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.expense_actual ?? '0')}</span></p>
                 <p className="mt-1 text-xs font-semibold text-red-700 dark:text-red-400">Sisa anggaran: {loading ? '…' : formatAmount(s?.remaining_expense ?? '0')} <span className="font-normal text-muted-foreground">({Number(s?.remaining_expense ?? 0) >= 0 ? 'tersisa' : 'over budget'})</span></p>
               </div>
+              <div className="rounded-lg bg-sky-50 px-3 py-3 ring-1 ring-sky-200 dark:bg-sky-950/30 dark:ring-sky-800">
+                <p className="text-xs font-medium text-sky-700 dark:text-sky-300">Akun lain (saldo)</p>
+                <p className="mt-1 text-sm text-muted-foreground">Pergerakan aktual: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.other_actual ?? '0')}</span></p>
+                <p className="text-sm text-muted-foreground">Asset/Liabilitas/Equity</p>
+              </div>
               <div className="rounded-lg bg-muted px-3 py-3 ring-1 ring-border">
                 <p className="text-xs font-medium text-foreground">Ringkasan</p>
                 <p className="mt-1 text-sm text-muted-foreground">Total budget: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.total_budgeted ?? data?.total_amount ?? '0')}</span> <span className="text-xs">({data?.total ?? 0} budget)</span></p>
+                <p className="text-sm text-muted-foreground">Total realisasi: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.total_actual ?? '0')}</span></p>
                 <p className="text-sm text-muted-foreground">Net dianggarkan: <span className="font-semibold text-foreground">{loading ? '…' : formatAmount(s?.net_budgeted ?? '0')}</span> <span className="text-xs">(pemasukan - pengeluaran)</span></p>
               </div>
             </div>
@@ -283,9 +289,15 @@ function BudgetsPage() {
                       </Td>
                       <Td>{formatAmount(budget.amount)}</Td>
                       <Td>
-                        <span className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${budget.budget_type === 'income' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200'}`}>
-                          {budget.budget_type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
-                        </span>
+                        {budget.budget_type === null ? (
+                          <span className="inline-flex rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                            Semua akun
+                          </span>
+                        ) : (
+                          <span className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${budget.budget_type === 'income' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200'}`}>
+                            {budget.budget_type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
+                          </span>
+                        )}
                       </Td>
                       <Td>
                         {new Date(budget.starts_at).toLocaleDateString()} —{' '}

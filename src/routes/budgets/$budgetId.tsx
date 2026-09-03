@@ -120,7 +120,13 @@ function BudgetDetailPage() {
               </div>
               <div>
                 <dt className="text-muted-foreground">Tipe anggaran</dt>
-                <dd className="mt-1"><span className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${budget.budget_type === 'income' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{budget.budget_type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</span></dd>
+                <dd className="mt-1">
+                  {budget.budget_type === null ? (
+                    <span className="inline-flex rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Semua akun</span>
+                  ) : (
+                    <span className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${budget.budget_type === 'income' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{budget.budget_type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</span>
+                  )}
+                </dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">Periode</dt>

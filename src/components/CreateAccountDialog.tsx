@@ -20,24 +20,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog'
+import { AccountSelect } from './AccountSelect'
 
 export function CreateAccountDialog({
   open,
   onOpenChange,
   suggested,
   description,
+  parentId,
+  excludeId,
   onCreated,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   suggested?: { name?: string | null; type?: AccountType | null }
   description?: string
+  parentId?: string | null
+  excludeId?: string | null
   onCreated: (account: Account) => void
 }) {
   const [name, setName] = React.useState('')
   const [type, setType] = React.useState<AccountType>('asset')
   const [currency, setCurrency] = React.useState('IDR')
   const [status, setStatus] = React.useState<'active' | 'inactive'>('active')
+  const [parent, setParent] = React.useState<string | null>(null)
   const [error, setError] = React.useState<unknown>(null)
   const [creating, setCreating] = React.useState(false)
 
@@ -47,9 +53,10 @@ export function CreateAccountDialog({
       setType(suggested?.type ?? 'asset')
       setCurrency('IDR')
       setStatus('active')
+      setParent(parentId ?? null)
       setError(null)
     }
-  }, [open, suggested])
+  }, [open, suggested, parentId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,6 +72,7 @@ export function CreateAccountDialog({
         type,
         currency,
         status,
+        ...(parent ? { parent_id: parent } : {}),
       })
       onCreated(result.data)
     } catch (err) {
@@ -138,6 +146,15 @@ export function CreateAccountDialog({
               </Select>
             </Field>
           </div>
+          <Field label="Parent account">
+            <AccountSelect
+              value={parent}
+              onValueChange={setParent}
+              excludeId={excludeId ?? null}
+              placeholder="Select parent account…"
+              allowNone
+            />
+          </Field>
           {error != null && <ErrorBox error={error} />}
           <DialogFooter>
             <Button

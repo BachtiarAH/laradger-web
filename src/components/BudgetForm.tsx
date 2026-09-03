@@ -26,6 +26,8 @@ function toMonthInput(dateStr: string): string {
   return dateStr.slice(0, 7)
 }
 
+export type BudgetType = 'income' | 'expense' | ''
+
 export function BudgetForm({
   initial,
   onSubmit,
@@ -37,8 +39,11 @@ export function BudgetForm({
   submitLabel?: string
   loading?: boolean
 }) {
-  const [budgetType, setBudgetType] = React.useState<'income' | 'expense'>(
-    () => (initial?.budget_type as 'income' | 'expense') ?? 'expense',
+  const [budgetType, setBudgetType] = React.useState<BudgetType>(
+    () =>
+      initial?.budget_type
+        ? (initial.budget_type as BudgetType)
+        : '',
   )
   const [periodType, setPeriodType] = React.useState<'custom' | 'monthly'>(
     () => (initial?.period_type as 'custom' | 'monthly') ?? 'custom',
@@ -72,7 +77,7 @@ export function BudgetForm({
       name: form.name,
       ...(form.description ? { description: form.description } : {}),
       amount: Number(form.amount),
-      budget_type: budgetType,
+      budget_type: budgetType || null,
       period_type: periodType,
       is_recurring: isRecurring,
       ...(accountIds.length > 0 ? { account_ids: accountIds } : {}),
@@ -121,9 +126,10 @@ export function BudgetForm({
           />
         </Field>
         <Field label="Tipe anggaran" htmlFor="budget_type">
-          <Select value={budgetType} onValueChange={(v) => { setBudgetType(v as 'income' | 'expense'); setAccountIds([]) }}>
+          <Select value={budgetType} onValueChange={(v) => { setBudgetType(v as BudgetType); setAccountIds([]) }}>
             <SelectTrigger id="budget_type" className="w-full min-w-0"><SelectValue /></SelectTrigger>
             <SelectContent>
+              <SelectItem value="">Semua akun (tanpa tipe)</SelectItem>
               <SelectItem value="expense">Pengeluaran (Belanja)</SelectItem>
               <SelectItem value="income">Pemasukan (Pendapatan)</SelectItem>
             </SelectContent>
@@ -192,8 +198,9 @@ export function BudgetForm({
         <AccountMultiSelect
           selectedIds={accountIds}
           onChange={setAccountIds}
-          placeholder={budgetType === 'income' ? 'Pilih akun pendapatan (income)…' : 'Pilih akun belanja (expense)…'}
-          filterType={budgetType}
+          placeholder={budgetType === 'income' ? 'Pilih akun pendapatan (income)…' : budgetType === 'expense' ? 'Pilih akun belanja (expense)…' : 'Pilih akun apa pun…'}
+          filterType={budgetType || undefined}
+          allowCreate
         />
       </Field>
       <Field label="Tags">

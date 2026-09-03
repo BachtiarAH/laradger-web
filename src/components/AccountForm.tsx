@@ -131,6 +131,7 @@ export function AccountForm({
             excludeId={initial?.id ?? null}
             placeholder="Select parent account…"
             allowNone
+            allowCreate
           />
           {initial?.id && form.parent_id === initial.id && (
             <p className="mt-1 text-xs text-destructive">An account cannot be its own parent.</p>

@@ -29,7 +29,7 @@ export function TableWidget({ widget }: { widget: WidgetConfig & { viz: 'table' 
           <thead><tr className="text-left text-xs text-muted-foreground"><th className="py-1">Name</th><th className="py-1">Amount</th><th className="py-1">Type</th></tr></thead>
           <tbody>
             {budgets.data.data.map((b: any) => (
-              <tr key={b.id} className="border-t"><td className="py-1.5">{b.name}</td><td className="py-1.5">{Number(b.amount).toLocaleString()}</td><td className="py-1.5 text-xs">{b.budget_type}</td></tr>
+              <tr key={b.id} className="border-t"><td className="py-1.5">{b.name}</td><td className="py-1.5">{Number(b.amount).toLocaleString()}</td><td className="py-1.5 text-xs">{b.budget_type === null ? 'Semua akun' : b.budget_type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</td></tr>
             ))}
           </tbody>
         </table>

@@ -29,6 +29,7 @@ import {
 } from '../../components/ui'
 import type { JournalLine, Tag, TagType } from '../../lib/types'
 import { AccountSelect } from '../../components/AccountSelect'
+import { GripVertical } from 'lucide-react'
 
 export const Route = createFileRoute('/journals/$journalId')({
   component: JournalDetailPage,
@@ -56,6 +57,11 @@ function JournalDetailPage() {
   const [busy, setBusy] = React.useState(false)
   const [editing, setEditing] = React.useState(false)
   const [editingLineId, setEditingLineId] = React.useState<string | null>(null)
+
+  const [orderedLines, setOrderedLines] = React.useState<JournalLine[]>([])
+  const [orderDirty, setOrderDirty] = React.useState(false)
+  const [dragIndex, setDragIndex] = React.useState<number | null>(null)
+  const [dropTargetIndex, setDropTargetIndex] = React.useState<number | null>(null)
 
   const [confirmDelete, setConfirmDelete] = React.useState(false)
   const [confirmReverse, setConfirmReverse] = React.useState(false)
@@ -89,6 +95,17 @@ function JournalDetailPage() {
       setFormStatus(journal.status === 'draft' ? 'draft' : 'posted')
     }
   }, [journal])
+
+  React.useEffect(() => {
+    setOrderedLines((prev) => {
+      const next = journal?.lines ?? []
+      const changed =
+        prev.length !== next.length ||
+        prev.some((line, i) => line.id !== next[i]?.id)
+      if (changed) setOrderDirty(false)
+      return next
+    })
+  }, [journal?.lines])
 
   const [accountLabels, setAccountLabels] = React.useState<Map<string, string>>(new Map())
 
@@ -145,7 +162,7 @@ function JournalDetailPage() {
       reference: formReference,
       status: statusOverride ?? formStatus,
       source: original.source,
-      lines: (original.lines ?? []).map((line) => ({
+      lines: orderedLines.map((line) => ({
         account_id: line.account_id,
         debit: Number(line.debit),
         credit: Number(line.credit),
@@ -235,6 +252,64 @@ function JournalDetailPage() {
     })
   }
 
+  const handleDragStart = (index: number) => {
+    setDragIndex(index)
+    setDropTargetIndex(index)
+  }
+
+  const handleDragOver = (event: React.DragEvent, index: number) => {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    setDropTargetIndex(index)
+  }
+
+  const handleDragLeave = () => {
+    setDropTargetIndex(null)
+  }
+
+  const handleDrop = (index: number) => {
+    setDropTargetIndex(null)
+    if (dragIndex === null || dragIndex === index) {
+      setDragIndex(null)
+      return
+    }
+    setOrderedLines((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(dragIndex, 1)
+      next.splice(index, 0, moved)
+      return next
+    })
+    setOrderDirty(true)
+    setDragIndex(null)
+  }
+
+  const handleDragEnd = () => {
+    setDragIndex(null)
+    setDropTargetIndex(null)
+  }
+
+  const handleSaveOrder = () => {
+    if (!journal) return
+    const payload = {
+      transaction_date: formDate,
+      description: formDescription,
+      reference: formReference,
+      status: formStatus,
+      source: journal.source,
+      lines: orderedLines.map((line) => ({
+        account_id: line.account_id,
+        debit: Number(line.debit),
+        credit: Number(line.credit),
+        description: line.description ?? undefined,
+      })),
+      tags: (journal.tags ?? []).map((tag) => tag.id),
+    }
+    return runAction(async () => {
+      await api.updateJournal(journalId, payload)
+      setOrderDirty(false)
+    })
+  }
+
   const handleAttachTag = () => {
     if (!attachTagId) return
     return runAction(async () => {
@@ -278,7 +353,7 @@ function JournalDetailPage() {
     (tag) => !attachedTagIds.has(tag.id),
   )
 
-  const lines = journal?.lines ?? []
+  const lines = orderedLines
   const totalDebit = lines
     .reduce((sum, line) => sum + (Number(line.debit) || 0), 0)
     .toFixed(2)
@@ -435,11 +510,18 @@ function JournalDetailPage() {
               <h2 className="text-lg font-semibold text-foreground">
                 Lines
               </h2>
-              <div className="text-sm text-muted-foreground">
-                Debit <span className="font-medium text-foreground">{totalDebit}</span>
-                <span className="mx-2">/</span>
-                Credit{' '}
-                <span className="font-medium text-foreground">{totalCredit}</span>
+              <div className="flex items-center gap-4">
+                {orderDirty && isDraft && (
+                  <Button variant="secondary" onClick={handleSaveOrder} loading={busy} className="!px-3 !py-1.5 text-sm">
+                    Save order
+                  </Button>
+                )}
+                <div className="text-sm text-muted-foreground">
+                  Debit <span className="font-medium text-foreground">{totalDebit}</span>
+                  <span className="mx-2">/</span>
+                  Credit{' '}
+                  <span className="font-medium text-foreground">{totalCredit}</span>
+                </div>
               </div>
             </div>
             {lines.length === 0 ? (
@@ -448,6 +530,7 @@ function JournalDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {isDraft && <Th className="w-10" />}
                     <Th>Account</Th>
                     <Th>Debit</Th>
                     <Th>Credit</Th>
@@ -456,7 +539,7 @@ function JournalDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lines.map((line) =>
+                  {lines.map((line, index) =>
                     editingLineId === line.id ? (
                       <LineEditRow
                         key={line.id}
@@ -466,7 +549,28 @@ function JournalDetailPage() {
                         onSave={(patch) => handleUpdateLine(line, patch)}
                       />
                     ) : (
-                      <TableRow key={line.id}>
+                      <TableRow
+                        key={line.id}
+                        draggable={isDraft}
+                        onDragStart={() => handleDragStart(index)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={() => handleDrop(index)}
+                        onDragEnd={handleDragEnd}
+                        className={[
+                          dragIndex === index ? 'opacity-50' : undefined,
+                          isDraft && dragIndex !== null && dropTargetIndex === index
+                            ? 'bg-primary/10 ring-1 ring-inset ring-primary'
+                            : undefined,
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                      >
+                        {isDraft && (
+                          <Td className="w-10 cursor-grab text-center text-muted-foreground">
+                            <GripVertical className="mx-auto h-4 w-4" />
+                          </Td>
+                        )}
                         <Td>{accountName(line.account_id)}</Td>
                         <Td>{line.debit ? Number(line.debit).toLocaleString() : '—'}</Td>
                         <Td>{line.credit ? Number(line.credit).toLocaleString() : '—'}</Td>
@@ -512,6 +616,7 @@ function JournalDetailPage() {
                           setNewLine((prev) => ({ ...prev, account_id: value ?? '' }))
                         }
                         placeholder="Select account…"
+                        allowCreate
                       />
                     </Field>
                   </div>
@@ -716,8 +821,9 @@ function LineEditRow({
 
   return (
     <TableRow>
+      <Td className="w-10" />
       <Td>
-        <AccountSelect value={accountId} onValueChange={(v) => setAccountId(v ?? '')} placeholder="Select account…" />
+        <AccountSelect value={accountId} onValueChange={(v) => setAccountId(v ?? '')} placeholder="Select account…" allowCreate />
       </Td>
       <Td>
         <Input
