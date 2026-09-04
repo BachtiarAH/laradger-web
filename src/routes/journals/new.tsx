@@ -38,7 +38,9 @@ function NewJournalPage() {
   const navigate = useNavigate()
   const [transactionDate, setTransactionDate] = React.useState('')
   const [description, setDescription] = React.useState('')
-  const [reference, setReference] = React.useState('')
+  const [nextReference, setNextReference] = React.useState('')
+  const [referenceCustom, setReferenceCustom] = React.useState(false)
+  const [customReference, setCustomReference] = React.useState('')
   const [status, setStatus] = React.useState<JournalStatus>('draft')
   const [source] = React.useState<JournalSource>('manual')
   const [lines, setLines] = React.useState<LineDraft[]>([])
@@ -54,8 +56,8 @@ function NewJournalPage() {
   const allTags = React.useMemo(() => [...(tags.data?.data ?? []), ...extraTags], [tags.data, extraTags])
 
   React.useEffect(() => {
-    if (nextRef.data && !reference) {
-      setReference(nextRef.data)
+    if (nextRef.data) {
+      setNextReference(nextRef.data)
     }
   }, [nextRef.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -90,18 +92,30 @@ function NewJournalPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    if (referenceCustom) {
+      const trimmed = customReference.trim()
+      if (!trimmed) {
+        setError(new Error('Custom reference cannot be empty — enter a value or click “Use auto-generate”.'))
+        return
+      }
+      if (trimmed.length > 255) {
+        setError(new Error('Reference must not exceed 255 characters.'))
+        return
+      }
+    }
+    const linesPayload = lines.map((line) => ({
+      account_id: line.account_id,
+      ...(line.debit ? { debit: Number(line.debit) } : {}),
+      ...(line.credit ? { credit: Number(line.credit) } : {}),
+      ...(line.description ? { description: line.description } : {}),
+    }))
     const payload = {
       transaction_date: transactionDate,
       description,
-      reference,
+      ...(referenceCustom && customReference.trim() ? { reference: customReference.trim() } : {}),
       status,
       source,
-      lines: lines.map((line) => ({
-        account_id: line.account_id,
-        ...(line.debit ? { debit: Number(line.debit) } : {}),
-        ...(line.credit ? { credit: Number(line.credit) } : {}),
-        ...(line.description ? { description: line.description } : {}),
-      })),
+      lines: linesPayload,
       ...(tagIds.length > 0 ? { tags: tagIds } : {}),
       ...(status === 'posted' && adjustments.length > 0
         ? {
@@ -113,7 +127,7 @@ function NewJournalPage() {
             })),
           }
         : {}),
-    }
+    } as Parameters<typeof api.createJournal>[0]
 
     if (!payload.lines[0]?.account_id) {
       setError(new Error('Each line must have an account selected.'))
@@ -187,13 +201,45 @@ function NewJournalPage() {
                   onChange={(e) => setTransactionDate(e.target.value)}
                 />
               </Field>
-              <Field label="Reference" htmlFor="reference">
-                <Input
-                  id="reference"
-                  value={reference}
-                  onChange={(e) => setReference(e.target.value)}
-                />
-              </Field>
+              {referenceCustom ? (
+                <Field label="Reference" htmlFor="reference">
+                  <Input
+                    id="reference"
+                    value={customReference}
+                    onChange={(e) => setCustomReference(e.target.value)}
+                    placeholder={nextReference ? `Auto: ${nextReference}` : 'Custom reference'}
+                    maxLength={255}
+                  />
+                  <div className="mt-1 flex gap-1">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => {
+                        setReferenceCustom(false)
+                        setCustomReference('')
+                      }}
+                    >
+                      Use auto-generate
+                    </Button>
+                  </div>
+                </Field>
+              ) : (
+                <Field label="Reference">
+                  <div className="flex items-center gap-2">
+                    <Input disabled value="Auto-generated" className="font-mono" />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="h-8 px-2.5"
+                      onClick={() => setReferenceCustom(true)}
+                    >
+                      Custom
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">Will be generated server-side (JRN-YYYY-XXXX, unique per tenant, retry-safe). Click Custom to set manually — not sent when auto, so no race.</p>
+                </Field>
+              )}
               <Field label="Status" htmlFor="status">
                 <Select
                   value={status}

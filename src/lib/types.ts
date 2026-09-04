@@ -131,7 +131,7 @@ export type JournalAllocationAdjustment = {
 export type JournalStore = {
   transaction_date: string
   description: string
-  reference: string
+  reference?: string
   status: JournalStatus
   source: JournalSource
   reverse_from_id?: string | null
