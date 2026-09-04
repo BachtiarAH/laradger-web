@@ -162,16 +162,22 @@ function AccountsPage() {
 
   const allAccounts: Account[] = React.useMemo(() => data?.data ?? [], [data])
 
-  // build hierarchy map + helper sets
+  // build hierarchy map + helper sets — only main parents may be ROOT
   const { childrenMap, hasChildrenSet, accountMap } = React.useMemo(() => {
     const cm = new Map<string, Account[]>()
     const am = new Map<string, Account>()
+    const isMainParent = (a: Account) =>
+      a.parent_id == null && (a.depth === 0 || !a.code.includes('-'))
     for (const a of allAccounts) {
       am.set(a.id, a)
       const pid = a.parent_id ?? 'ROOT'
       if (!cm.has(pid)) cm.set(pid, [])
       cm.get(pid)!.push(a)
     }
+    // filter ROOT to only main parents — sub-parents with null parent_id (orphans) must not appear as top-level
+    const root = cm.get('ROOT') ?? []
+    const filteredRoot = root.filter(isMainParent)
+    cm.set('ROOT', filteredRoot)
     const hs = new Set<string>()
     for (const a of allAccounts) if (cm.has(a.id)) hs.add(a.id)
     return { childrenMap: cm, hasChildrenSet: hs, accountMap: am }
@@ -231,15 +237,20 @@ function AccountsPage() {
     const isSearchActive = search.trim().length > 0
     type Row = { account: Account; depth: number; hasChildren: boolean; isCollapsed: boolean }
     const rows: Row[] = []
+    const visited = new Set<string>()
 
     if (viewMode === 'tree') {
       const traverse = (parentId: string, depth: number, ancestorVisible: boolean) => {
         let children = [...(childrenMap.get(parentId) ?? [])].sort(comparator)
         for (const node of children) {
+          if (visited.has(node.id)) continue
           if (!nodeOrDescendantMatches(node)) continue
           const hasChildren = hasChildrenSet.has(node.id)
           const isCollapsed = collapsedNodes.has(node.id)
-          if (ancestorVisible) rows.push({ account: node, depth, hasChildren, isCollapsed })
+          if (ancestorVisible) {
+            visited.add(node.id)
+            rows.push({ account: node, depth, hasChildren, isCollapsed })
+          }
           const shouldShowChildren = ancestorVisible && (!isCollapsed || isSearchActive)
           if (hasChildren) traverse(node.id, depth + 1, shouldShowChildren)
         }
