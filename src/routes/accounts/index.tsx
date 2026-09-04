@@ -78,16 +78,33 @@ function highlight(text: string, keyword: string): string {
 }
 
 // ── Statistics ───────────────────────────────────────────────────────────
-function StatisticsCards({ accounts, loading }: { accounts: Account[]; loading: boolean }) {
-  const sum = (types: string[]) =>
-    accounts
+function StatisticsCards({
+  accounts,
+  loading,
+  getAggregatedNet,
+}: {
+  accounts: Account[]
+  loading: boolean
+  getAggregatedNet: (a: Account) => number
+}) {
+  // Use aggregated roll-up for headers so parent totals aren't double-counted: sum only ROOT-level mains
+  const isRoot = (a: Account) => a.parent_id == null && (a.depth === 0 || !a.code.includes('-'))
+  const hasRoots = accounts.some(isRoot)
+  const sumByType = (types: string[]) => {
+    if (hasRoots) {
+      return accounts
+        .filter((a) => isRoot(a) && types.includes(a.type))
+        .reduce((s, a) => s + getAggregatedNet(a), 0)
+    }
+    return accounts
       .filter((a) => types.includes(a.type))
       .reduce((s, a) => s + Number(a.net ?? a.balance ?? 0), 0)
+  }
 
-  const assets = sum(['asset'])
-  const liabilities = sum(['liability'])
-  const equity = sum(['equity'])
-  const revenue = sum(['income'])
+  const assets = sumByType(['asset'])
+  const liabilities = sumByType(['liability'])
+  const equity = sumByType(['equity'])
+  const revenue = sumByType(['income'])
 
   // header = has children, detail = leaf
   const childrenIds = new Set(accounts.map((a) => a.parent_id).filter(Boolean))
@@ -183,6 +200,40 @@ function AccountsPage() {
     return { childrenMap: cm, hasChildrenSet: hs, accountMap: am }
   }, [allAccounts])
 
+  // aggregated net per account = sum of children's aggregated nets (parents show roll-up)
+  const aggregatedNetMap = React.useMemo(() => {
+    const map = new Map<string, number>()
+    const visiting = new Set<string>()
+    const directNet = (a: Account) => Number(a.net ?? a.balance ?? 0)
+    const dfs = (id: string): number => {
+      if (map.has(id)) return map.get(id)!
+      if (visiting.has(id)) return 0
+      visiting.add(id)
+      const acc = accountMap.get(id)
+      const children = childrenMap.get(id) ?? []
+      if (children.length === 0) {
+        const v = acc ? directNet(acc) : 0
+        map.set(id, v)
+        visiting.delete(id)
+        return v
+      }
+      let sum = 0
+      for (const c of children) sum += dfs(c.id)
+      // Header accounts are not postable: aggregated = sum of children (ignore own direct to avoid double count).
+      // If you need to include parent's own postings, change to: sum + (acc ? directNet(acc) : 0)
+      map.set(id, sum)
+      visiting.delete(id)
+      return sum
+    }
+    for (const a of allAccounts) dfs(a.id)
+    return map
+  }, [allAccounts, childrenMap, accountMap])
+
+  const getAggregatedNet = React.useCallback(
+    (a: Account) => aggregatedNetMap.get(a.id) ?? Number(a.net ?? a.balance ?? 0),
+    [aggregatedNetMap],
+  )
+
   const getBreadcrumb = React.useCallback(
     (acc: Account): Account[] => {
       const path: Account[] = [acc]
@@ -205,10 +256,10 @@ function AccountsPage() {
       if (filterCategory !== 'ALL' && a.type !== filterCategory) return false
       if (filterNodeType === 'HEADER' && !hasChildrenSet.has(a.id)) return false
       if (filterNodeType === 'POSTABLE' && hasChildrenSet.has(a.id)) return false
-      if (filterNonZero && Number(a.net ?? a.balance ?? 0) === 0) return false
+      if (filterNonZero && getAggregatedNet(a) === 0) return false
       return true
     },
-    [search, filterCategory, filterNodeType, filterNonZero, hasChildrenSet],
+    [search, filterCategory, filterNodeType, filterNonZero, hasChildrenSet, getAggregatedNet],
   )
 
   // check if node or any descendant matches (for tree pruning)
@@ -227,10 +278,10 @@ function AccountsPage() {
       if (sortBy === 'code') res = a.code.localeCompare(b.code)
       else if (sortBy === 'name') res = a.name.localeCompare(b.name)
       else if (sortBy === 'category') res = a.type.localeCompare(b.type)
-      else if (sortBy === 'balance') res = Number(a.net ?? a.balance ?? 0) - Number(b.net ?? b.balance ?? 0)
+      else if (sortBy === 'balance') res = getAggregatedNet(a) - getAggregatedNet(b)
       return sortOrder === 'asc' ? res : -res
     },
-    [sortBy, sortOrder],
+    [sortBy, sortOrder, getAggregatedNet],
   )
 
   const renderedRows = React.useMemo(() => {
@@ -349,7 +400,7 @@ function AccountsPage() {
         {actionError != null && <div className="mb-4"><ErrorBox error={actionError} /></div>}
         {error != null && <div className="mb-4"><ErrorBox error={error} /></div>}
 
-        <StatisticsCards accounts={allAccounts} loading={loading} />
+        <StatisticsCards accounts={allAccounts} loading={loading} getAggregatedNet={getAggregatedNet} />
 
         {/* Toolbar like example.txt */}
         <Card className="mb-4 p-4 bg-muted/30 gap-0">
@@ -486,7 +537,7 @@ function AccountsPage() {
                     const codeHtml = highlight(account.code, search.trim())
                     const nameHtml = highlight(account.name, search.trim())
                     const cat = categoryBadge(account.type)
-                    const balanceVal = Number(account.net ?? account.balance ?? 0)
+                    const balanceVal = getAggregatedNet(account)
                     const balanceFmt = formatIDR(balanceVal)
                     const balanceColor = balanceVal < 0 ? 'text-destructive font-mono font-medium' : balanceVal === 0 ? 'text-muted-foreground font-mono' : 'text-foreground font-mono font-medium'
                     const normalIsDebit = isDebitNormal(account.type)
@@ -603,8 +654,8 @@ function AccountsPage() {
                   </div>
                 </div>
                 <div className="bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 rounded-xl p-4">
-                  <span className="text-xs text-indigo-700 dark:text-indigo-300 font-medium">Saldo Berjalan Saat Ini</span>
-                  <div className="text-2xl font-bold font-mono mt-1">{formatIDR(Number(drawerAccount.net ?? drawerAccount.balance ?? 0))}</div>
+                  <span className="text-xs text-indigo-700 dark:text-indigo-300 font-medium">Saldo Berjalan Saat Ini {hasChildrenSet.has(drawerAccount.id) ? '(Roll-up)' : ''}</span>
+                  <div className="text-2xl font-bold font-mono mt-1">{formatIDR(getAggregatedNet(drawerAccount))}</div>
                   <div className="flex items-center gap-2 mt-2">
                     <span className="text-xs px-2 py-0.5 rounded-md bg-background border text-indigo-800 dark:text-indigo-200 font-medium">Saldo Normal: {isDebitNormal(drawerAccount.type) ? 'DEBIT' : 'CREDIT'}</span>
                     <span className="text-xs px-2 py-0.5 rounded-md bg-background border">Tipe: {hasChildrenSet.has(drawerAccount.id) ? 'Induk (Header)' : 'Transaksi'}</span>
