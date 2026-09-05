@@ -4,10 +4,15 @@ import { api } from '../lib/api'
 import { useFetch } from '../lib/useFetch'
 import { useAuth } from '../lib/auth'
 import { Button, Card, LoadingBox, ErrorBox } from '../components/ui'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import {
   ArrowUpRight,
   ArrowDownRight,
   TrendingUp,
+  Wallet,
+  PiggyBank,
+  ShieldCheck,
+  Info,
 } from 'lucide-react'
 import type { Overview, WealthPoint } from '../lib/types'
 
@@ -85,11 +90,11 @@ function WealthDonut({ assets, liabilities }: { assets: number; liabilities: num
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="rgba(255,255,255,0.25)"
+            stroke="hsl(var(--muted-foreground) / 0.25)"
             strokeWidth={stroke}
           />
         </svg>
-        <p className="mt-2 text-xs text-emerald-100/80">No data yet</p>
+        <p className="mt-2 text-xs text-muted-foreground">No data yet</p>
       </div>
     )
   }
@@ -123,17 +128,17 @@ function WealthDonut({ assets, liabilities }: { assets: number; liabilities: num
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Assets vs liabilities">
         <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
           {assetLen > 0 && (
-            <circle {...sliceProps('assets', 0, `${Math.max(assetLen - gap, 0)} ${circumference}`, '#a7f3d0')} />
+            <circle {...sliceProps('assets', 0, `${Math.max(assetLen - gap, 0)} ${circumference}`, '#34d399')} />
           )}
           {liabilityLen > 0 && (
-            <circle {...sliceProps('liabilities', Math.max(assetLen, 0), `${Math.max(liabilityLen - gap, 0)} ${circumference}`, '#fda4af')} />
+            <circle {...sliceProps('liabilities', Math.max(assetLen, 0), `${Math.max(liabilityLen - gap, 0)} ${circumference}`, '#fb7185')} />
           )}
         </g>
         <text
           x="50%"
           y="47%"
           textAnchor="middle"
-          className="fill-white text-lg font-extrabold"
+          className="fill-foreground text-lg font-extrabold"
         >
           {formatCompactIDR(centerValue)}
         </text>
@@ -141,12 +146,12 @@ function WealthDonut({ assets, liabilities }: { assets: number; liabilities: num
           x="50%"
           y="58%"
           textAnchor="middle"
-          className="fill-emerald-100 text-[11px] opacity-80"
+          className="fill-muted-foreground text-[11px] opacity-80"
         >
           {centerLabel}
         </text>
       </svg>
-      <div className="mt-3 flex justify-center gap-4 text-xs text-emerald-100">
+      <div className="mt-3 flex justify-center gap-4 text-xs text-muted-foreground">
         <button
           type="button"
           className="flex cursor-pointer items-center gap-1.5"
@@ -155,7 +160,7 @@ function WealthDonut({ assets, liabilities }: { assets: number; liabilities: num
           onFocus={() => setHovered('assets')}
           onBlur={() => setHovered(null)}
         >
-          <span className="size-2 rounded-full bg-emerald-200" />
+          <span className="size-2 rounded-full bg-emerald-500" />
           Assets {formatCompactIDR(assets)}
         </button>
         <button
@@ -166,7 +171,7 @@ function WealthDonut({ assets, liabilities }: { assets: number; liabilities: num
           onFocus={() => setHovered('liabilities')}
           onBlur={() => setHovered(null)}
         >
-          <span className="size-2 rounded-full bg-rose-300" />
+          <span className="size-2 rounded-full bg-rose-500" />
           Liabilities {formatCompactIDR(liabilities)}
         </button>
       </div>
@@ -178,7 +183,7 @@ function WealthTrend({ history }: { history: WealthPoint[] }) {
   const values = history.map((p) => Number(p.net_worth))
   if (values.length < 2 || values.every((v) => !Number.isFinite(v))) {
     return (
-      <p className="py-8 text-center text-sm text-emerald-100/70">
+      <p className="py-8 text-center text-sm text-muted-foreground">
         Not enough data for a trend yet.
       </p>
     )
@@ -214,8 +219,8 @@ function WealthTrend({ history }: { history: WealthPoint[] }) {
       >
         <defs>
           <linearGradient id="wealth-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={isPositive ? '#a7f3d0' : '#fda4af'} stopOpacity="0.5" />
-            <stop offset="100%" stopColor={isPositive ? '#a7f3d0' : '#fda4af'} stopOpacity="0.02" />
+            <stop offset="0%" stopColor={isPositive ? '#34d399' : '#fb7185'} stopOpacity="0.5" />
+            <stop offset="100%" stopColor={isPositive ? '#34d399' : '#fb7185'} stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
@@ -224,7 +229,7 @@ function WealthTrend({ history }: { history: WealthPoint[] }) {
           x2={width - padX}
           y1={zeroY}
           y2={zeroY}
-          stroke="rgba(255,255,255,0.3)"
+          stroke="hsl(var(--muted-foreground) / 0.3)"
           strokeWidth={1}
           strokeDasharray="3 4"
         />
@@ -233,7 +238,7 @@ function WealthTrend({ history }: { history: WealthPoint[] }) {
         <polyline
           points={points}
           fill="none"
-          stroke={isPositive ? '#6ee7b7' : '#fda4af'}
+          stroke={isPositive ? '#10b981' : '#f43f5e'}
           strokeWidth={2.5}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -241,18 +246,96 @@ function WealthTrend({ history }: { history: WealthPoint[] }) {
 
         {values.map((v, i) =>
           i === values.length - 1 ? (
-            <circle key={i} cx={x(i)} cy={y(v)} r={4} fill="#fff" stroke={isPositive ? '#059669' : '#be123c'} strokeWidth={2} />
+            <circle key={i} cx={x(i)} cy={y(v)} r={4} fill="hsl(var(--background))" stroke={isPositive ? '#059669' : '#be123c'} strokeWidth={2} />
           ) : null,
         )}
 
-        <text x={padX} y={height - 6} textAnchor="start" className="fill-emerald-100 text-[10px] opacity-80">
+        <text x={padX} y={height - 6} textAnchor="start" className="fill-muted-foreground text-[10px] opacity-80">
           {monthLabel(history[0].month)}
         </text>
-        <text x={width - padX} y={height - 6} textAnchor="end" className="fill-emerald-100 text-[10px] opacity-80">
+        <text x={width - padX} y={height - 6} textAnchor="end" className="fill-muted-foreground text-[10px] opacity-80">
           {monthLabel(history[history.length - 1].month)}
         </text>
       </svg>
     </div>
+  )
+}
+
+function SafeMoneyHero({ overview }: { overview: Overview }) {
+  const eligible = Number(overview.eligible_assets ?? overview.assets.balance)
+  const allocated = Number(overview.allocated?.total_allocated ?? 0)
+  const target = Number(overview.allocated?.total_target ?? 0)
+  const unfunded = Number(overview.allocated?.unfunded ?? Math.max(0, target - allocated))
+  const safe = Number(overview.safe_money)
+  const isOver = overview.is_over_allocated ?? safe < 0
+  const formula = overview.safe_money_formula ?? 'eligible_assets - active_allocated - other_obligations'
+
+  return (
+    <TooltipProvider>
+      <div className={`relative overflow-hidden rounded-2xl p-6 sm:p-8 ring-1 ring-foreground/10 ${isOver ? 'bg-rose-50 dark:bg-rose-950/20' : 'bg-card'}`}>
+        <div className="relative">
+          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <ShieldCheck className="size-4" />
+            Safe to Spend
+          </p>
+          <div className="mt-3 grid gap-6 lg:grid-cols-3">
+            <div className="rounded-xl bg-muted/50 p-4">
+              <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Wallet className="size-3.5" /> Total Assets</p>
+              <p className="mt-1 text-2xl font-extrabold text-foreground">{formatIDR(String(eligible))}</p>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
+                    <Info className="size-3" />
+                    <span>Eligible (asset aktif, posted+archived)</span>
+                  </p>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Total assets yang eligible untuk alokasi safe money (hanya asset aktif, posted dan archived)</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="rounded-xl bg-muted/50 p-4">
+              <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><PiggyBank className="size-3.5" /> Allocated</p>
+              <p className="mt-1 text-2xl font-extrabold text-foreground">{formatIDR(String(allocated))}</p>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
+                    <Info className="size-3" />
+                    <span>Target {formatIDR(String(target))} {unfunded > 0 ? `· Unfunded ${formatIDR(String(unfunded))}` : '· Fully funded'}</span>
+                  </p>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Total allocation saat ini vs target allocation yang telah diset</p>
+                  {unfunded > 0 && <p className="mt-1 text-xs text-muted-foreground">Unfunded: {formatIDR(String(unfunded))} (kekurangan dari target)</p>}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div className={`rounded-xl p-4 ${isOver ? 'bg-rose-100 dark:bg-rose-900/30 ring-1 ring-rose-200 dark:ring-rose-800' : 'bg-emerald-100 dark:bg-emerald-900/30 ring-1 ring-emerald-200 dark:ring-emerald-800'}`}>
+              <p className="text-xs font-medium text-muted-foreground">Safe to Spend</p>
+              <p className={`mt-1 text-2xl font-extrabold ${isOver ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}`}>{formatIDR(String(safe))}</p>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
+                    <Info className="size-3" />
+                    <span className="font-mono">{formula}</span>
+                  </p>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="font-mono text-xs">{formula}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatIDR(String(eligible))} − {formatIDR(String(allocated))} − {formatIDR(overview.other_obligations ?? '0.00')}
+                  </p>
+                  <p className="mt-2 text-xs">
+                    Target boleh melebihi saldo (aspirasi), Reserved strict tidak boleh melebihi saldo saat allocate.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+              {isOver && <p className="mt-2 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white">Over-allocated — release atau top-up</p>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </TooltipProvider>
   )
 }
 
@@ -266,50 +349,62 @@ function WealthHero({ overview }: { overview: Overview }) {
   const delta = previous == null ? null : netWorth - previous
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-800 p-6 text-white shadow-lg sm:p-8">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-24 -top-24 size-64 rounded-full bg-white/10 blur-2xl"
-      />
-      <div className="relative grid items-center gap-8 lg:grid-cols-[minmax(0,1.1fr)_auto_minmax(0,1fr)]">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-emerald-100">
-            Net Worth
-          </p>
-          <p className={`mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl ${netWorth < 0 ? 'text-rose-200' : ''}`}>
-            {formatIDR(overview.net_worth)}
-          </p>
-          {delta != null && (
-            <p className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${delta >= 0 ? 'bg-emerald-400/25 text-emerald-50' : 'bg-rose-400/25 text-rose-100'}`}>
-              {delta >= 0 ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
-              {formatIDR(String(Math.abs(delta)))} from last month
+    <TooltipProvider>
+      <div className="relative overflow-hidden rounded-2xl bg-card p-6 ring-1 ring-foreground/10 sm:p-8">
+        <div className="relative grid items-center gap-8 lg:grid-cols-[minmax(0,1.1fr)_auto_minmax(0,1fr)]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Net Worth
             </p>
-          )}
-          <div className="mt-5 flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm font-medium backdrop-blur">
-              <span className="size-2 rounded-full bg-emerald-200" />
-              Assets {formatIDR(overview.assets.balance)}
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm font-medium backdrop-blur">
-              <span className="size-2 rounded-full bg-rose-300" />
-              Liabilities {formatIDR(overview.liabilities.balance)}
-            </span>
+            <p className={`mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl text-foreground ${netWorth < 0 ? 'text-rose-600 dark:text-rose-400' : ''}`}>
+              {formatIDR(overview.net_worth)}
+            </p>
+            {delta != null && (
+              <p className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${delta >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300'}`}>
+                {delta >= 0 ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
+                {formatIDR(String(Math.abs(delta)))} from last month
+              </p>
+            )}
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 text-sm font-medium text-emerald-700 dark:text-emerald-300 cursor-help">
+                    <span className="size-2 rounded-full bg-emerald-500" />
+                    Assets {formatIDR(overview.assets.balance)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Total assets balance</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 dark:bg-rose-900/30 px-3 py-1 text-sm font-medium text-rose-700 dark:text-rose-300 cursor-help">
+                    <span className="size-2 rounded-full bg-rose-500" />
+                    Liabilities {formatIDR(overview.liabilities.balance)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Total liabilities balance</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-        </div>
 
-        <WealthDonut assets={assets} liabilities={liabilities} />
+          <WealthDonut assets={assets} liabilities={liabilities} />
 
-        <div className="lg:pl-4">
-          <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-100">
-            <TrendingUp className="size-4" />
-            6-Month Trend
-          </p>
-          <div className="mt-3">
-            <WealthTrend history={history} />
+          <div className="lg:pl-4">
+            <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              <TrendingUp className="size-4" />
+              6-Month Trend
+            </p>
+            <div className="mt-3">
+              <WealthTrend history={history} />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   )
 }
 
@@ -327,6 +422,11 @@ export default function OverviewPage() {
       unbudgeted_income: '0.00',
       net_budgeted: '0.00',
       safe_money: '0.00',
+      safe_money_formula: 'eligible_assets - active_allocated - other_obligations',
+      eligible_assets: '0.00',
+      allocated: { total_allocated: '0.00', total_target: '0.00', unfunded: '0.00' },
+      other_obligations: '0.00',
+      is_over_allocated: false,
       assets: { balance: '0.00' },
       liabilities: { balance: '0.00' },
       net_worth: '0.00',
@@ -428,6 +528,7 @@ export default function OverviewPage() {
       {overview.data && (
         <div className="space-y-6">
           <WealthHero overview={overview.data} />
+          <SafeMoneyHero overview={overview.data} />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Card className="p-5">
