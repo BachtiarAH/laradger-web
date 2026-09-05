@@ -122,7 +122,7 @@ function QuickTransactionPage() {
         }
       />
 
-      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+      <div className="mb-4 -mx-1 flex gap-2 overflow-x-auto overflow-y-visible px-1 py-1">
         {tabs.map((t) => (
           <button
             key={t.id}
