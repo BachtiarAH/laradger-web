@@ -81,9 +81,14 @@ function JournalsPage() {
         title="Journals"
         subtitle="Journal entries with lines and tags"
         actions={
-          <Link to="/journals/new">
-            <Button>New journal</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to="/transactions/new">
+              <Button>Quick Transaction</Button>
+            </Link>
+            <Link to="/journals/new">
+              <Button variant="secondary">Manual Journal</Button>
+            </Link>
+          </div>
         }
       />
 

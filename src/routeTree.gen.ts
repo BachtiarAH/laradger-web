@@ -32,6 +32,7 @@ import { Route as TagsIndexRouteImport } from './routes/tags/index'
 import { Route as TemplatesIndexRouteImport } from './routes/templates/index'
 import { Route as TemplatesTemplateIdRouteImport } from './routes/templates/$templateId'
 import { Route as TemplatesNewRouteImport } from './routes/templates/new'
+import { Route as TransactionsNewRouteImport } from './routes/transactions/new'
 import { Route as AdminUsersIndexRouteImport } from './routes/admin/users/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -149,6 +150,11 @@ const TemplatesNewRoute = TemplatesNewRouteImport.update({
   path: '/templates/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TransactionsNewRoute = TransactionsNewRouteImport.update({
+  id: '/transactions/new',
+  path: '/transactions/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
   id: '/admin/users/',
   path: '/admin/users/',
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/journals/new': typeof JournalsNewRoute
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
   '/templates/new': typeof TemplatesNewRoute
+  '/transactions/new': typeof TransactionsNewRoute
   '/accounts/': typeof AccountsIndexRoute
   '/allocations/': typeof AllocationsIndexRoute
   '/audit-logs/': typeof AuditLogsIndexRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/journals/new': typeof JournalsNewRoute
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
   '/templates/new': typeof TemplatesNewRoute
+  '/transactions/new': typeof TransactionsNewRoute
   '/accounts': typeof AccountsIndexRoute
   '/allocations': typeof AllocationsIndexRoute
   '/audit-logs': typeof AuditLogsIndexRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/journals/new': typeof JournalsNewRoute
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
   '/templates/new': typeof TemplatesNewRoute
+  '/transactions/new': typeof TransactionsNewRoute
   '/accounts/': typeof AccountsIndexRoute
   '/allocations/': typeof AllocationsIndexRoute
   '/audit-logs/': typeof AuditLogsIndexRoute
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
     | '/journals/new'
     | '/templates/$templateId'
     | '/templates/new'
+    | '/transactions/new'
     | '/accounts/'
     | '/allocations/'
     | '/audit-logs/'
@@ -279,6 +289,7 @@ export interface FileRouteTypes {
     | '/journals/new'
     | '/templates/$templateId'
     | '/templates/new'
+    | '/transactions/new'
     | '/accounts'
     | '/allocations'
     | '/audit-logs'
@@ -305,6 +316,7 @@ export interface FileRouteTypes {
     | '/journals/new'
     | '/templates/$templateId'
     | '/templates/new'
+    | '/transactions/new'
     | '/accounts/'
     | '/allocations/'
     | '/audit-logs/'
@@ -332,6 +344,7 @@ export interface RootRouteChildren {
   JournalsNewRoute: typeof JournalsNewRoute
   TemplatesTemplateIdRoute: typeof TemplatesTemplateIdRoute
   TemplatesNewRoute: typeof TemplatesNewRoute
+  TransactionsNewRoute: typeof TransactionsNewRoute
   AccountsIndexRoute: typeof AccountsIndexRoute
   AllocationsIndexRoute: typeof AllocationsIndexRoute
   AuditLogsIndexRoute: typeof AuditLogsIndexRoute
@@ -505,6 +518,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TemplatesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/transactions/new': {
+      id: '/transactions/new'
+      path: '/transactions/new'
+      fullPath: '/transactions/new'
+      preLoaderRoute: typeof TransactionsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/users/': {
       id: '/admin/users/'
       path: '/admin/users'
@@ -532,6 +552,7 @@ const rootRouteChildren: RootRouteChildren = {
   JournalsNewRoute: JournalsNewRoute,
   TemplatesTemplateIdRoute: TemplatesTemplateIdRoute,
   TemplatesNewRoute: TemplatesNewRoute,
+  TransactionsNewRoute: TransactionsNewRoute,
   AccountsIndexRoute: AccountsIndexRoute,
   AllocationsIndexRoute: AllocationsIndexRoute,
   AuditLogsIndexRoute: AuditLogsIndexRoute,

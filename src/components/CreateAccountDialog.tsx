@@ -29,6 +29,7 @@ export function CreateAccountDialog({
   description,
   parentId,
   excludeId,
+  lockType,
   onCreated,
 }: {
   open: boolean
@@ -37,6 +38,7 @@ export function CreateAccountDialog({
   description?: string
   parentId?: string | null
   excludeId?: string | null
+  lockType?: boolean
   onCreated: (account: Account) => void
 }) {
   const [name, setName] = React.useState('')
@@ -107,6 +109,7 @@ export function CreateAccountDialog({
               <Select
                 value={type}
                 onValueChange={(value) => setType(value as AccountType)}
+                disabled={!!lockType}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -119,6 +122,7 @@ export function CreateAccountDialog({
                   <SelectItem value="expense">expense</SelectItem>
                 </SelectContent>
               </Select>
+              {lockType && <p className="mt-1 text-xs text-muted-foreground">Tipe terkunci sesuai kategori transaksi.</p>}
             </Field>
             <Field label="Currency" htmlFor="create_account_currency">
               <Input

@@ -34,6 +34,8 @@ type Props = {
   type?: string
   leafOnly?: boolean
   hasError?: boolean
+  lockCreateType?: boolean
+  createDescription?: string
 }
 
 export function AccountSelect({
@@ -48,6 +50,8 @@ export function AccountSelect({
   type,
   leafOnly = false,
   hasError = false,
+  lockCreateType = false,
+  createDescription,
 }: Props) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
@@ -218,6 +222,9 @@ export function AccountSelect({
       <CreateAccountDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
+        suggested={type ? { type: type as Account['type'] } : undefined}
+        description={createDescription}
+        lockType={!!lockCreateType && !!type}
         onCreated={(account) => {
           onValueChange(account.id)
           setCreateOpen(false)

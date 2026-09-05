@@ -390,6 +390,9 @@ export const api = {
   listAuditLogs: (params: { page?: number; per_page?: number } = {}) =>
     get<RawList<AuditLog>>(tenantPath(`/audit-logs${toQuery(params)}`)).then(asList),
   getAuditLog: (id: string) => get<ApiEnvelope<AuditLog>>(tenantPath(`/audit-logs/${id}`)),
+
+  createTransaction: (payload: import('./types').QuickTransactionStore) =>
+    post<ApiEnvelope<Journal>>(tenantPath('/transactions'), payload),
 }
 
 type RawList<T> = {

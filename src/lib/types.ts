@@ -404,6 +404,26 @@ export type AuthResponse = {
   tenant?: Tenant
 }
 
+export type QuickTransactionType = 'expense' | 'income' | 'transfer' | 'debt_payment'
+
+export type QuickTransactionStore = {
+  type: QuickTransactionType
+  amount: number
+  description: string
+  transaction_date?: string
+  reference?: string
+  status?: JournalStatus
+  payment_method?: 'cash' | 'credit'
+  tags?: string[]
+  asset_account_id?: string
+  expense_account_id?: string
+  income_account_id?: string
+  from_account_id?: string
+  to_account_id?: string
+  via_account_ids?: string[]
+  liability_account_id?: string
+}
+
 export type RegisterPayload = {
   name: string
   email: string

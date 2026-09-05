@@ -182,12 +182,20 @@ function NewJournalPage() {
         title="New journal"
         subtitle="Create a journal entry with balanced debit/credit lines"
         actions={
-          <Button
-            variant="secondary"
-            onClick={() => navigate({ to: '/journals' })}
-          >
-            Back
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => navigate({ to: '/transactions/new' })}
+            >
+              Quick Transaction
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => navigate({ to: '/journals' })}
+            >
+              Back
+            </Button>
+          </div>
         }
       />
 
