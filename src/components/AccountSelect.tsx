@@ -32,6 +32,8 @@ type Props = {
   disabled?: boolean
   allowCreate?: boolean
   type?: string
+  leafOnly?: boolean
+  hasError?: boolean
 }
 
 export function AccountSelect({
@@ -44,6 +46,8 @@ export function AccountSelect({
   disabled = false,
   allowCreate = false,
   type,
+  leafOnly = false,
+  hasError = false,
 }: Props) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
@@ -119,7 +123,10 @@ export function AccountSelect({
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className="w-full justify-between font-normal"
+          className={cn(
+            'w-full justify-between font-normal',
+            hasError && 'border-destructive ring-1 ring-destructive/30',
+          )}
         >
           <span className={cn('truncate', !label && 'text-muted-foreground')}>
             {label ?? placeholder}
@@ -163,25 +170,40 @@ export function AccountSelect({
               {accounts.map((account) => {
                 const isExcluded = excludeId != null && account.id === excludeId
                 const isSelected = value === account.id
+                const isHeader = account.is_header
+                const headerBlocked = leafOnly && isHeader
+                const disabledItem = isExcluded || headerBlocked
+                const hint = 'tidak bisa dipakai transaksi'
                 return (
                   <CommandItem
                     key={account.id}
                     value={`${account.code} ${account.name} ${account.id}`}
                     onSelect={() => {
-                      if (!isExcluded) handleSelect(account.id)
+                      if (!disabledItem) handleSelect(account.id)
                     }}
-                    disabled={isExcluded}
+                    disabled={disabledItem}
                     className={cn(
                       'justify-between',
-                      isExcluded && 'opacity-50',
+                      disabledItem && 'opacity-60',
                     )}
                   >
                     <span className="flex flex-col">
-                      <span>
+                      <span className={cn(headerBlocked && 'text-muted-foreground')}>
                         {account.code} — {account.name}
+                        {isHeader && (
+                          <span
+                            title="Akun induk = folder grup, hanya untuk mengelompokkan. Transaksi harus pakai akun detail di bawahnya"
+                            className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                          >
+                            Induk
+                          </span>
+                        )}
                       </span>
                       {isExcluded && (
                         <span className="text-xs text-muted-foreground">Current account (cannot be parent)</span>
+                      )}
+                      {headerBlocked && (
+                        <span className="text-xs text-muted-foreground">{hint}</span>
                       )}
                     </span>
                     <Check className={cn('size-4', isSelected ? 'opacity-100' : 'opacity-0')} />

@@ -40,10 +40,12 @@ export type Account = {
   code: string
   name: string
   type: AccountType
+  is_header: boolean
   parent_id: string | null
   currency: string
   status: AccountStatus
   depth: number
+  children_count: number
   total_debit?: string | null
   total_credit?: string | null
   net?: string | null
@@ -59,6 +61,7 @@ export type AccountStore = {
   code?: string
   name: string
   type: AccountType
+  is_header?: boolean
   parent_id?: string | null
   currency: string
   status: AccountStatus

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
-import { api } from '../../lib/api'
+import { ApiError, api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
 import { RequireAuth } from '../../components/RequireAuth'
 import {
@@ -52,6 +52,17 @@ function NewJournalPage() {
   const accounts = useFetch(() => api.listAccounts({ per_page: 20 }), [])
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
   const nextRef = useFetch(() => api.nextJournalReference(), [])
+  const lineErrors = React.useMemo<Record<number, string>>(() => {
+    if (error instanceof ApiError && error.errors) {
+      const map: Record<number, string> = {}
+      for (const [field, msgs] of Object.entries(error.errors)) {
+        const m = field.match(/^lines\.(\d+)\.account_id$/)
+        if (m && msgs[0]) map[Number(m[1])] = msgs[0]
+      }
+      return map
+    }
+    return {}
+  }, [error])
   const [extraTags, setExtraTags] = React.useState<Tag[]>([])
   const allTags = React.useMemo(() => [...(tags.data?.data ?? []), ...extraTags], [tags.data, extraTags])
 
@@ -273,7 +284,17 @@ function NewJournalPage() {
             <h2 className="text-lg font-semibold text-foreground">
               Lines
             </h2>
-            <LineEditor lines={lines} onChange={setLines} />
+            <LineEditor
+              lines={lines}
+              onChange={(next) => {
+                setLines(next)
+                if (error instanceof ApiError && error.errors) {
+                  const hasLineErr = Object.keys(error.errors).some((k) => k.startsWith('lines.'))
+                  if (hasLineErr) setError(null)
+                }
+              }}
+              lineErrors={lineErrors}
+            />
           </Card>
 
           <Card className="p-6">

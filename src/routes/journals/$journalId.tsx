@@ -617,8 +617,15 @@ function JournalDetailPage() {
                         }
                         placeholder="Select account…"
                         allowCreate
+                        leafOnly
+                        hasError={Boolean(actionError instanceof ApiError && actionError.errors?.account_id)}
                       />
                     </Field>
+                    {actionError instanceof ApiError && actionError.errors?.account_id && (
+                      <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                        {actionError.errors.account_id[0]}
+                      </p>
+                    )}
                   </div>
                   <div className="col-span-2">
                     <Field label="Debit">
@@ -825,7 +832,7 @@ function LineEditRow({
     <TableRow>
       <Td className="w-10" />
       <Td>
-        <AccountSelect value={accountId} onValueChange={(v) => setAccountId(v ?? '')} placeholder="Select account…" allowCreate />
+        <AccountSelect value={accountId} onValueChange={(v) => setAccountId(v ?? '')} placeholder="Select account…" allowCreate leafOnly />
       </Td>
       <Td>
         <Input

@@ -97,22 +97,58 @@ export function Field({
   )
 }
 
-export function ErrorBox({ error }: { error: unknown }) {
+function friendlyField(field: string): string {
+  const lineMatch = field.match(/^lines\.(\d+)\.account_id$/)
+  if (lineMatch) return `Baris ${Number(lineMatch[1]) + 1} · Akun`
+  if (field.startsWith('lines.')) {
+    const m = field.match(/^lines\.(\d+)\.(.+)$/)
+    if (m) return `Baris ${Number(m[1]) + 1} · ${m[2]}`
+  }
+  if (field === 'account_id') return 'Akun'
+  if (field === 'parent_id') return 'Akun induk'
+  return field
+}
+
+export function ErrorBox({ error, onFieldClick }: { error: unknown; onFieldClick?: (field: string) => void }) {
   if (!error) return null
   if (error instanceof ApiError) {
+    const hasErrors = error.errors && Object.keys(error.errors).length > 0
     return (
       <Alert variant="destructive">
         <AlertCircle />
         <AlertTitle>{error.message}</AlertTitle>
-        {error.errors && Object.keys(error.errors).length > 0 && (
+        {hasErrors && (
           <AlertDescription>
-            <ul className="list-disc space-y-1 pl-5">
-              {Object.entries(error.errors).flatMap(([field, messages]) =>
-                messages.map((msg) => (
-                  <li key={`${field}:${msg}`}>
-                    <span className="font-medium">{field}:</span> {msg}
-                  </li>
-                )),
+            <ul className="space-y-2">
+              {Object.entries(error.errors!).flatMap(([field, messages]) =>
+                messages.map((msg) => {
+                  const lineMatch = field.match(/^lines\.(\d+)\.account_id$/)
+                  const isLineAccount = !!lineMatch
+                  const lineIndex = lineMatch ? Number(lineMatch[1]) : null
+                  const handleClick = () => {
+                    if (onFieldClick) {
+                      onFieldClick(field)
+                    } else if (lineIndex !== null) {
+                      document.getElementById(`line-${lineIndex}-account`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }
+                  }
+                  return (
+                    <li key={`${field}:${msg}`} className="flex flex-wrap items-start justify-between gap-2 rounded-md bg-destructive/10 px-3 py-2">
+                      <span className="min-w-0 flex-1">
+                        <span className="font-semibold">{friendlyField(field)}:</span> <span className="break-words">{msg}</span>
+                      </span>
+                      {isLineAccount && (
+                        <button
+                          type="button"
+                          onClick={handleClick}
+                          className="shrink-0 rounded bg-white px-2.5 py-1 text-xs font-medium text-destructive ring-1 ring-destructive/20 hover:bg-destructive hover:text-white dark:bg-transparent dark:ring-destructive/40"
+                        >
+                          Ganti akun
+                        </button>
+                      )}
+                    </li>
+                  )
+                }),
               )}
             </ul>
           </AlertDescription>

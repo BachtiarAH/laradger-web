@@ -24,10 +24,12 @@ export function LineEditor({
   accounts,
   lines,
   onChange,
+  lineErrors,
 }: {
   accounts?: Account[]
   lines: LineDraft[]
   onChange: (lines: LineDraft[]) => void
+  lineErrors?: Record<number, string>
 }) {
   const [dragIndex, setDragIndex] = React.useState<number | null>(null)
   const [dropTargetIndex, setDropTargetIndex] = React.useState<number | null>(null)
@@ -111,13 +113,21 @@ export function LineEditor({
           <div className="col-span-1 flex items-center justify-center text-muted-foreground">
             <GripVertical className="h-4 w-4 cursor-grab" />
           </div>
-          <div className="col-span-4">
+          <div id={`line-${index}-account`} className="col-span-4">
             <AccountSelect
               value={line.account_id || null}
               onValueChange={(value) => updateLine(index, { account_id: value ?? '' })}
               placeholder="Select account…"
               allowCreate
+              leafOnly
+              hasError={!!lineErrors?.[index]}
             />
+            {lineErrors?.[index] && (
+              <div className="mt-1.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs leading-snug text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                <div className="font-medium">Baris {index + 1} — akun induk tidak bisa dipakai</div>
+                <div>{lineErrors[index]}</div>
+              </div>
+            )}
           </div>
           <div className="col-span-2">
             <Input
