@@ -229,6 +229,7 @@ function JournalDetailPage() {
     try {
       await api.deleteJournalLine(line.id)
       setEditingLineId(null)
+      await reload()
     } catch (err) {
       setActionError(err)
       throw err
