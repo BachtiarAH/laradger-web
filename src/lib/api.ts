@@ -369,6 +369,7 @@ export const api = {
       page?: number
       per_page?: number
       search?: string
+      status?: string
     } = {},
   ) => get<RawList<Allocation>>(tenantPath(`/allocations${toQuery(params)}`)).then(asList),
   getAllocation: (id: string) => get<ApiEnvelope<Allocation>>(tenantPath(`/allocations/${id}`)),
@@ -381,6 +382,10 @@ export const api = {
     post<ApiEnvelope<Allocation>>(tenantPath(`/allocations/${id}/allocate`), payload),
   releaseOnAllocation: (id: string, payload: AllocationAdjust) =>
     post<ApiEnvelope<Allocation>>(tenantPath(`/allocations/${id}/release`), payload),
+  completeAllocation: (id: string) =>
+    post<ApiEnvelope<Allocation>>(tenantPath(`/allocations/${id}/complete`)),
+  cancelAllocation: (id: string) =>
+    post<ApiEnvelope<Allocation>>(tenantPath(`/allocations/${id}/cancel`)),
   getAccountAllocations: (accountId: string) =>
     get<ApiEnvelope<AccountAllocations>>(tenantPath(`/accounts/${accountId}/allocations`)).then(
       (r) => r.data,

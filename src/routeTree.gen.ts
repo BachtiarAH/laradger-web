@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IconsRouteImport } from './routes/icons'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as OverviewRouteImport } from './routes/overview'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AccountsIndexRouteImport } from './routes/accounts/index'
 import { Route as AccountsAccountIdRouteImport } from './routes/accounts/$accountId'
@@ -53,6 +54,11 @@ const IconsRoute = IconsRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OverviewRoute = OverviewRouteImport.update({
+  id: '/overview',
+  path: '/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/icons': typeof IconsRoute
   '/login': typeof LoginRoute
+  '/overview': typeof OverviewRoute
   '/register': typeof RegisterRoute
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/accounts/new': typeof AccountsNewRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/icons': typeof IconsRoute
   '/login': typeof LoginRoute
+  '/overview': typeof OverviewRoute
   '/register': typeof RegisterRoute
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/accounts/new': typeof AccountsNewRoute
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/icons': typeof IconsRoute
   '/login': typeof LoginRoute
+  '/overview': typeof OverviewRoute
   '/register': typeof RegisterRoute
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/accounts/new': typeof AccountsNewRoute
@@ -250,6 +259,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/icons'
     | '/login'
+    | '/overview'
     | '/register'
     | '/accounts/$accountId'
     | '/accounts/new'
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/icons'
     | '/login'
+    | '/overview'
     | '/register'
     | '/accounts/$accountId'
     | '/accounts/new'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/icons'
     | '/login'
+    | '/overview'
     | '/register'
     | '/accounts/$accountId'
     | '/accounts/new'
@@ -332,6 +344,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   IconsRoute: typeof IconsRoute
   LoginRoute: typeof LoginRoute
+  OverviewRoute: typeof OverviewRoute
   RegisterRoute: typeof RegisterRoute
   AccountsAccountIdRoute: typeof AccountsAccountIdRoute
   AccountsNewRoute: typeof AccountsNewRoute
@@ -383,6 +396,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/overview': {
+      id: '/overview'
+      path: '/overview'
+      fullPath: '/overview'
+      preLoaderRoute: typeof OverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/register': {
@@ -540,6 +560,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   IconsRoute: IconsRoute,
   LoginRoute: LoginRoute,
+  OverviewRoute: OverviewRoute,
   RegisterRoute: RegisterRoute,
   AccountsAccountIdRoute: AccountsAccountIdRoute,
   AccountsNewRoute: AccountsNewRoute,

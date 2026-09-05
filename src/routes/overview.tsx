@@ -569,3 +569,7 @@ export default function OverviewPage() {
     </div>
   )
 }
+
+export const Route = createFileRoute('/overview')({
+  component: OverviewPage,
+})

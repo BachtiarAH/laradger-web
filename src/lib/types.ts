@@ -254,12 +254,18 @@ export type BudgetStore = {
 
 export type BudgetUpdate = Partial<BudgetStore>
 
+export type AllocationStatus = 'active' | 'completed' | 'cancelled' | 'expired'
+
 export type Allocation = {
   id: string
   name: string
   description: string | null
   target_amount: string | null
+  status: AllocationStatus
+  expires_at: string | null
+  completed_at: string | null
   total_allocated: string | null
+  unfunded_amount?: string | null
   created_at: string
   updated_at: string
   accounts?: AllocationAccount[]
@@ -277,6 +283,8 @@ export type AllocationStore = {
   name: string
   description?: string | null
   target_amount?: number | null
+  status?: AllocationStatus
+  expires_at?: string | null
 }
 
 export type AllocationUpdate = Partial<AllocationStore>
@@ -375,6 +383,16 @@ export type Overview = {
   unbudgeted_income: string
   net_budgeted: string
   safe_money: string
+  safe_money_legacy?: string
+  safe_money_formula?: string
+  eligible_assets?: string
+  allocated?: {
+    total_allocated: string
+    total_target: string
+    unfunded: string
+  }
+  other_obligations?: string
+  is_over_allocated?: boolean
   assets: {
     balance: string
   }
