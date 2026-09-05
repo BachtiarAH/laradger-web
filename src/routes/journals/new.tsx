@@ -46,11 +46,15 @@ function NewJournalPage() {
   const [lines, setLines] = React.useState<LineDraft[]>([])
   const [tagIds, setTagIds] = React.useState<string[]>([])
   const [adjustments, setAdjustments] = React.useState<AdjustmentDraft[]>([])
+  const [allocationId, setAllocationId] = React.useState<string | null>(null)
+  const [goalId, setGoalId] = React.useState<string | null>(null)
   const [error, setError] = React.useState<unknown>(null)
   const [saving, setSaving] = React.useState(false)
 
   const accounts = useFetch(() => api.listAccounts({ per_page: 20 }), [])
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
+  const allocations = useFetch(() => api.listAllocations({ per_page: 100, status: 'active' }), [])
+  const goals = useFetch(() => api.listGoals({ per_page: 100, status: 'active' }), [])
   const nextRef = useFetch(() => api.nextJournalReference(), [])
   const lineErrors = React.useMemo<Record<number, string>>(() => {
     if (error instanceof ApiError && error.errors) {
@@ -126,6 +130,8 @@ function NewJournalPage() {
       ...(referenceCustom && customReference.trim() ? { reference: customReference.trim() } : {}),
       status,
       source,
+      ...(allocationId ? { allocation_id: allocationId } : {}),
+      ...(goalId ? { goal_id: goalId } : {}),
       lines: linesPayload,
       ...(tagIds.length > 0 ? { tags: tagIds } : {}),
       ...(status === 'posted' && adjustments.length > 0
@@ -286,6 +292,44 @@ function NewJournalPage() {
                 onChange={(e) => setDescription(e.target.value)}
               />
             </Field>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Fulfill Allocation (optional)">
+                <Select
+                  value={allocationId ?? 'none'}
+                  onValueChange={(v) => setAllocationId(v === 'none' ? null : v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="— None (No allocation) —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— None (No allocation) —</SelectItem>
+                    {(allocations.data?.data ?? []).map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name} (Remaining: {a.remaining_amount ?? a.target_amount ?? '—'})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Contribute to Goal (optional)">
+                <Select
+                  value={goalId ?? 'none'}
+                  onValueChange={(v) => setGoalId(v === 'none' ? null : v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="— None (No goal) —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— None (No goal) —</SelectItem>
+                    {(goals.data?.data ?? []).map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.name} (Remaining: {g.remaining_amount})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
           </Card>
 
           <Card className="space-y-4 p-6">

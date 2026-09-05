@@ -13,6 +13,9 @@ import type {
   Budget,
   BudgetStore,
   BudgetUpdate,
+  Goal,
+  GoalStore,
+  GoalUpdate,
   Journal,
   JournalDraft,
   JournalLine,
@@ -289,6 +292,8 @@ export const api = {
       per_page?: number
       status?: string
       source?: string
+      allocation_id?: string
+      goal_id?: string
       from?: string
       to?: string
     } = {},
@@ -390,6 +395,22 @@ export const api = {
     get<ApiEnvelope<AccountAllocations>>(tenantPath(`/accounts/${accountId}/allocations`)).then(
       (r) => r.data,
     ),
+
+  // Goals
+  listGoals: (
+    params: {
+      page?: number
+      per_page?: number
+      search?: string
+      status?: string
+    } = {},
+  ) => get<RawList<Goal>>(tenantPath(`/goals${toQuery(params)}`)).then(asList),
+  getGoal: (id: string) => get<ApiEnvelope<Goal>>(tenantPath(`/goals/${id}`)),
+  createGoal: (payload: GoalStore) =>
+    post<ApiEnvelope<Goal>>(tenantPath('/goals'), payload),
+  updateGoal: (id: string, payload: GoalUpdate) =>
+    put<ApiEnvelope<Goal>>(tenantPath(`/goals/${id}`), payload),
+  deleteGoal: (id: string) => del(tenantPath(`/goals/${id}`)),
 
   // Audit logs
   listAuditLogs: (params: { page?: number; per_page?: number } = {}) =>

@@ -3,8 +3,20 @@ import * as React from 'react'
 import { ApiError, api } from '../../lib/api'
 import { RequireAuth } from '../../components/RequireAuth'
 import { AccountSelect } from '../../components/AccountSelect'
-import { Button, Card, ErrorBox, Field, Input, PageHeader } from '../../components/ui'
 import { TagInput } from '../../components/TagInput'
+import {
+  Button,
+  Card,
+  ErrorBox,
+  Field,
+  Input,
+  PageHeader,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui'
 import type { QuickTransactionType, Tag } from '../../lib/types'
 
 export const Route = createFileRoute('/transactions/new')({
@@ -34,6 +46,10 @@ function QuickTransactionPage() {
   const [viaId, setViaId] = React.useState<string | null>(null)
   const [liabilityId, setLiabilityId] = React.useState<string | null>(null)
   const [expensePayment, setExpensePayment] = React.useState<'cash' | 'credit'>('cash')
+  const [allocations, setAllocations] = React.useState<import('../../lib/types').Allocation[]>([])
+  const [allocationId, setAllocationId] = React.useState<string | null>(null)
+  const [goals, setGoals] = React.useState<import('../../lib/types').Goal[]>([])
+  const [goalId, setGoalId] = React.useState<string | null>(null)
   const [error, setError] = React.useState<unknown>(null)
   const [savingDraft, setSavingDraft] = React.useState(false)
   const [savingPosted, setSavingPosted] = React.useState(false)
@@ -43,6 +59,8 @@ function QuickTransactionPage() {
 
   React.useEffect(() => {
     api.listTags({ per_page: 100 }).then((r) => setTags(r.data)).catch(() => {})
+    api.listAllocations({ per_page: 100, status: 'active' }).then((r) => setAllocations(r.data)).catch(() => {})
+    api.listGoals({ per_page: 100, status: 'active' }).then((r) => setGoals(r.data)).catch(() => {})
   }, [])
 
   const buildPayload = (status: 'draft' | 'posted'): Parameters<typeof api.createTransaction>[0] | null => {
@@ -57,6 +75,8 @@ function QuickTransactionPage() {
       transaction_date: transactionDate,
       status,
       ...(tagIds.length ? { tags: tagIds } : {}),
+      ...(type === 'expense' && allocationId ? { allocation_id: allocationId } : {}),
+      ...(type === 'transfer' && goalId ? { goal_id: goalId } : {}),
     }
     if (type === 'expense') {
       if (!expenseId) { setError(new Error('Pilih Category (expense)')); return null }
@@ -170,6 +190,24 @@ function QuickTransactionPage() {
                   <AccountSelect value={expenseId} onValueChange={setExpenseId} type="expense" leafOnly allowCreate lockCreateType createDescription="Kategori pengeluaran — tipe otomatis expense" placeholder="Pilih kategori expense..." />
                 </Field>
               </div>
+              <Field label="Fulfill Allocation (optional)">
+                <Select
+                  value={allocationId ?? 'none'}
+                  onValueChange={(v) => setAllocationId(v === 'none' ? null : v)}
+                >
+                  <SelectTrigger className="w-full min-w-0">
+                    <SelectValue placeholder="— None (No allocation) —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— None (No allocation) —</SelectItem>
+                    {allocations.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name} (Remaining: {a.remaining_amount ?? a.target_amount ?? '—'})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
               <p className="text-xs text-muted-foreground">{expensePayment === 'cash' ? 'Jurnal: Dr Expense / Cr Asset (langsung lunas)' : 'Jurnal: Dr Expense / Cr Liability (hutang naik) — lunasi nanti via tab Debt'}</p>
             </>
           )}
@@ -184,17 +222,37 @@ function QuickTransactionPage() {
             </div>
           )}
           {type === 'transfer' && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Field label="From (Asset)">
-                <AccountSelect value={fromId} onValueChange={setFromId} type="asset" leafOnly allowCreate lockCreateType createDescription="Akun aset asal transfer" placeholder="BRI..." />
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <Field label="From (Asset)">
+                  <AccountSelect value={fromId} onValueChange={setFromId} type="asset" leafOnly allowCreate lockCreateType createDescription="Akun aset asal transfer" placeholder="BRI..." />
+                </Field>
+                <Field label="Via (optional, e.g. ShopeePay)">
+                  <AccountSelect value={viaId} onValueChange={setViaId} type="asset" leafOnly allowCreate allowNone noneLabel="— No via —" lockCreateType createDescription="Akun transit (opsional) — tipe asset" placeholder="Transit (opsional)" />
+                </Field>
+                <Field label="To (Asset)">
+                  <AccountSelect value={toId} onValueChange={setToId} type="asset" leafOnly allowCreate lockCreateType createDescription="Akun aset tujuan transfer" placeholder="Jago..." />
+                </Field>
+              </div>
+              <Field label="Contribute to Goal (optional)">
+                <Select
+                  value={goalId ?? 'none'}
+                  onValueChange={(v) => setGoalId(v === 'none' ? null : v)}
+                >
+                  <SelectTrigger className="w-full min-w-0">
+                    <SelectValue placeholder="— None (Normal transfer) —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— None (Normal transfer) —</SelectItem>
+                    {goals.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.name} (Remaining: {g.remaining_amount})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
-              <Field label="Via (optional, e.g. ShopeePay)">
-                <AccountSelect value={viaId} onValueChange={setViaId} type="asset" leafOnly allowCreate allowNone noneLabel="— No via —" lockCreateType createDescription="Akun transit (opsional) — tipe asset" placeholder="Transit (opsional)" />
-              </Field>
-              <Field label="To (Asset)">
-                <AccountSelect value={toId} onValueChange={setToId} type="asset" leafOnly allowCreate lockCreateType createDescription="Akun aset tujuan transfer" placeholder="Jago..." />
-              </Field>
-            </div>
+            </>
           )}
           {type === 'debt_payment' && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

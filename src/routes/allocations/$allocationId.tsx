@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import * as React from 'react'
 import { ApiError, api } from '../../lib/api'
 import { AllocationForm } from '../../components/AllocationForm'
@@ -7,6 +7,7 @@ import { RequireAuth } from '../../components/RequireAuth'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { NotFound } from '../../components/NotFound'
 import {
+  Badge,
   Button,
   Card,
   ErrorBox,
@@ -44,6 +45,10 @@ function AllocationDetailPage() {
 
   const { data, error, loading, reload } = useFetch(
     () => api.getAllocation(allocationId),
+    [allocationId],
+  )
+  const journals = useFetch(
+    () => api.listJournals({ allocation_id: allocationId, per_page: 20 }),
     [allocationId],
   )
   const allocation = data?.data
@@ -119,25 +124,52 @@ function AllocationDetailPage() {
         <>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card className="p-6">
-              <h2 className="mb-4 text-lg font-semibold text-foreground">Details</h2>
+              <h2 className="mb-4 text-lg font-semibold text-foreground">Planning Details</h2>
               <dl className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <dt className="text-muted-foreground">Name</dt>
                   <dd className="mt-1 font-medium text-foreground">{allocation.name}</dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">Target amount</dt>
-                  <dd className="mt-1">{formatAmount(allocation.target_amount)}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Total allocated</dt>
-                  <dd className="mt-1 text-lg font-bold text-foreground">
-                    {formatAmount(allocation.total_allocated)}
+                  <dt className="text-muted-foreground">Plan Type</dt>
+                  <dd className="mt-1 capitalize font-medium text-foreground">
+                    {allocation.type ?? 'recurring'} {allocation.period_type ? `(${allocation.period_type})` : ''}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">Accounts</dt>
-                  <dd className="mt-1">{allocation.accounts?.length ?? 0}</dd>
+                  <dt className="text-muted-foreground">Planned Target</dt>
+                  <dd className="mt-1 font-semibold text-foreground">{formatAmount(allocation.target_amount)}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Carried Over</dt>
+                  <dd className="mt-1 text-foreground">{formatAmount(allocation.carry_over_amount ?? '0.00')}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Realized / Spent</dt>
+                  <dd className="mt-1 font-bold text-foreground">
+                    {formatAmount(allocation.realized_amount ?? '0.00')}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Remaining Unspent</dt>
+                  <dd className="mt-1 font-bold text-primary">
+                    {formatAmount(allocation.remaining_amount ?? allocation.target_amount)}
+                  </dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-muted-foreground mb-1">
+                    Progress ({Math.min(100, Math.max(0, allocation.progress_percent ?? 0))}%)
+                  </dt>
+                  <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${Math.min(100, Math.max(0, allocation.progress_percent ?? 0))}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-muted-foreground">Status</dt>
+                  <dd className="mt-1 capitalize">{allocation.status}</dd>
                 </div>
                 <div className="col-span-2">
                   <dt className="text-muted-foreground">Description</dt>
@@ -199,6 +231,56 @@ function AllocationDetailPage() {
                           Release
                         </button>
                       </Td>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </Card>
+
+          <Card className="mt-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Realization Transactions</h2>
+                <p className="text-xs text-muted-foreground">Journals fulfilling this allocation envelope</p>
+              </div>
+              <Link to="/transactions/new">
+                <Button variant="secondary" className="text-xs h-8">New Expense</Button>
+              </Link>
+            </div>
+            {journals.loading ? (
+              <LoadingBox label="Loading realization journals…" />
+            ) : (journals.data?.data ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">
+                No transactions have fulfilled this allocation yet.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <Th>Reference</Th>
+                    <Th>Description</Th>
+                    <Th>Date</Th>
+                    <Th>Status</Th>
+                    <Th className="text-right">Amount</Th>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {journals.data!.data.map((j) => (
+                    <TableRow key={j.id}>
+                      <Td>
+                        <Link
+                          to="/journals/$journalId"
+                          params={{ journalId: j.id }}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {j.reference || '—'}
+                        </Link>
+                      </Td>
+                      <Td className="max-w-xs truncate">{j.description}</Td>
+                      <Td>{new Date(j.transaction_date).toLocaleDateString()}</Td>
+                      <Td><Badge value={j.status} /></Td>
+                      <Td className="text-right font-medium">{formatAmount(j.total_debit)}</Td>
                     </TableRow>
                   ))}
                 </TableBody>

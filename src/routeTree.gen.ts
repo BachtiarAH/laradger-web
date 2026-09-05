@@ -26,6 +26,9 @@ import { Route as AuditLogsAuditLogIdRouteImport } from './routes/audit-logs/$au
 import { Route as BudgetsIndexRouteImport } from './routes/budgets/index'
 import { Route as BudgetsBudgetIdRouteImport } from './routes/budgets/$budgetId'
 import { Route as BudgetsNewRouteImport } from './routes/budgets/new'
+import { Route as GoalsIndexRouteImport } from './routes/goals/index'
+import { Route as GoalsGoalIdRouteImport } from './routes/goals/$goalId'
+import { Route as GoalsNewRouteImport } from './routes/goals/new'
 import { Route as JournalsIndexRouteImport } from './routes/journals/index'
 import { Route as JournalsJournalIdRouteImport } from './routes/journals/$journalId'
 import { Route as JournalsNewRouteImport } from './routes/journals/new'
@@ -121,6 +124,21 @@ const BudgetsNewRoute = BudgetsNewRouteImport.update({
   path: '/budgets/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GoalsIndexRoute = GoalsIndexRouteImport.update({
+  id: '/goals/',
+  path: '/goals/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoalsGoalIdRoute = GoalsGoalIdRouteImport.update({
+  id: '/goals/$goalId',
+  path: '/goals/$goalId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoalsNewRoute = GoalsNewRouteImport.update({
+  id: '/goals/new',
+  path: '/goals/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JournalsIndexRoute = JournalsIndexRouteImport.update({
   id: '/journals/',
   path: '/journals/',
@@ -181,6 +199,8 @@ export interface FileRoutesByFullPath {
   '/audit-logs/$auditLogId': typeof AuditLogsAuditLogIdRoute
   '/budgets/$budgetId': typeof BudgetsBudgetIdRoute
   '/budgets/new': typeof BudgetsNewRoute
+  '/goals/$goalId': typeof GoalsGoalIdRoute
+  '/goals/new': typeof GoalsNewRoute
   '/journals/$journalId': typeof JournalsJournalIdRoute
   '/journals/new': typeof JournalsNewRoute
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
@@ -190,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/allocations/': typeof AllocationsIndexRoute
   '/audit-logs/': typeof AuditLogsIndexRoute
   '/budgets/': typeof BudgetsIndexRoute
+  '/goals/': typeof GoalsIndexRoute
   '/journals/': typeof JournalsIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/templates/': typeof TemplatesIndexRoute
@@ -209,6 +230,8 @@ export interface FileRoutesByTo {
   '/audit-logs/$auditLogId': typeof AuditLogsAuditLogIdRoute
   '/budgets/$budgetId': typeof BudgetsBudgetIdRoute
   '/budgets/new': typeof BudgetsNewRoute
+  '/goals/$goalId': typeof GoalsGoalIdRoute
+  '/goals/new': typeof GoalsNewRoute
   '/journals/$journalId': typeof JournalsJournalIdRoute
   '/journals/new': typeof JournalsNewRoute
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
@@ -218,6 +241,7 @@ export interface FileRoutesByTo {
   '/allocations': typeof AllocationsIndexRoute
   '/audit-logs': typeof AuditLogsIndexRoute
   '/budgets': typeof BudgetsIndexRoute
+  '/goals': typeof GoalsIndexRoute
   '/journals': typeof JournalsIndexRoute
   '/tags': typeof TagsIndexRoute
   '/templates': typeof TemplatesIndexRoute
@@ -238,6 +262,8 @@ export interface FileRoutesById {
   '/audit-logs/$auditLogId': typeof AuditLogsAuditLogIdRoute
   '/budgets/$budgetId': typeof BudgetsBudgetIdRoute
   '/budgets/new': typeof BudgetsNewRoute
+  '/goals/$goalId': typeof GoalsGoalIdRoute
+  '/goals/new': typeof GoalsNewRoute
   '/journals/$journalId': typeof JournalsJournalIdRoute
   '/journals/new': typeof JournalsNewRoute
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
@@ -247,6 +273,7 @@ export interface FileRoutesById {
   '/allocations/': typeof AllocationsIndexRoute
   '/audit-logs/': typeof AuditLogsIndexRoute
   '/budgets/': typeof BudgetsIndexRoute
+  '/goals/': typeof GoalsIndexRoute
   '/journals/': typeof JournalsIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/templates/': typeof TemplatesIndexRoute
@@ -268,6 +295,8 @@ export interface FileRouteTypes {
     | '/audit-logs/$auditLogId'
     | '/budgets/$budgetId'
     | '/budgets/new'
+    | '/goals/$goalId'
+    | '/goals/new'
     | '/journals/$journalId'
     | '/journals/new'
     | '/templates/$templateId'
@@ -277,6 +306,7 @@ export interface FileRouteTypes {
     | '/allocations/'
     | '/audit-logs/'
     | '/budgets/'
+    | '/goals/'
     | '/journals/'
     | '/tags/'
     | '/templates/'
@@ -296,6 +326,8 @@ export interface FileRouteTypes {
     | '/audit-logs/$auditLogId'
     | '/budgets/$budgetId'
     | '/budgets/new'
+    | '/goals/$goalId'
+    | '/goals/new'
     | '/journals/$journalId'
     | '/journals/new'
     | '/templates/$templateId'
@@ -305,6 +337,7 @@ export interface FileRouteTypes {
     | '/allocations'
     | '/audit-logs'
     | '/budgets'
+    | '/goals'
     | '/journals'
     | '/tags'
     | '/templates'
@@ -324,6 +357,8 @@ export interface FileRouteTypes {
     | '/audit-logs/$auditLogId'
     | '/budgets/$budgetId'
     | '/budgets/new'
+    | '/goals/$goalId'
+    | '/goals/new'
     | '/journals/$journalId'
     | '/journals/new'
     | '/templates/$templateId'
@@ -333,6 +368,7 @@ export interface FileRouteTypes {
     | '/allocations/'
     | '/audit-logs/'
     | '/budgets/'
+    | '/goals/'
     | '/journals/'
     | '/tags/'
     | '/templates/'
@@ -353,6 +389,8 @@ export interface RootRouteChildren {
   AuditLogsAuditLogIdRoute: typeof AuditLogsAuditLogIdRoute
   BudgetsBudgetIdRoute: typeof BudgetsBudgetIdRoute
   BudgetsNewRoute: typeof BudgetsNewRoute
+  GoalsGoalIdRoute: typeof GoalsGoalIdRoute
+  GoalsNewRoute: typeof GoalsNewRoute
   JournalsJournalIdRoute: typeof JournalsJournalIdRoute
   JournalsNewRoute: typeof JournalsNewRoute
   TemplatesTemplateIdRoute: typeof TemplatesTemplateIdRoute
@@ -362,6 +400,7 @@ export interface RootRouteChildren {
   AllocationsIndexRoute: typeof AllocationsIndexRoute
   AuditLogsIndexRoute: typeof AuditLogsIndexRoute
   BudgetsIndexRoute: typeof BudgetsIndexRoute
+  GoalsIndexRoute: typeof GoalsIndexRoute
   JournalsIndexRoute: typeof JournalsIndexRoute
   TagsIndexRoute: typeof TagsIndexRoute
   TemplatesIndexRoute: typeof TemplatesIndexRoute
@@ -489,6 +528,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BudgetsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/goals/': {
+      id: '/goals/'
+      path: '/goals'
+      fullPath: '/goals/'
+      preLoaderRoute: typeof GoalsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/goals/$goalId': {
+      id: '/goals/$goalId'
+      path: '/goals/$goalId'
+      fullPath: '/goals/$goalId'
+      preLoaderRoute: typeof GoalsGoalIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/goals/new': {
+      id: '/goals/new'
+      path: '/goals/new'
+      fullPath: '/goals/new'
+      preLoaderRoute: typeof GoalsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/journals/': {
       id: '/journals/'
       path: '/journals'
@@ -569,6 +629,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuditLogsAuditLogIdRoute: AuditLogsAuditLogIdRoute,
   BudgetsBudgetIdRoute: BudgetsBudgetIdRoute,
   BudgetsNewRoute: BudgetsNewRoute,
+  GoalsGoalIdRoute: GoalsGoalIdRoute,
+  GoalsNewRoute: GoalsNewRoute,
   JournalsJournalIdRoute: JournalsJournalIdRoute,
   JournalsNewRoute: JournalsNewRoute,
   TemplatesTemplateIdRoute: TemplatesTemplateIdRoute,
@@ -578,6 +640,7 @@ const rootRouteChildren: RootRouteChildren = {
   AllocationsIndexRoute: AllocationsIndexRoute,
   AuditLogsIndexRoute: AuditLogsIndexRoute,
   BudgetsIndexRoute: BudgetsIndexRoute,
+  GoalsIndexRoute: GoalsIndexRoute,
   JournalsIndexRoute: JournalsIndexRoute,
   TagsIndexRoute: TagsIndexRoute,
   TemplatesIndexRoute: TemplatesIndexRoute,

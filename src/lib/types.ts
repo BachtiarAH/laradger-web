@@ -107,6 +107,8 @@ export type Journal = {
   status: JournalStatus
   source: JournalSource
   reverse_from_id: string | null
+  allocation_id?: string | null
+  goal_id?: string | null
   created_at: string
   updated_at: string
   total_debit?: string | null
@@ -115,6 +117,8 @@ export type Journal = {
   user?: User | null
   lines?: JournalLine[]
   tags?: Tag[]
+  allocation?: Allocation | null
+  goal?: Goal | null
 }
 
 export type JournalStoreLine = {
@@ -138,6 +142,8 @@ export type JournalStore = {
   status: JournalStatus
   source: JournalSource
   reverse_from_id?: string | null
+  allocation_id?: string | null
+  goal_id?: string | null
   lines: JournalStoreLine[]
   tags?: string[]
   allocation_adjustments?: JournalAllocationAdjustment[]
@@ -254,13 +260,25 @@ export type BudgetStore = {
 
 export type BudgetUpdate = Partial<BudgetStore>
 
-export type AllocationStatus = 'active' | 'completed' | 'cancelled' | 'expired'
+export type AllocationStatus = 'active' | 'upcoming' | 'fulfilled' | 'skipped' | 'completed' | 'cancelled' | 'expired'
+export type AllocationType = 'recurring' | 'one_time'
+export type AllocationPeriod = 'weekly' | 'monthly' | 'yearly' | 'custom'
+export type AllocationRollForward = 'carry_over' | 'release' | 'reset'
 
 export type Allocation = {
   id: string
   name: string
   description: string | null
   target_amount: string | null
+  type?: AllocationType
+  period_type?: AllocationPeriod
+  starts_at?: string | null
+  ends_at?: string | null
+  roll_forward_mode?: AllocationRollForward
+  carry_over_amount?: string
+  realized_amount?: string
+  remaining_amount?: string
+  progress_percent?: number
   status: AllocationStatus
   expires_at: string | null
   completed_at: string | null
@@ -283,11 +301,49 @@ export type AllocationStore = {
   name: string
   description?: string | null
   target_amount?: number | null
+  type?: AllocationType
+  period_type?: AllocationPeriod
+  starts_at?: string | null
+  ends_at?: string | null
+  roll_forward_mode?: AllocationRollForward
   status?: AllocationStatus
   expires_at?: string | null
 }
 
 export type AllocationUpdate = Partial<AllocationStore>
+
+export type GoalStatus = 'active' | 'achieved' | 'paused' | 'cancelled'
+
+export type Goal = {
+  id: string
+  name: string
+  description: string | null
+  target_amount: string
+  current_amount: string
+  accumulated_amount?: string
+  remaining_amount: string
+  progress_percent: number
+  target_date: string | null
+  recurring_contribution_amount: string | null
+  contribution_frequency: string
+  actual_contribution_this_period: string
+  pending_contribution_this_period: string
+  status: GoalStatus
+  created_at: string
+  updated_at: string
+}
+
+export type GoalStore = {
+  name: string
+  description?: string | null
+  target_amount: number
+  target_date?: string | null
+  recurring_contribution_amount?: number | null
+  contribution_frequency?: string
+  status?: GoalStatus
+}
+
+export type GoalUpdate = Partial<GoalStore>
 
 export type AllocationAdjust = {
   account_id: string
@@ -384,12 +440,18 @@ export type Overview = {
   net_budgeted: string
   safe_money: string
   safe_money_legacy?: string
+  safe_to_spend?: string
   safe_money_formula?: string
   eligible_assets?: string
   allocated?: {
     total_allocated: string
     total_target: string
     unfunded: string
+  }
+  goal_commitments?: {
+    total: string
+    pending_contributions: string
+    accumulated_savings: string
   }
   other_obligations?: string
   is_over_allocated?: boolean
@@ -433,6 +495,8 @@ export type QuickTransactionStore = {
   status?: JournalStatus
   payment_method?: 'cash' | 'credit'
   tags?: string[]
+  allocation_id?: string
+  goal_id?: string
   asset_account_id?: string
   expense_account_id?: string
   income_account_id?: string

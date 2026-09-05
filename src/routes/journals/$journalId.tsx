@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import * as React from 'react'
 import { ApiError, api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
@@ -29,7 +29,7 @@ import {
 } from '../../components/ui'
 import type { JournalLine, Tag, TagType } from '../../lib/types'
 import { AccountSelect } from '../../components/AccountSelect'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, Flag, Target } from 'lucide-react'
 
 export const Route = createFileRoute('/journals/$journalId')({
   component: JournalDetailPage,
@@ -72,6 +72,11 @@ function JournalDetailPage() {
   const [formDescription, setFormDescription] = React.useState('')
   const [formReference, setFormReference] = React.useState('')
   const [formStatus, setFormStatus] = React.useState<'draft' | 'posted'>('draft')
+  const [formAllocationId, setFormAllocationId] = React.useState<string | null>(null)
+  const [formGoalId, setFormGoalId] = React.useState<string | null>(null)
+
+  const allocations = useFetch(() => api.listAllocations({ per_page: 100, status: 'active' }), [])
+  const goals = useFetch(() => api.listGoals({ per_page: 100, status: 'active' }), [])
 
   // Add line form
   const [newLine, setNewLine] = React.useState({
@@ -93,6 +98,8 @@ function JournalDetailPage() {
       setFormDescription(journal.description)
       setFormReference(journal.reference)
       setFormStatus(journal.status === 'draft' ? 'draft' : 'posted')
+      setFormAllocationId(journal.allocation_id ?? null)
+      setFormGoalId(journal.goal_id ?? null)
     }
   }, [journal])
 
@@ -162,6 +169,8 @@ function JournalDetailPage() {
       reference: formReference,
       status: statusOverride ?? formStatus,
       source: original.source,
+      allocation_id: formAllocationId,
+      goal_id: formGoalId,
       lines: orderedLines.map((line) => ({
         account_id: line.account_id,
         debit: Number(line.debit),
@@ -440,6 +449,50 @@ function JournalDetailPage() {
                 <dd>{journal.description || '—'}</dd>
               </div>
               <div className="col-span-2">
+                <dt className="text-muted-foreground">Planning / Allocation</dt>
+                <dd className="mt-1">
+                  {journal.allocation ? (
+                    <Link
+                      to="/allocations/$allocationId"
+                      params={{ allocationId: journal.allocation_id! }}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-sm font-medium text-blue-700 hover:underline dark:bg-blue-950/40 dark:text-blue-300"
+                    >
+                      <Target className="size-4 shrink-0" />
+                      <span>{journal.allocation.name}</span>
+                      {journal.allocation.remaining_amount != null && (
+                        <span className="text-xs font-normal text-muted-foreground">
+                          (Remaining: {journal.allocation.remaining_amount})
+                        </span>
+                      )}
+                    </Link>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-muted-foreground">Planning / Goal</dt>
+                <dd className="mt-1">
+                  {journal.goal ? (
+                    <Link
+                      to="/goals/$goalId"
+                      params={{ goalId: journal.goal_id! }}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-sm font-medium text-emerald-700 hover:underline dark:bg-emerald-950/40 dark:text-emerald-300"
+                    >
+                      <Flag className="size-4 shrink-0" />
+                      <span>{journal.goal.name}</span>
+                      {journal.goal.current_amount != null && (
+                        <span className="text-xs font-normal text-muted-foreground">
+                          (Saved: {journal.goal.current_amount})
+                        </span>
+                      )}
+                    </Link>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </dd>
+              </div>
+              <div className="col-span-2">
                 <dt className="text-muted-foreground">Updated</dt>
                 <dd>{formatDate(journal.updated_at)}</dd>
               </div>
@@ -484,6 +537,44 @@ function JournalDetailPage() {
                     <SelectContent>
                       <SelectItem value="draft">draft</SelectItem>
                       <SelectItem value="posted">posted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Fulfill Allocation (optional)">
+                  <Select
+                    value={formAllocationId ?? 'none'}
+                    onValueChange={(v) => setFormAllocationId(v === 'none' ? null : v)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="— None (No allocation) —" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— None (No allocation) —</SelectItem>
+                      {(allocations.data?.data ?? []).map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name} (Remaining: {a.remaining_amount ?? a.target_amount ?? '—'})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Contribute to Goal (optional)">
+                  <Select
+                    value={formGoalId ?? 'none'}
+                    onValueChange={(v) => setFormGoalId(v === 'none' ? null : v)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="— None (No goal) —" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— None (No goal) —</SelectItem>
+                      {(goals.data?.data ?? []).map((g) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          {g.name} (Remaining: {g.remaining_amount})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>

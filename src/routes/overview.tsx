@@ -264,11 +264,14 @@ function WealthTrend({ history }: { history: WealthPoint[] }) {
 function SafeMoneyHero({ overview }: { overview: Overview }) {
   const eligible = Number(overview.eligible_assets ?? overview.assets.balance)
   const allocated = Number(overview.allocated?.total_allocated ?? 0)
+  const goalTotal = Number(overview.goal_commitments?.total ?? 0)
+  const pendingGoals = Number(overview.goal_commitments?.pending_contributions ?? 0)
+  const accumulatedGoals = Number(overview.goal_commitments?.accumulated_savings ?? 0)
   const target = Number(overview.allocated?.total_target ?? 0)
   const unfunded = Number(overview.allocated?.unfunded ?? Math.max(0, target - allocated))
-  const safe = Number(overview.safe_money)
+  const safe = Number(overview.safe_to_spend ?? overview.safe_money)
   const isOver = overview.is_over_allocated ?? safe < 0
-  const formula = overview.safe_money_formula ?? 'eligible_assets - active_allocated - other_obligations'
+  const formula = overview.safe_money_formula ?? 'eligible_assets - active_allocated - goal_commitments - other_obligations'
 
   return (
     <TooltipProvider>
@@ -276,9 +279,9 @@ function SafeMoneyHero({ overview }: { overview: Overview }) {
         <div className="relative">
           <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             <ShieldCheck className="size-4" />
-            Safe to Spend
+            Financial Planning & Safe to Spend
           </p>
-          <div className="mt-3 grid gap-6 lg:grid-cols-3">
+          <div className="mt-3 grid gap-4 lg:grid-cols-4">
             <div className="rounded-xl bg-muted/50 p-4">
               <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Wallet className="size-3.5" /> Total Assets</p>
               <p className="mt-1 text-2xl font-extrabold text-foreground">{formatIDR(String(eligible))}</p>
@@ -286,30 +289,50 @@ function SafeMoneyHero({ overview }: { overview: Overview }) {
                 <TooltipTrigger asChild>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
                     <Info className="size-3" />
-                    <span>Eligible (asset aktif, posted+archived)</span>
+                    <span>Eligible ledger balance</span>
                   </p>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="text-xs">Total assets yang eligible untuk alokasi safe money (hanya asset aktif, posted dan archived)</p>
+                  <p className="text-xs">Total saldo riil dari akun aset aktif (posted & archived) di ledger</p>
                 </TooltipContent>
               </Tooltip>
             </div>
+
             <div className="rounded-xl bg-muted/50 p-4">
-              <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><PiggyBank className="size-3.5" /> Allocated</p>
+              <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><PiggyBank className="size-3.5" /> Allocations</p>
               <p className="mt-1 text-2xl font-extrabold text-foreground">{formatIDR(String(allocated))}</p>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
                     <Info className="size-3" />
-                    <span>Target {formatIDR(String(target))} {unfunded > 0 ? `· Unfunded ${formatIDR(String(unfunded))}` : '· Fully funded'}</span>
+                    <span>Target {formatIDR(String(target))}</span>
                   </p>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="text-xs">Total allocation saat ini vs target allocation yang telah diset</p>
-                  {unfunded > 0 && <p className="mt-1 text-xs text-muted-foreground">Unfunded: {formatIDR(String(unfunded))} (kekurangan dari target)</p>}
+                  <p className="text-xs">Komitmen alokasi aktif yang belum terpakai</p>
+                  {unfunded > 0 && <p className="mt-1 text-xs text-muted-foreground">Unfunded: {formatIDR(String(unfunded))}</p>}
                 </TooltipContent>
               </Tooltip>
             </div>
+
+            <div className="rounded-xl bg-muted/50 p-4">
+              <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><ShieldCheck className="size-3.5" /> Goals</p>
+              <p className="mt-1 text-2xl font-extrabold text-foreground">{formatIDR(String(goalTotal))}</p>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
+                    <Info className="size-3" />
+                    <span>Pending: {formatIDR(String(pendingGoals))}</span>
+                  </p>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Dana tujuan finansial (Emergency fund, Wishlist, dll.)</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Pending transfer bulan ini: {formatIDR(String(pendingGoals))}</p>
+                  <p className="text-xs text-muted-foreground">Tersimpan terakumulasi: {formatIDR(String(accumulatedGoals))}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+
             <div className={`rounded-xl p-4 ${isOver ? 'bg-rose-100 dark:bg-rose-900/30 ring-1 ring-rose-200 dark:ring-rose-800' : 'bg-emerald-100 dark:bg-emerald-900/30 ring-1 ring-emerald-200 dark:ring-emerald-800'}`}>
               <p className="text-xs font-medium text-muted-foreground">Safe to Spend</p>
               <p className={`mt-1 text-2xl font-extrabold ${isOver ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}`}>{formatIDR(String(safe))}</p>
@@ -317,20 +340,17 @@ function SafeMoneyHero({ overview }: { overview: Overview }) {
                 <TooltipTrigger asChild>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
                     <Info className="size-3" />
-                    <span className="font-mono">{formula}</span>
+                    <span className="font-mono text-[11px] truncate max-w-[140px] inline-block">{formula}</span>
                   </p>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="font-mono text-xs">{formula}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {formatIDR(String(eligible))} − {formatIDR(String(allocated))} − {formatIDR(overview.other_obligations ?? '0.00')}
-                  </p>
-                  <p className="mt-2 text-xs">
-                    Target boleh melebihi saldo (aspirasi), Reserved strict tidak boleh melebihi saldo saat allocate.
+                    {formatIDR(String(eligible))} − {formatIDR(String(allocated))} − {formatIDR(String(goalTotal))}
                   </p>
                 </TooltipContent>
               </Tooltip>
-              {isOver && <p className="mt-2 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white">Over-allocated — release atau top-up</p>}
+              {isOver && <p className="mt-2 rounded-full bg-rose-600 px-2.5 py-0.5 text-[11px] font-bold text-white text-center">Over-allocated</p>}
             </div>
           </div>
         </div>
@@ -422,6 +442,7 @@ export default function OverviewPage() {
       unbudgeted_income: '0.00',
       net_budgeted: '0.00',
       safe_money: '0.00',
+      safe_to_spend: '0.00',
       safe_money_formula: 'eligible_assets - active_allocated - other_obligations',
       eligible_assets: '0.00',
       allocated: { total_allocated: '0.00', total_target: '0.00', unfunded: '0.00' },

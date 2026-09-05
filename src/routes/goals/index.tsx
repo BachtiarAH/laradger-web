@@ -22,10 +22,10 @@ import {
   Td,
   Th,
 } from '../../components/ui'
-import type { Allocation, AllocationStatus } from '../../lib/types'
+import type { Goal, GoalStatus } from '../../lib/types'
 
-export const Route = createFileRoute('/allocations/')({
-  component: AllocationsPage,
+export const Route = createFileRoute('/goals/')({
+  component: GoalsPage,
 })
 
 function formatAmount(value: string | number | null | undefined): string {
@@ -34,18 +34,14 @@ function formatAmount(value: string | number | null | undefined): string {
   return Number.isNaN(n) ? String(value) : n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function renderStatusBadge(status: AllocationStatus) {
+function renderStatusBadge(status: GoalStatus) {
   switch (status) {
     case 'active':
       return <Badge variant="default">Active</Badge>
-    case 'upcoming':
-      return <Badge variant="secondary">Upcoming</Badge>
-    case 'fulfilled':
-    case 'completed':
-      return <Badge variant="outline" className="border-green-500 text-green-600 dark:text-green-400">Fulfilled</Badge>
-    case 'skipped':
-    case 'expired':
-      return <Badge variant="secondary">Expired</Badge>
+    case 'achieved':
+      return <Badge variant="outline" className="border-green-500 text-green-600 dark:text-green-400">Achieved</Badge>
+    case 'paused':
+      return <Badge variant="secondary">Paused</Badge>
     case 'cancelled':
       return <Badge variant="destructive">Cancelled</Badge>
     default:
@@ -53,17 +49,17 @@ function renderStatusBadge(status: AllocationStatus) {
   }
 }
 
-function AllocationsPage() {
+function GoalsPage() {
   const navigate = useNavigate()
   const [page, setPage] = React.useState(1)
   const [search, setSearch] = React.useState('')
   const debouncedSearch = useDebounce(search, 300)
-  const [confirmDelete, setConfirmDelete] = React.useState<Allocation | null>(null)
+  const [confirmDelete, setConfirmDelete] = React.useState<Goal | null>(null)
   const [actionError, setActionError] = React.useState<unknown>(null)
 
   const { data, error, loading, reload } = useFetch(
     () =>
-      api.listAllocations({
+      api.listGoals({
         page,
         per_page: 15,
         search: debouncedSearch || undefined,
@@ -71,10 +67,10 @@ function AllocationsPage() {
     [page, debouncedSearch],
   )
 
-  const handleDelete = async (allocation: Allocation) => {
+  const handleDelete = async (goal: Goal) => {
     setActionError(null)
     try {
-      await api.deleteAllocation(allocation.id)
+      await api.deleteGoal(goal.id)
       await reload()
     } catch (err) {
       setActionError(err)
@@ -85,11 +81,11 @@ function AllocationsPage() {
   return (
     <RequireAuth>
       <PageHeader
-        title="Allocations"
-        subtitle="Financial planning envelopes — realized automatically from expenses across any asset account"
+        title="Financial Goals"
+        subtitle="Long-term savings targets and wishlists — accumulated via asset-to-asset transfers without inflating expenses"
         actions={
-          <Link to="/allocations/new">
-            <Button>New allocation</Button>
+          <Link to="/goals/new">
+            <Button>New goal</Button>
           </Link>
         }
       />
@@ -100,7 +96,7 @@ function AllocationsPage() {
       <Card className="mb-4 p-4">
         <Field label="Search name">
           <Input
-            placeholder="Search allocations…"
+            placeholder="Search goals…"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
           />
@@ -108,14 +104,14 @@ function AllocationsPage() {
       </Card>
 
       <Card>
-        {loading && !data && <LoadingBox label="Loading allocations…" />}
+        {loading && !data && <LoadingBox label="Loading goals…" />}
         {data && (
           <>
             {data.data.length === 0 ? (
               <p className="p-6 text-sm text-muted-foreground">
-                No allocations yet.{' '}
-                <Link to="/allocations/new" className="font-medium text-primary hover:underline">
-                  Create your first allocation
+                No goals yet.{' '}
+                <Link to="/goals/new" className="font-medium text-primary hover:underline">
+                  Create your first goal
                 </Link>
                 .
               </p>
@@ -124,52 +120,58 @@ function AllocationsPage() {
                 <TableHeader>
                   <TableRow>
                     <Th>Name</Th>
-                    <Th>Plan Type</Th>
-                    <Th>Planned / Target</Th>
-                    <Th>Realized / Used</Th>
+                    <Th>Target</Th>
+                    <Th>Accumulated</Th>
                     <Th>Remaining</Th>
+                    <Th>Plan / Cycle</Th>
+                    <Th>Target Date</Th>
                     <Th>Progress</Th>
                     <Th>Status</Th>
                     <Th className="text-right">Actions</Th>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.data.map((allocation) => {
-                    const percent = Math.min(100, Math.max(0, allocation.progress_percent ?? 0))
+                  {data.data.map((goal) => {
+                    const percent = Math.min(100, Math.max(0, goal.progress_percent ?? 0))
                     return (
                       <TableRow
-                        key={allocation.id}
+                        key={goal.id}
                         className="cursor-pointer"
                         onClick={(e) => {
                           const target = e.target as HTMLElement
                           if (target.closest('a, button')) return
-                          navigate({ to: '/allocations/$allocationId', params: { allocationId: allocation.id } })
+                          navigate({ to: '/goals/$goalId', params: { goalId: goal.id } })
                         }}
                       >
                         <Td>
                           <Link
-                            to="/allocations/$allocationId"
-                            params={{ allocationId: allocation.id }}
+                            to="/goals/$goalId"
+                            params={{ goalId: goal.id }}
                             className="font-medium text-primary hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {allocation.name}
+                            {goal.name}
                           </Link>
-                          {allocation.description && (
+                          {goal.description && (
                             <p className="mt-0.5 max-w-[200px] truncate text-xs text-muted-foreground">
-                              {allocation.description}
+                              {goal.description}
                             </p>
                           )}
                         </Td>
+                        <Td className="font-semibold">{formatAmount(goal.target_amount)}</Td>
+                        <Td className="font-medium text-foreground">{formatAmount(goal.current_amount)}</Td>
+                        <Td className="font-medium text-primary">{formatAmount(goal.remaining_amount)}</Td>
                         <Td className="text-sm">
-                          <span className="capitalize">{allocation.type ?? 'recurring'}</span>
-                          {allocation.type !== 'one_time' && allocation.period_type && (
-                            <span className="text-xs text-muted-foreground"> ({allocation.period_type})</span>
+                          {goal.recurring_contribution_amount ? (
+                            <span>
+                              {formatAmount(goal.recurring_contribution_amount)}
+                              <span className="text-xs text-muted-foreground"> / {goal.contribution_frequency}</span>
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </Td>
-                        <Td className="font-medium">{formatAmount(allocation.target_amount)}</Td>
-                        <Td className="text-foreground">{formatAmount(allocation.realized_amount ?? '0.00')}</Td>
-                        <Td className="font-medium text-primary">{formatAmount(allocation.remaining_amount ?? allocation.target_amount)}</Td>
+                        <Td className="text-sm">{goal.target_date || '—'}</Td>
                         <Td>
                           <div className="w-24">
                             <div className="flex justify-between text-xs text-muted-foreground mb-1">
@@ -183,12 +185,12 @@ function AllocationsPage() {
                             </div>
                           </div>
                         </Td>
-                        <Td>{renderStatusBadge(allocation.status)}</Td>
+                        <Td>{renderStatusBadge(goal.status)}</Td>
                         <Td className="text-right">
                           <div className="flex justify-end gap-3">
                             <Link
-                              to="/allocations/$allocationId"
-                              params={{ allocationId: allocation.id }}
+                              to="/goals/$goalId"
+                              params={{ goalId: goal.id }}
                               className="text-sm text-primary hover:underline"
                               onClick={(e) => e.stopPropagation()}
                             >
@@ -198,7 +200,7 @@ function AllocationsPage() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation()
-                                setConfirmDelete(allocation)
+                                setConfirmDelete(goal)
                               }}
                               className="text-sm text-destructive hover:underline"
                             >
@@ -227,10 +229,10 @@ function AllocationsPage() {
       <ConfirmDialog
         open={confirmDelete !== null}
         onOpenChange={(open) => !open && setConfirmDelete(null)}
-        title="Delete allocation"
+        title="Delete goal"
         description={
           confirmDelete
-            ? `Delete allocation "${confirmDelete.name}"? This action cannot be undone.`
+            ? `Delete goal "${confirmDelete.name}"? This action cannot be undone.`
             : ''
         }
         confirmLabel="Delete"
