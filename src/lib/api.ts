@@ -5,6 +5,7 @@ import type {
   AccountStore,
   Allocation,
   AllocationAdjust,
+  AllocationDirectDeduct,
   AllocationStore,
   AllocationUpdate,
   ApiEnvelope,
@@ -391,6 +392,8 @@ export const api = {
     post<ApiEnvelope<Allocation>>(tenantPath(`/allocations/${id}/complete`)),
   cancelAllocation: (id: string) =>
     post<ApiEnvelope<Allocation>>(tenantPath(`/allocations/${id}/cancel`)),
+  deductAllocation: (id: string, payload: AllocationDirectDeduct) =>
+    post<ApiEnvelope<Allocation>>(tenantPath(`/allocations/${id}/deduct`), payload),
   getAccountAllocations: (accountId: string) =>
     get<ApiEnvelope<AccountAllocations>>(tenantPath(`/accounts/${accountId}/allocations`)).then(
       (r) => r.data,

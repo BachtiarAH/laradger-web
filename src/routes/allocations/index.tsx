@@ -168,7 +168,14 @@ function AllocationsPage() {
                           )}
                         </Td>
                         <Td className="font-medium">{formatAmount(allocation.target_amount)}</Td>
-                        <Td className="text-foreground">{formatAmount(allocation.realized_amount ?? '0.00')}</Td>
+                        <Td className="text-foreground">
+                          <div>{formatAmount(allocation.realized_amount ?? '0.00')}</div>
+                          {Number(allocation.manual_realized_amount ?? 0) > 0 && (
+                            <div className="text-[11px] text-muted-foreground">
+                              (Manual: {formatAmount(allocation.manual_realized_amount)})
+                            </div>
+                          )}
+                        </Td>
                         <Td className="font-medium text-primary">{formatAmount(allocation.remaining_amount ?? allocation.target_amount)}</Td>
                         <Td>
                           <div className="w-24">

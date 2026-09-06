@@ -276,6 +276,8 @@ export type Allocation = {
   ends_at?: string | null
   roll_forward_mode?: AllocationRollForward
   carry_over_amount?: string
+  manual_realized_amount?: string
+  journal_realized_amount?: string
   realized_amount?: string
   remaining_amount?: string
   progress_percent?: number
@@ -306,11 +308,18 @@ export type AllocationStore = {
   starts_at?: string | null
   ends_at?: string | null
   roll_forward_mode?: AllocationRollForward
+  manual_realized_amount?: number | null
   status?: AllocationStatus
   expires_at?: string | null
 }
 
 export type AllocationUpdate = Partial<AllocationStore>
+
+export type AllocationDirectDeduct = {
+  amount: number
+  mode?: 'add' | 'set'
+  reason?: string
+}
 
 export type GoalStatus = 'active' | 'achieved' | 'paused' | 'cancelled'
 

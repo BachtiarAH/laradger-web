@@ -3,6 +3,7 @@ import * as React from 'react'
 import { ApiError, api } from '../../lib/api'
 import { AllocationForm } from '../../components/AllocationForm'
 import { AllocationAdjustDialog } from '../../components/AllocationAdjustDialog'
+import { AllocationDirectDeductDialog } from '../../components/AllocationDirectDeductDialog'
 import { RequireAuth } from '../../components/RequireAuth'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { NotFound } from '../../components/NotFound'
@@ -42,6 +43,7 @@ function AllocationDetailPage() {
 
   const [allocateOpen, setAllocateOpen] = React.useState(false)
   const [releaseRow, setReleaseRow] = React.useState<AllocationAccount | null>(null)
+  const [deductOpen, setDeductOpen] = React.useState(false)
 
   const { data, error, loading, reload } = useFetch(
     () => api.getAllocation(allocationId),
@@ -104,7 +106,8 @@ function AllocationDetailPage() {
         actions={
           allocation && (
             <>
-              <Button onClick={() => setAllocateOpen(true)}>Allocate money</Button>
+              <Button onClick={() => setDeductOpen(true)}>Potong Langsung</Button>
+              <Button variant="secondary" onClick={() => setAllocateOpen(true)}>Reserve money</Button>
               <Button variant="danger" onClick={() => setConfirmDelete(true)}>
                 Delete
               </Button>
@@ -124,7 +127,12 @@ function AllocationDetailPage() {
         <>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card className="p-6">
-              <h2 className="mb-4 text-lg font-semibold text-foreground">Planning Details</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground">Planning Details</h2>
+                <Button variant="secondary" className="h-8 text-xs" onClick={() => setDeductOpen(true)}>
+                  Potong Langsung
+                </Button>
+              </div>
               <dl className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <dt className="text-muted-foreground">Name</dt>
@@ -145,7 +153,15 @@ function AllocationDetailPage() {
                   <dd className="mt-1 text-foreground">{formatAmount(allocation.carry_over_amount ?? '0.00')}</dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">Realized / Spent</dt>
+                  <dt className="text-muted-foreground">Realisasi Jurnal</dt>
+                  <dd className="mt-1 text-foreground">{formatAmount(allocation.journal_realized_amount ?? '0.00')}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Realisasi Manual</dt>
+                  <dd className="mt-1 text-foreground">{formatAmount(allocation.manual_realized_amount ?? '0.00')}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Total Realisasi / Spent</dt>
                   <dd className="mt-1 font-bold text-foreground">
                     {formatAmount(allocation.realized_amount ?? '0.00')}
                   </dd>
@@ -308,6 +324,15 @@ function AllocationDetailPage() {
         limitAmount={releaseRow?.amount ?? null}
         onSubmitted={handleAdjusted}
       />
+
+      {allocation && (
+        <AllocationDirectDeductDialog
+          open={deductOpen}
+          onOpenChange={setDeductOpen}
+          allocation={allocation}
+          onSubmitted={handleAdjusted}
+        />
+      )}
 
       <ConfirmDialog
         open={confirmDelete}

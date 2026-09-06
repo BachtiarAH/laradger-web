@@ -29,6 +29,7 @@ export function AllocationForm({
     name: initial?.name ?? '',
     description: initial?.description ?? '',
     targetAmount: initial?.target_amount ? Number(initial.target_amount) : '',
+    manualRealizedAmount: initial?.manual_realized_amount ? Number(initial.manual_realized_amount) : '',
     type: (initial?.type ?? 'recurring') as AllocationType,
     periodType: (initial?.period_type ?? 'monthly') as AllocationPeriod,
     rollForwardMode: (initial?.roll_forward_mode ?? 'reset') as AllocationRollForward,
@@ -47,6 +48,9 @@ export function AllocationForm({
       target_amount: form.targetAmount === '' || form.targetAmount === null
         ? null
         : Number(form.targetAmount),
+      manual_realized_amount: form.manualRealizedAmount === '' || form.manualRealizedAmount === null
+        ? 0
+        : Number(form.manualRealizedAmount),
       type: form.type,
       period_type: form.periodType,
       roll_forward_mode: form.rollForwardMode,
@@ -145,6 +149,24 @@ export function AllocationForm({
           value={form.description}
           onChange={(e) => set({ description: e.target.value })}
         />
+      </Field>
+
+      <Field
+        label="Potong Langsung / Realisasi Manual (opsional)"
+        htmlFor="allocation-manual-realized"
+      >
+        <Input
+          id="allocation-manual-realized"
+          type="number"
+          step="0.01"
+          min="0"
+          placeholder="0.00"
+          value={form.manualRealizedAmount}
+          onChange={(e) => set({ manualRealizedAmount: e.target.value })}
+        />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Nominal alokasi yang langsung terpakai tanpa transaksi jurnal (mengurangi sisa alokasi).
+        </p>
       </Field>
 
       {error != null && <ErrorBox error={error} />}
