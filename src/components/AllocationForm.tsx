@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+import { AccountMultiSelect } from './AccountMultiSelect'
 
 export function AllocationForm({
   initial,
@@ -33,6 +34,7 @@ export function AllocationForm({
     type: (initial?.type ?? 'recurring') as AllocationType,
     periodType: (initial?.period_type ?? 'monthly') as AllocationPeriod,
     rollForwardMode: (initial?.roll_forward_mode ?? 'reset') as AllocationRollForward,
+    expenseAccountIds: initial?.expense_account_ids ?? initial?.expense_accounts?.map((a) => a.id) ?? [] as string[],
   })
   const [error, setError] = React.useState<unknown>(null)
 
@@ -54,6 +56,7 @@ export function AllocationForm({
       type: form.type,
       period_type: form.periodType,
       roll_forward_mode: form.rollForwardMode,
+      expense_account_ids: form.expenseAccountIds,
     }
     try {
       await onSubmit(payload)
@@ -149,6 +152,18 @@ export function AllocationForm({
           value={form.description}
           onChange={(e) => set({ description: e.target.value })}
         />
+      </Field>
+
+      <Field label="Auto-spend Akun Beban (opsional)">
+        <AccountMultiSelect
+          selectedIds={form.expenseAccountIds}
+          onChange={(ids) => set({ expenseAccountIds: ids })}
+          filterType="expense"
+          placeholder="Pilih akun beban untuk auto-spend…"
+        />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Setiap transaksi pengeluaran (expense) yang menggunakan akun-akun beban ini akan otomatis memotong dan memenuhi alokasi ini.
+        </p>
       </Field>
 
       <Field

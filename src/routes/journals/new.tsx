@@ -88,9 +88,29 @@ function NewJournalPage() {
     })
   }, [lines, accountTypes])
 
+  const [userInteractedAllocation, setUserInteractedAllocation] = React.useState(false)
+
   const hasExpenseAccount = React.useMemo(() => {
     return lines.some((l) => accountTypes.get(l.account_id) === 'expense')
   }, [lines, accountTypes])
+
+  React.useEffect(() => {
+    if (userInteractedAllocation || allocationId) return
+    const allocList = allocations.data?.data ?? []
+    if (allocList.length === 0) return
+
+    for (const line of lines) {
+      if (!line.account_id) continue
+      const matched = allocList.find((a) =>
+        a.expense_account_ids?.includes(line.account_id) ||
+        a.expense_accounts?.some((acc) => acc.id === line.account_id)
+      )
+      if (matched) {
+        setAllocationId(matched.id)
+        break
+      }
+    }
+  }, [lines, allocations.data, allocationId, userInteractedAllocation])
   const lineErrors = React.useMemo<Record<number, string>>(() => {
     if (error instanceof ApiError && error.errors) {
       const map: Record<number, string> = {}
@@ -332,7 +352,10 @@ function NewJournalPage() {
                 <Select
                   disabled={!hasExpenseAccount}
                   value={hasExpenseAccount ? (allocationId ?? 'none') : 'none'}
-                  onValueChange={(v) => setAllocationId(v === 'none' ? null : v)}
+                  onValueChange={(v) => {
+                    setUserInteractedAllocation(true)
+                    setAllocationId(v === 'none' ? null : v)
+                  }}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue
@@ -345,11 +368,19 @@ function NewJournalPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— None (No allocation) —</SelectItem>
-                    {(allocations.data?.data ?? []).map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name} (Remaining: {a.remaining_amount ?? a.target_amount ?? '—'})
-                      </SelectItem>
-                    ))}
+                    {(allocations.data?.data ?? []).map((a) => {
+                      const hasLineMatch = lines.some((l) =>
+                        l.account_id &&
+                        (a.expense_account_ids?.includes(l.account_id) ||
+                          a.expense_accounts?.some((acc) => acc.id === l.account_id))
+                      )
+                      return (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name} (Remaining: {a.remaining_amount ?? a.target_amount ?? '—'})
+                          {hasLineMatch ? ' ⚡ Auto' : ''}
+                        </SelectItem>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
                 {!hasExpenseAccount && (

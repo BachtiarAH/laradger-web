@@ -57,6 +57,27 @@ function QuickTransactionPage() {
 
   const allTags = React.useMemo(() => [...tags, ...extraTags], [tags, extraTags])
 
+  const handleExpenseChange = (id: string | null) => {
+    setExpenseId(id)
+    if (id) {
+      const matched = allocations.find((a) =>
+        a.expense_account_ids?.includes(id) ||
+        a.expense_accounts?.some((acc) => acc.id === id)
+      )
+      if (matched) {
+        setAllocationId(matched.id)
+      }
+    }
+  }
+
+  const matchedAllocation = React.useMemo(() => {
+    if (!expenseId) return null
+    return allocations.find((a) =>
+      a.expense_account_ids?.includes(expenseId) ||
+      a.expense_accounts?.some((acc) => acc.id === expenseId)
+    )
+  }, [allocations, expenseId])
+
   React.useEffect(() => {
     api.listTags({ per_page: 100 }).then((r) => setTags(r.data)).catch(() => {})
     api.listAllocations({ per_page: 100, status: 'active' }).then((r) => setAllocations(r.data)).catch(() => {})
@@ -187,7 +208,7 @@ function QuickTransactionPage() {
                   </Field>
                 )}
                 <Field label="Category (Expense: Coffee / Food)">
-                  <AccountSelect value={expenseId} onValueChange={setExpenseId} type="expense" leafOnly allowCreate lockCreateType createDescription="Kategori pengeluaran — tipe otomatis expense" placeholder="Pilih kategori expense..." />
+                  <AccountSelect value={expenseId} onValueChange={handleExpenseChange} type="expense" leafOnly allowCreate lockCreateType createDescription="Kategori pengeluaran — tipe otomatis expense" placeholder="Pilih kategori expense..." />
                 </Field>
               </div>
               <Field label="Fulfill Allocation (optional)">
@@ -200,13 +221,26 @@ function QuickTransactionPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— None (No allocation) —</SelectItem>
-                    {allocations.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name} (Remaining: {a.remaining_amount ?? a.target_amount ?? '—'})
-                      </SelectItem>
-                    ))}
+                    {allocations.map((a) => {
+                      const isAutoMatch = Boolean(
+                        expenseId &&
+                        (a.expense_account_ids?.includes(expenseId) ||
+                          a.expense_accounts?.some((acc) => acc.id === expenseId))
+                      )
+                      return (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name} (Remaining: {a.remaining_amount ?? a.target_amount ?? '—'})
+                          {isAutoMatch ? ' ⚡ Auto' : ''}
+                        </SelectItem>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
+                {matchedAllocation && allocationId === matchedAllocation.id && (
+                  <p className="mt-1 text-xs text-primary">
+                    ⚡ Alokasi otomatis terpilih karena akun beban ini terhubung dengan alokasi &ldquo;{matchedAllocation.name}&rdquo;.
+                  </p>
+                )}
               </Field>
               <p className="text-xs text-muted-foreground">{expensePayment === 'cash' ? 'Jurnal: Dr Expense / Cr Asset (langsung lunas)' : 'Jurnal: Dr Expense / Cr Liability (hutang naik) — lunasi nanti via tab Debt'}</p>
             </>

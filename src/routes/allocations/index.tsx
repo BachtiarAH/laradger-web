@@ -160,6 +160,19 @@ function AllocationsPage() {
                               {allocation.description}
                             </p>
                           )}
+                          {allocation.expense_accounts && allocation.expense_accounts.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {allocation.expense_accounts.map((acc) => (
+                                <span
+                                  key={acc.id}
+                                  className="inline-flex items-center rounded bg-secondary/80 px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                                  title={`Auto-spend: ${acc.code} — ${acc.name}`}
+                                >
+                                  ⚡ {acc.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </Td>
                         <Td className="text-sm">
                           <span className="capitalize">{allocation.type ?? 'recurring'}</span>

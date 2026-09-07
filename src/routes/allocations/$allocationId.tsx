@@ -188,6 +188,25 @@ function AllocationDetailPage() {
                   <dd className="mt-1 capitalize">{allocation.status}</dd>
                 </div>
                 <div className="col-span-2">
+                  <dt className="text-muted-foreground">Auto-spend Expense Accounts</dt>
+                  <dd className="mt-1">
+                    {allocation.expense_accounts && allocation.expense_accounts.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {allocation.expense_accounts.map((acc) => (
+                          <span
+                            key={acc.id}
+                            className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+                          >
+                            {acc.code} — {acc.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground italic text-xs">Belum ada akun pengeluaran terhubung (manual only)</span>
+                    )}
+                  </dd>
+                </div>
+                <div className="col-span-2">
                   <dt className="text-muted-foreground">Description</dt>
                   <dd className="mt-1">{allocation.description || '—'}</dd>
                 </div>

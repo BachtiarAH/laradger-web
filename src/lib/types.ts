@@ -289,6 +289,8 @@ export type Allocation = {
   created_at: string
   updated_at: string
   accounts?: AllocationAccount[]
+  expense_accounts?: Account[]
+  expense_account_ids?: string[]
 }
 
 export type AllocationAccount = {
@@ -311,6 +313,7 @@ export type AllocationStore = {
   manual_realized_amount?: number | null
   status?: AllocationStatus
   expires_at?: string | null
+  expense_account_ids?: string[]
 }
 
 export type AllocationUpdate = Partial<AllocationStore>
