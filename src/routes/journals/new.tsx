@@ -51,11 +51,46 @@ function NewJournalPage() {
   const [error, setError] = React.useState<unknown>(null)
   const [saving, setSaving] = React.useState(false)
 
-  const accounts = useFetch(() => api.listAccounts({ per_page: 20 }), [])
+  const accounts = useFetch(() => api.listAccounts({ per_page: 100 }), [])
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
   const allocations = useFetch(() => api.listAllocations({ per_page: 100, status: 'active' }), [])
   const goals = useFetch(() => api.listGoals({ per_page: 100, status: 'active' }), [])
   const nextRef = useFetch(() => api.nextJournalReference(), [])
+
+  const [accountTypes, setAccountTypes] = React.useState<Map<string, string>>(new Map())
+
+  React.useEffect(() => {
+    if (accounts.data?.data) {
+      setAccountTypes((prev) => {
+        const next = new Map(prev)
+        accounts.data!.data.forEach((acc) => next.set(acc.id, acc.type))
+        return next
+      })
+    }
+  }, [accounts.data])
+
+  React.useEffect(() => {
+    const unknownIds = lines
+      .map((l) => l.account_id)
+      .filter((id) => id && !accountTypes.has(id))
+
+    unknownIds.forEach((id) => {
+      api
+        .getAccount(id)
+        .then((res) => {
+          setAccountTypes((prev) => {
+            const next = new Map(prev)
+            next.set(id, res.data.type)
+            return next
+          })
+        })
+        .catch(() => {})
+    })
+  }, [lines, accountTypes])
+
+  const hasExpenseAccount = React.useMemo(() => {
+    return lines.some((l) => accountTypes.get(l.account_id) === 'expense')
+  }, [lines, accountTypes])
   const lineErrors = React.useMemo<Record<number, string>>(() => {
     if (error instanceof ApiError && error.errors) {
       const map: Record<number, string> = {}
@@ -130,7 +165,7 @@ function NewJournalPage() {
       ...(referenceCustom && customReference.trim() ? { reference: customReference.trim() } : {}),
       status,
       source,
-      ...(allocationId ? { allocation_id: allocationId } : {}),
+      ...(hasExpenseAccount && allocationId ? { allocation_id: allocationId } : {}),
       ...(goalId ? { goal_id: goalId } : {}),
       lines: linesPayload,
       ...(tagIds.length > 0 ? { tags: tagIds } : {}),
@@ -295,11 +330,18 @@ function NewJournalPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Fulfill Allocation (optional)">
                 <Select
-                  value={allocationId ?? 'none'}
+                  disabled={!hasExpenseAccount}
+                  value={hasExpenseAccount ? (allocationId ?? 'none') : 'none'}
                   onValueChange={(v) => setAllocationId(v === 'none' ? null : v)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="— None (No allocation) —" />
+                    <SelectValue
+                      placeholder={
+                        !hasExpenseAccount
+                          ? '— Dinonaktifkan (perlu akun beban/expense) —'
+                          : '— None (No allocation) —'
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— None (No allocation) —</SelectItem>
@@ -310,6 +352,11 @@ function NewJournalPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {!hasExpenseAccount && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Alokasi dinonaktifkan karena belum ada baris dengan akun beban (expense). Alokasi anggaran hanya dapat dipenuhi oleh transaksi pengeluaran/beban.
+                  </p>
+                )}
               </Field>
               <Field label="Contribute to Goal (optional)">
                 <Select

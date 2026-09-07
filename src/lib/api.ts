@@ -198,6 +198,11 @@ const put = <T>(path: string, body?: unknown) =>
     method: 'PUT',
     body: body === undefined ? undefined : JSON.stringify(body),
   })
+const patch = <T>(path: string, body?: unknown) =>
+  request<T>(path, {
+    method: 'PATCH',
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
 const del = (path: string) => request<void>(path, { method: 'DELETE' })
 
 export const api = {
@@ -304,6 +309,11 @@ export const api = {
     post<ApiEnvelope<Journal>>(tenantPath('/journals'), payload),
   updateJournal: (id: string, payload: JournalStore) =>
     put<ApiEnvelope<Journal>>(tenantPath(`/journals/${id}`), payload),
+  updateJournalPlanning: (
+    id: string,
+    payload: { allocation_id?: string | null; goal_id?: string | null },
+  ) =>
+    patch<ApiEnvelope<Journal>>(tenantPath(`/journals/${id}/planning`), payload),
   deleteJournal: (id: string) => del(tenantPath(`/journals/${id}`)),
   reverseJournal: (id: string) =>
     post<ApiEnvelope<Journal>>(tenantPath(`/journals/${id}/reverse`)),

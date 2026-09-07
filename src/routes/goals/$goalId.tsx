@@ -218,7 +218,7 @@ function GoalDetailPage() {
             <LoadingBox label="Loading contribution journals…" />
           ) : (journals.data?.data ?? []).length === 0 ? (
             <p className="text-sm text-muted-foreground py-2">
-              No transfer transactions have contributed to this goal yet.
+              No transfer transactions have contributed to this goal yet. You can create a new transfer or link an existing posted journal to this goal from its detail page.
             </p>
           ) : (
             <Table>

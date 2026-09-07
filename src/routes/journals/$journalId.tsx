@@ -115,6 +115,7 @@ function JournalDetailPage() {
   }, [journal?.lines])
 
   const [accountLabels, setAccountLabels] = React.useState<Map<string, string>>(new Map())
+  const [accountTypes, setAccountTypes] = React.useState<Map<string, string>>(new Map())
 
   React.useEffect(() => {
     const ids = new Set<string>()
@@ -123,6 +124,11 @@ function JournalDetailPage() {
         setAccountLabels((prev) => {
           const next = new Map(prev)
           next.set(l.account_id, `${l.account!.code} — ${l.account!.name}`)
+          return next
+        })
+        setAccountTypes((prev) => {
+          const next = new Map(prev)
+          next.set(l.account_id, l.account!.type)
           return next
         })
       } else if (!accountLabels.has(l.account_id)) {
@@ -138,11 +144,24 @@ function JournalDetailPage() {
             next.set(id, `${res.data.code} — ${res.data.name}`)
             return next
           })
+          setAccountTypes((prev) => {
+            const next = new Map(prev)
+            next.set(id, res.data.type)
+            return next
+          })
         })
         .catch(() => {})
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [journal?.lines])
+
+  const hasExpenseAccount = React.useMemo(() => {
+    return orderedLines.some(
+      (line) =>
+        line.account?.type === 'expense' ||
+        accountTypes.get(line.account_id) === 'expense'
+    )
+  }, [orderedLines, accountTypes])
 
   const accountName = (accountId: string) => {
     return accountLabels.get(accountId) ?? accountId
@@ -163,25 +182,32 @@ function JournalDetailPage() {
 
   const handleSaveJournal = (statusOverride?: 'draft' | 'posted') => {
     const original = journal!
-    const payload = {
-      transaction_date: formDate,
-      description: formDescription,
-      reference: formReference,
-      status: statusOverride ?? formStatus,
-      source: original.source,
-      allocation_id: formAllocationId,
-      goal_id: formGoalId,
-      lines: orderedLines.map((line) => ({
-        account_id: line.account_id,
-        debit: Number(line.debit),
-        credit: Number(line.credit),
-        description: line.description ?? undefined,
-      })),
-      tags: (original.tags ?? []).map((tag) => tag.id),
-    }
     return runAction(async () => {
-      await api.updateJournal(journalId, payload)
-      if (statusOverride) setFormStatus(statusOverride)
+      if (original.status === 'posted') {
+        await api.updateJournalPlanning(journalId, {
+          allocation_id: hasExpenseAccount ? formAllocationId : null,
+          goal_id: formGoalId,
+        })
+      } else {
+        const payload = {
+          transaction_date: formDate,
+          description: formDescription,
+          reference: formReference,
+          status: statusOverride ?? formStatus,
+          source: original.source,
+          allocation_id: hasExpenseAccount ? formAllocationId : null,
+          goal_id: formGoalId,
+          lines: orderedLines.map((line) => ({
+            account_id: line.account_id,
+            debit: Number(line.debit),
+            credit: Number(line.credit),
+            description: line.description ?? undefined,
+          })),
+          tags: (original.tags ?? []).map((tag) => tag.id),
+        }
+        await api.updateJournal(journalId, payload)
+        if (statusOverride) setFormStatus(statusOverride)
+      }
       setEditing(false)
     })
   }
@@ -400,9 +426,9 @@ function JournalDetailPage() {
                   Post
                 </Button>
               )}
-              {isDraft && (
+              {(isDraft || isPosted) && (
                 <Button variant="secondary" onClick={() => setEditing((v) => !v)}>
-                  {editing ? 'Cancel edit' : 'Edit'}
+                  {editing ? 'Cancel edit' : isPosted ? 'Edit planning' : 'Edit'}
                 </Button>
               )}
               {isPosted && (
@@ -507,21 +533,30 @@ function JournalDetailPage() {
 
           {editing && (
             <Card className="mb-4 space-y-4 p-6">
-              <h2 className="text-lg font-semibold text-foreground">
-                Edit journal
-              </h2>
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">
+                  {isPosted ? 'Edit planning links' : 'Edit journal'}
+                </h2>
+                {isPosted && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Jurnal ini sudah diposting (posted). Kolom keuangan terkunci demi integritas akuntansi, namun Anda bebas menautkan atau mengganti Alokasi dan Goal.
+                  </p>
+                )}
+              </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <Field label="Transaction date">
                   <Input
                     type="date"
                     value={formDate}
                     onChange={(e) => setFormDate(e.target.value)}
+                    disabled={isPosted}
                   />
                 </Field>
                 <Field label="Reference">
                   <Input
                     value={formReference}
                     onChange={(e) => setFormReference(e.target.value)}
+                    disabled={isPosted}
                   />
                 </Field>
                 <Field label="Status">
@@ -530,6 +565,7 @@ function JournalDetailPage() {
                     onValueChange={(value) =>
                       setFormStatus(value as 'draft' | 'posted')
                     }
+                    disabled={isPosted}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue />
@@ -544,11 +580,18 @@ function JournalDetailPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Fulfill Allocation (optional)">
                   <Select
-                    value={formAllocationId ?? 'none'}
+                    disabled={!hasExpenseAccount}
+                    value={hasExpenseAccount ? (formAllocationId ?? 'none') : 'none'}
                     onValueChange={(v) => setFormAllocationId(v === 'none' ? null : v)}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="— None (No allocation) —" />
+                      <SelectValue
+                        placeholder={
+                          !hasExpenseAccount
+                            ? '— Dinonaktifkan (perlu akun beban/expense) —'
+                            : '— None (No allocation) —'
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">— None (No allocation) —</SelectItem>
@@ -559,6 +602,11 @@ function JournalDetailPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {!hasExpenseAccount && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Alokasi dinonaktifkan karena jurnal ini tidak memiliki akun beban (expense). Alokasi anggaran hanya dapat dipenuhi oleh transaksi pengeluaran/beban.
+                    </p>
+                  )}
                 </Field>
                 <Field label="Contribute to Goal (optional)">
                   <Select
@@ -583,13 +631,13 @@ function JournalDetailPage() {
                 <Input
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
+                  disabled={isPosted}
                 />
               </Field>
               <div className="flex gap-2">
                 <Button
                   onClick={() => handleSaveJournal()}
                   loading={busy}
-                  disabled={!isDraft}
                 >
                   Save changes
                 </Button>
