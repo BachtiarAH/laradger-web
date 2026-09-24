@@ -14,7 +14,7 @@ const PERIOD_LABEL: Record<string, string> = {
 export function TemplateQuickActions() {
   const navigate = useNavigate()
   const { data, error, loading, reload } = useFetch(
-    () => api.listJournalTemplates({ is_active: true, per_page: 4 }),
+    () => api.listJournalTemplates({ is_active: true, show_on_dashboard: true, per_page: 4 }),
     [],
   )
 
@@ -33,7 +33,7 @@ export function TemplateQuickActions() {
               {data && <Badge value="active" />}
             </div>
             <p className="text-xs text-muted-foreground">
-              {data ? `${data.total} active template${data.total === 1 ? '' : 's'}` : 'Active journal templates'}
+              {data ? `${data.total} selected template${data.total === 1 ? '' : 's'}` : 'Selected journal templates'}
             </p>
           </div>
         </div>
@@ -61,7 +61,7 @@ export function TemplateQuickActions() {
 
       {!loading && !error && templates.length === 0 && (
         <div className="px-6 py-5 text-sm text-muted-foreground">
-          No active templates.{' '}
+          No active templates selected for the dashboard.{' '}
           <Link to="/templates/new" className="font-medium text-primary hover:underline">
             Create one
           </Link>{' '}

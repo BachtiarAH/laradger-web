@@ -63,6 +63,7 @@ export function TemplateForm({
     initial?.day_of_month != null ? String(initial.day_of_month) : '1',
   )
   const [isActive, setIsActive] = React.useState(initial?.is_active ?? true)
+  const [showOnDashboard, setShowOnDashboard] = React.useState(initial?.show_on_dashboard ?? true)
   const [allocationId, setAllocationId] = React.useState(
     initial?.allocation_id ?? NO_ALLOCATION,
   )
@@ -92,6 +93,7 @@ export function TemplateForm({
       ...(description ? { description } : {}),
       period_type: periodType,
       is_active: isActive,
+      show_on_dashboard: showOnDashboard,
       allocation_id: allocationId === NO_ALLOCATION ? null : allocationId,
       lines: lines.map((line) => ({
         account_id: line.account_id,
@@ -181,13 +183,21 @@ export function TemplateForm({
             />
           </Field>
         )}
-        <div className="flex min-w-0 items-end pb-2">
+        <div className="flex min-w-0 flex-col gap-2 pb-2">
           <label className="flex min-w-0 cursor-pointer items-center gap-2 text-sm">
             <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="h-4 w-4 shrink-0 rounded border-input" />
             <span className="min-w-0 break-words leading-tight">Aktif (otomatis dibuat tiap periode)</span>
           </label>
+          <label className="flex min-w-0 cursor-pointer items-center gap-2 text-sm">
+            <input type="checkbox" checked={showOnDashboard} onChange={(e) => setShowOnDashboard(e.target.checked)} className="h-4 w-4 shrink-0 rounded border-input" />
+            <span className="min-w-0 break-words leading-tight">Tampilkan di dashboard</span>
+          </label>
         </div>
       </div>
+
+      <p className="-mt-2 text-xs text-muted-foreground">
+        Template yang tidak ditampilkan tetap berjalan dan membuat jurnal sesuai jadwalnya.
+      </p>
 
       <Field label="Allocation" htmlFor="journal-template-allocation">
         <Select value={allocationId} onValueChange={setAllocationId}>

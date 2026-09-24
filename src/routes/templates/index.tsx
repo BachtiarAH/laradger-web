@@ -60,6 +60,7 @@ function TemplatesPage() {
   const [generating, setGenerating] = React.useState(false)
   const [actionError, setActionError] = React.useState<unknown>(null)
   const [busy, setBusy] = React.useState(false)
+  const [updatingVisibility, setUpdatingVisibility] = React.useState<string | null>(null)
 
   const { data, error, loading, reload } = useFetch(
     () =>
@@ -102,6 +103,21 @@ function TemplatesPage() {
       throw err
     } finally {
       setGenerating(false)
+    }
+  }
+
+  const handleToggleDashboard = async (template: JournalTemplate) => {
+    setActionError(null)
+    setUpdatingVisibility(template.id)
+    try {
+      await api.updateJournalTemplate(template.id, {
+        show_on_dashboard: !template.show_on_dashboard,
+      })
+      reload()
+    } catch (err) {
+      setActionError(err)
+    } finally {
+      setUpdatingVisibility(null)
     }
   }
 
@@ -173,6 +189,7 @@ function TemplatesPage() {
                     <Th>Name</Th>
                     <Th>Period</Th>
                     <Th>Status</Th>
+                    <Th>Dashboard</Th>
                     <Th>Allocation</Th>
                     <Th>Lines</Th>
                     <Th>Next run</Th>
@@ -202,6 +219,22 @@ function TemplatesPage() {
                       </Td>
                       <Td>{PERIOD_LABEL[template.period_type] ?? template.period_type}</Td>
                       <Td><Badge value={template.is_active ? 'active' : 'inactive'} /></Td>
+                       <Td>
+                         <label
+                           className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground"
+                           onClick={(e) => e.stopPropagation()}
+                         >
+                           <input
+                             type="checkbox"
+                             checked={template.show_on_dashboard}
+                             disabled={updatingVisibility === template.id}
+                             onChange={() => void handleToggleDashboard(template)}
+                             className="h-4 w-4 rounded border-input"
+                             aria-label={`Show ${template.name} on dashboard`}
+                           />
+                           <span>{template.show_on_dashboard ? 'Shown' : 'Hidden'}</span>
+                         </label>
+                       </Td>
                       <Td>
                         {template.allocation ? (
                           <Link

@@ -181,6 +181,7 @@ export type JournalTemplate = {
   description: string | null
   period_type: JournalTemplatePeriod
   is_active: boolean
+  show_on_dashboard: boolean
   day_of_week: number | null
   day_of_month: number | null
   next_run_at: string | null
@@ -219,6 +220,7 @@ export type JournalTemplateStore = {
   description?: string | null
   period_type: JournalTemplatePeriod
   is_active?: boolean
+  show_on_dashboard?: boolean
   day_of_week?: number | null
   day_of_month?: number | null
   allocation_id?: string | null

@@ -337,6 +337,7 @@ export const api = {
       per_page?: number
       period_type?: string
       is_active?: boolean
+      show_on_dashboard?: boolean
       search?: string
     } = {},
   ) =>

@@ -200,6 +200,10 @@ function TemplateDetailPage() {
                 </dd>
               </div>
               <div>
+                <dt className="text-muted-foreground">Dashboard</dt>
+                <dd className="mt-1">{template.show_on_dashboard ? 'Shown' : 'Hidden'}</dd>
+              </div>
+              <div>
                 <dt className="text-muted-foreground">Next run</dt>
                 <dd className="mt-1">{template.next_run_at ? formatDate(template.next_run_at) : '—'}</dd>
               </div>
