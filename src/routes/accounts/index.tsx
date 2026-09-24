@@ -439,15 +439,15 @@ function AccountsPage() {
 
               <Select value={filterCategory} onValueChange={setFilterCategory}>
                 <SelectTrigger className="h-8 text-xs bg-background w-[200px]">
-                  <SelectValue placeholder="Semua Kategori" />
+                  <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">Semua Kategori</SelectItem>
-                  <SelectItem value="asset">1 - Aset</SelectItem>
-                  <SelectItem value="liability">2 - Liabilitas</SelectItem>
-                  <SelectItem value="equity">3 - Ekuitas</SelectItem>
-                  <SelectItem value="income">4 - Pendapatan</SelectItem>
-                  <SelectItem value="expense">5/6 - Beban</SelectItem>
+                  <SelectItem value="ALL">All Categories</SelectItem>
+                  <SelectItem value="asset">Assets</SelectItem>
+                  <SelectItem value="liability">Liabilities</SelectItem>
+                  <SelectItem value="equity">Equity</SelectItem>
+                  <SelectItem value="income">Income</SelectItem>
+                  <SelectItem value="expense">Expenses</SelectItem>
                 </SelectContent>
               </Select>
 
