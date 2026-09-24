@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { ApiError, api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
@@ -182,6 +182,22 @@ function TemplateDetailPage() {
               <div>
                 <dt className="text-muted-foreground">Status</dt>
                 <dd className="mt-1">{template.is_active ? 'Aktif' : 'Nonaktif'}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Allocation</dt>
+                <dd className="mt-1">
+                  {template.allocation ? (
+                    <Link
+                      to="/allocations/$allocationId"
+                      params={{ allocationId: template.allocation.id }}
+                      className="text-primary hover:underline"
+                    >
+                      {template.allocation.name}
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-emerald-700 dark:text-emerald-300">Auto-detect</span>
+                  )}
+                </dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">Next run</dt>

@@ -185,6 +185,8 @@ export type JournalTemplate = {
   day_of_month: number | null
   next_run_at: string | null
   last_run_at: string | null
+  allocation_id?: string | null
+  allocation?: Pick<Allocation, 'id' | 'name' | 'status'> | null
   created_at: string
   updated_at: string
   lines?: JournalTemplateLine[]
@@ -219,6 +221,7 @@ export type JournalTemplateStore = {
   is_active?: boolean
   day_of_week?: number | null
   day_of_month?: number | null
+  allocation_id?: string | null
   lines: JournalTemplateStoreLine[]
   tags?: string[]
 }

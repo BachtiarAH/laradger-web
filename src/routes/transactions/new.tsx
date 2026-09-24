@@ -17,11 +17,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui'
-import type { QuickTransactionType, Tag } from '../../lib/types'
+import type { Allocation, QuickTransactionType, Tag } from '../../lib/types'
 
 export const Route = createFileRoute('/transactions/new')({
   component: QuickTransactionPage,
 })
+
+function allocationMatchesExpense(allocation: Allocation, expenseId: string): boolean {
+  return Boolean(
+    allocation.expense_account_ids?.includes(expenseId) ||
+    allocation.expense_accounts?.some((account) => account.id === expenseId),
+  )
+}
 
 const tabs: { id: QuickTransactionType; label: string; desc: string }[] = [
   { id: 'expense', label: 'Expense', desc: 'Bayar / belanja' },
@@ -59,24 +66,20 @@ function QuickTransactionPage() {
 
   const handleExpenseChange = (id: string | null) => {
     setExpenseId(id)
-    if (id) {
-      const matched = allocations.find((a) =>
-        a.expense_account_ids?.includes(id) ||
-        a.expense_accounts?.some((acc) => acc.id === id)
-      )
-      if (matched) {
-        setAllocationId(matched.id)
-      }
+    if (!id) {
+      setAllocationId(null)
+      return
     }
+
+    const matches = allocations.filter((allocation) => allocationMatchesExpense(allocation, id))
+    setAllocationId(matches.length === 1 ? matches[0].id : null)
   }
 
-  const matchedAllocation = React.useMemo(() => {
-    if (!expenseId) return null
-    return allocations.find((a) =>
-      a.expense_account_ids?.includes(expenseId) ||
-      a.expense_accounts?.some((acc) => acc.id === expenseId)
-    )
+  const matchingAllocations = React.useMemo(() => {
+    if (!expenseId) return []
+    return allocations.filter((allocation) => allocationMatchesExpense(allocation, expenseId))
   }, [allocations, expenseId])
+  const matchedAllocation = matchingAllocations.length === 1 ? matchingAllocations[0] : null
 
   React.useEffect(() => {
     api.listTags({ per_page: 100 }).then((r) => setTags(r.data)).catch(() => {})
@@ -223,9 +226,7 @@ function QuickTransactionPage() {
                     <SelectItem value="none">— None (No allocation) —</SelectItem>
                     {allocations.map((a) => {
                       const isAutoMatch = Boolean(
-                        expenseId &&
-                        (a.expense_account_ids?.includes(expenseId) ||
-                          a.expense_accounts?.some((acc) => acc.id === expenseId))
+                        expenseId && allocationMatchesExpense(a, expenseId)
                       )
                       return (
                         <SelectItem key={a.id} value={a.id}>
@@ -239,6 +240,11 @@ function QuickTransactionPage() {
                 {matchedAllocation && allocationId === matchedAllocation.id && (
                   <p className="mt-1 text-xs text-primary">
                     ⚡ Alokasi otomatis terpilih karena akun beban ini terhubung dengan alokasi &ldquo;{matchedAllocation.name}&rdquo;.
+                  </p>
+                )}
+                {matchingAllocations.length > 1 && (
+                  <p className="mt-1 text-xs text-destructive">
+                    ⚠ Ada {matchingAllocations.length} auto-allocation untuk akun ini. Pilih satu secara eksplisit atau perbaiki mapping.
                   </p>
                 )}
               </Field>

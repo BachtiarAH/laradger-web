@@ -173,6 +173,7 @@ function TemplatesPage() {
                     <Th>Name</Th>
                     <Th>Period</Th>
                     <Th>Status</Th>
+                    <Th>Allocation</Th>
                     <Th>Lines</Th>
                     <Th>Next run</Th>
                     <Th className="text-right">Actions</Th>
@@ -201,6 +202,20 @@ function TemplatesPage() {
                       </Td>
                       <Td>{PERIOD_LABEL[template.period_type] ?? template.period_type}</Td>
                       <Td><Badge value={template.is_active ? 'active' : 'inactive'} /></Td>
+                      <Td>
+                        {template.allocation ? (
+                          <Link
+                            to="/allocations/$allocationId"
+                            params={{ allocationId: template.allocation.id }}
+                            className="text-primary hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {template.allocation.name}
+                          </Link>
+                        ) : (
+                          <span className="text-xs text-emerald-700 dark:text-emerald-300">Auto-detect</span>
+                        )}
+                      </Td>
                       <Td>{template.lines_count ?? template.lines?.length ?? '—'}</Td>
                       <Td>{template.next_run_at ? formatDate(template.next_run_at) : '—'}</Td>
                       <Td className="text-right">

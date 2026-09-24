@@ -23,6 +23,7 @@ const PERIODS: { value: JournalTemplatePeriod; label: string }[] = [
 ]
 
 const WEEKDAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+const NO_ALLOCATION = '__none__'
 
 function toLineDraft(line?: {
   account_id: string
@@ -62,6 +63,9 @@ export function TemplateForm({
     initial?.day_of_month != null ? String(initial.day_of_month) : '1',
   )
   const [isActive, setIsActive] = React.useState(initial?.is_active ?? true)
+  const [allocationId, setAllocationId] = React.useState(
+    initial?.allocation_id ?? NO_ALLOCATION,
+  )
   const [lines, setLines] = React.useState<LineDraft[]>(
     initial?.lines && initial.lines.length > 0
       ? initial.lines.map(toLineDraft)
@@ -74,8 +78,13 @@ export function TemplateForm({
 
   const accounts = useFetch(() => api.listAccounts({ per_page: 100 }), [])
   const tags = useFetch(() => api.listTags({ per_page: 100 }), [])
+  const allocations = useFetch(
+    () => api.listAllocations({ status: 'active', per_page: 100 }),
+    [],
+  )
   const [extraTags, setExtraTags] = React.useState<Tag[]>([])
   const allTags = React.useMemo(() => [...(tags.data?.data ?? []), ...extraTags], [tags.data, extraTags])
+  const allocationOptions = allocations.data?.data ?? []
 
   const buildPayload = () => {
     const base = {
@@ -83,6 +92,7 @@ export function TemplateForm({
       ...(description ? { description } : {}),
       period_type: periodType,
       is_active: isActive,
+      allocation_id: allocationId === NO_ALLOCATION ? null : allocationId,
       lines: lines.map((line) => ({
         account_id: line.account_id,
         ...(line.debit ? { debit: Number(line.debit) } : {}),
@@ -178,6 +188,33 @@ export function TemplateForm({
           </label>
         </div>
       </div>
+
+      <Field label="Allocation" htmlFor="journal-template-allocation">
+        <Select value={allocationId} onValueChange={setAllocationId}>
+          <SelectTrigger id="journal-template-allocation" className="w-full">
+            <SelectValue placeholder="Auto-detect (no explicit allocation)" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NO_ALLOCATION}>Auto-detect (no explicit allocation)</SelectItem>
+            {allocationOptions.map((allocation) => (
+              <SelectItem key={allocation.id} value={allocation.id}>
+                {allocation.name}
+              </SelectItem>
+            ))}
+            {initial?.allocation && !allocationOptions.some((allocation) => allocation.id === initial.allocation?.id) && (
+              <SelectItem value={initial.allocation.id}>
+                {initial.allocation.name} · Current
+              </SelectItem>
+            )}
+          </SelectContent>
+        </Select>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Auto-detect wins when all expense lines match one active allocation. The selected allocation is only a fallback when there is no match; no match means no allocation, while multiple or partial matches stop generation.
+        </p>
+        {allocations.error != null && (
+          <p className="mt-1 text-xs text-destructive">Failed to load allocations.</p>
+        )}
+      </Field>
 
       <div className="space-y-2">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Lines</h3>

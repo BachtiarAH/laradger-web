@@ -162,7 +162,7 @@ export function AllocationForm({
           placeholder="Pilih akun beban untuk auto-spend…"
         />
         <p className="mt-1 text-xs text-muted-foreground">
-          Setiap transaksi pengeluaran (expense) yang menggunakan akun-akun beban ini akan otomatis memotong dan memenuhi alokasi ini.
+          Setiap transaksi pengeluaran (expense) yang menggunakan akun-akun beban ini akan otomatis memotong dan memenuhi alokasi ini. Setiap akun hanya boleh masuk ke satu active auto allocation.
         </p>
       </Field>
 

@@ -5,6 +5,7 @@ import { useFetch } from '../lib/useFetch'
 import { useAuth } from '../lib/auth'
 import { Button, Card, LoadingBox, ErrorBox } from '../components/ui'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
+import { TemplateQuickActions } from '../components/dashboard/TemplateQuickActions'
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -533,6 +534,8 @@ export default function OverviewPage() {
           ))}
         </div>
       </div>
+
+      <TemplateQuickActions />
 
       {(overview.loading) && (
         <Card className="p-4">
