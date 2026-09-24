@@ -1,5 +1,11 @@
 import * as React from 'react'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowDown,
+  ArrowUp,
+  ChevronsUpDown,
+  Loader2,
+} from 'lucide-react'
 import { ApiError } from '../lib/api'
 import { cn } from '../lib/utils'
 import { Button as ShadcnButton } from './ui/button'
@@ -264,6 +270,64 @@ export function Th({
       )}
     >
       {children}
+    </TableHead>
+  )
+}
+
+export type SortDirection = 'asc' | 'desc'
+
+export function SortableTableHeader<TColumn extends string>({
+  label,
+  column,
+  activeColumn,
+  direction,
+  onSort,
+  align = 'left',
+  className = '',
+}: {
+  label: string
+  column: TColumn
+  activeColumn: TColumn
+  direction: SortDirection
+  onSort: (column: TColumn) => void
+  align?: 'left' | 'center' | 'right'
+  className?: string
+}) {
+  const isActive = activeColumn === column
+  const SortIcon = isActive
+    ? direction === 'asc'
+      ? ArrowUp
+      : ArrowDown
+    : ChevronsUpDown
+
+  return (
+    <TableHead
+      aria-sort={
+        isActive
+          ? direction === 'asc'
+            ? 'ascending'
+            : 'descending'
+          : 'none'
+      }
+      className={cn('p-0', className)}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className={cn(
+          'flex min-h-10 w-full items-center gap-1.5 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+          align === 'left' && 'justify-start',
+          align === 'center' && 'justify-center',
+          align === 'right' && 'justify-end',
+          isActive && 'text-foreground',
+        )}
+      >
+        <span>{label}</span>
+        <SortIcon
+          className={cn('size-3.5 shrink-0', isActive ? 'text-primary' : 'text-muted-foreground/60')}
+          aria-hidden
+        />
+      </button>
     </TableHead>
   )
 }

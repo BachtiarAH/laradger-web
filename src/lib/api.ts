@@ -259,6 +259,8 @@ export const api = {
       from?: string
       to?: string
       search?: string
+      sort_by?: 'reference' | 'transaction_date' | 'debit' | 'credit' | 'description' | 'status'
+      sort_direction?: 'asc' | 'desc'
     } = {},
   ) => get<RawList<JournalLine>>(tenantPath(`/accounts/${id}/journal-lines${toQuery(params)}`)).then(asList),
   nextAccountCode: (type: string) =>
@@ -302,6 +304,8 @@ export const api = {
       goal_id?: string
       from?: string
       to?: string
+      sort_by?: 'reference' | 'description' | 'transaction_date' | 'status' | 'source' | 'total_debit' | 'lines_count'
+      sort_direction?: 'asc' | 'desc'
     } = {},
   ) => get<RawList<Journal>>(tenantPath(`/journals${toQuery(params)}`)).then(asList),
   getJournal: (id: string) => get<ApiEnvelope<Journal>>(tenantPath(`/journals/${id}`)),

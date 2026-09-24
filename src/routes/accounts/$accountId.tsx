@@ -22,6 +22,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SortableTableHeader,
   Table,
   TableBody,
   TableHeader,
@@ -36,6 +37,15 @@ import { useDebounce } from '../../hooks/useDebounce'
 export const Route = createFileRoute('/accounts/$accountId')({
   component: AccountDetailPage,
 })
+
+type JournalLineSortColumn =
+  | 'reference'
+  | 'transaction_date'
+  | 'debit'
+  | 'credit'
+  | 'description'
+  | 'status'
+type SortDirection = 'asc' | 'desc'
 
 function AccountDetailPage() {
   const { accountId } = Route.useParams()
@@ -72,6 +82,8 @@ function AccountDetailPage() {
   const [jlSearch, setJlSearch] = React.useState('')
   const debouncedJlSearch = useDebounce(jlSearch, 300)
   const [jlStatus, setJlStatus] = React.useState('')
+  const [jlSortBy, setJlSortBy] = React.useState<JournalLineSortColumn>('transaction_date')
+  const [jlSortDirection, setJlSortDirection] = React.useState<SortDirection>('desc')
 
   const jlFetch = useFetch(
     () =>
@@ -80,9 +92,25 @@ function AccountDetailPage() {
         per_page: 10,
         search: debouncedJlSearch || undefined,
         status: jlStatus || undefined,
+        sort_by: jlSortBy,
+        sort_direction: jlSortDirection,
       }),
-    [accountId, jlPage, debouncedJlSearch, jlStatus],
+    [accountId, jlPage, debouncedJlSearch, jlStatus, jlSortBy, jlSortDirection],
   )
+
+  const setSortDirectionForColumn = (column: JournalLineSortColumn) => {
+    setJlSortDirection(['transaction_date', 'debit', 'credit'].includes(column) ? 'desc' : 'asc')
+  }
+
+  const toggleJournalLineSort = (column: JournalLineSortColumn) => {
+    if (jlSortBy === column) {
+      setJlSortDirection((current) => current === 'asc' ? 'desc' : 'asc')
+    } else {
+      setJlSortBy(column)
+      setSortDirectionForColumn(column)
+    }
+    setJlPage(1)
+  }
 
   const handleAllocationsChanged = async () => {
     await allocFetch.reload()
@@ -462,12 +490,50 @@ function AccountDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <Th>Journal</Th>
-                      <Th>Date</Th>
-                      <Th>Debit</Th>
-                      <Th>Credit</Th>
-                      <Th>Description</Th>
-                      <Th>Status</Th>
+                      <SortableTableHeader
+                        label="Journal"
+                        column="reference"
+                        activeColumn={jlSortBy}
+                        direction={jlSortDirection}
+                        onSort={toggleJournalLineSort}
+                      />
+                      <SortableTableHeader
+                        label="Date"
+                        column="transaction_date"
+                        activeColumn={jlSortBy}
+                        direction={jlSortDirection}
+                        onSort={toggleJournalLineSort}
+                      />
+                      <SortableTableHeader
+                        label="Debit"
+                        column="debit"
+                        activeColumn={jlSortBy}
+                        direction={jlSortDirection}
+                        onSort={toggleJournalLineSort}
+                        align="right"
+                      />
+                      <SortableTableHeader
+                        label="Credit"
+                        column="credit"
+                        activeColumn={jlSortBy}
+                        direction={jlSortDirection}
+                        onSort={toggleJournalLineSort}
+                        align="right"
+                      />
+                      <SortableTableHeader
+                        label="Description"
+                        column="description"
+                        activeColumn={jlSortBy}
+                        direction={jlSortDirection}
+                        onSort={toggleJournalLineSort}
+                      />
+                      <SortableTableHeader
+                        label="Status"
+                        column="status"
+                        activeColumn={jlSortBy}
+                        direction={jlSortDirection}
+                        onSort={toggleJournalLineSort}
+                      />
                       <Th className="text-right">Action</Th>
                     </TableRow>
                   </TableHeader>

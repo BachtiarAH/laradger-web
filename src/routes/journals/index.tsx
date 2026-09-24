@@ -19,6 +19,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SortableTableHeader,
   Table,
   TableBody,
   TableHeader,
@@ -30,6 +31,16 @@ import {
 export const Route = createFileRoute('/journals/')({
   component: JournalsPage,
 })
+
+type JournalSortColumn =
+  | 'reference'
+  | 'description'
+  | 'transaction_date'
+  | 'status'
+  | 'source'
+  | 'total_debit'
+  | 'lines_count'
+type SortDirection = 'asc' | 'desc'
 
 function JournalsPage() {
   const navigate = useNavigate()
@@ -48,6 +59,8 @@ function JournalsPage() {
   const [goalId, setGoalId] = React.useState('')
   const [from, setFrom] = React.useState('')
   const [to, setTo] = React.useState('')
+  const [sortBy, setSortBy] = React.useState<JournalSortColumn>('transaction_date')
+  const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc')
 
   const allocations = useFetch(() => api.listAllocations({ per_page: 100 }), [])
   const goals = useFetch(() => api.listGoals({ per_page: 100 }), [])
@@ -63,8 +76,10 @@ function JournalsPage() {
         goal_id: goalId || undefined,
         from: from || undefined,
         to: to || undefined,
+        sort_by: sortBy,
+        sort_direction: sortDirection,
       }),
-    [page, status, source, allocationId, goalId, from, to],
+    [page, status, source, allocationId, goalId, from, to, sortBy, sortDirection],
   )
 
   const resetFilters = () => {
@@ -84,6 +99,16 @@ function JournalsPage() {
     if (name === 'goal_id') setGoalId(value)
     if (name === 'from') setFrom(value)
     if (name === 'to') setTo(value)
+    setPage(1)
+  }
+
+  const toggleSort = (column: JournalSortColumn) => {
+    if (sortBy === column) {
+      setSortDirection((current) => current === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(column)
+      setSortDirection(['transaction_date', 'total_debit', 'lines_count'].includes(column) ? 'desc' : 'asc')
+    }
     setPage(1)
   }
 
@@ -212,14 +237,58 @@ function JournalsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <Th>Reference</Th>
-                    <Th>Description</Th>
+                    <SortableTableHeader
+                      label="Reference"
+                      column="reference"
+                      activeColumn={sortBy}
+                      direction={sortDirection}
+                      onSort={toggleSort}
+                    />
+                    <SortableTableHeader
+                      label="Description"
+                      column="description"
+                      activeColumn={sortBy}
+                      direction={sortDirection}
+                      onSort={toggleSort}
+                    />
                     <Th>Planning</Th>
-                    <Th>Date</Th>
-                    <Th>Status</Th>
-                    <Th>Source</Th>
-                    <Th className="text-right">Amount</Th>
-                    <Th>Lines</Th>
+                    <SortableTableHeader
+                      label="Date"
+                      column="transaction_date"
+                      activeColumn={sortBy}
+                      direction={sortDirection}
+                      onSort={toggleSort}
+                    />
+                    <SortableTableHeader
+                      label="Status"
+                      column="status"
+                      activeColumn={sortBy}
+                      direction={sortDirection}
+                      onSort={toggleSort}
+                    />
+                    <SortableTableHeader
+                      label="Source"
+                      column="source"
+                      activeColumn={sortBy}
+                      direction={sortDirection}
+                      onSort={toggleSort}
+                    />
+                    <SortableTableHeader
+                      label="Amount"
+                      column="total_debit"
+                      activeColumn={sortBy}
+                      direction={sortDirection}
+                      onSort={toggleSort}
+                      align="right"
+                    />
+                    <SortableTableHeader
+                      label="Lines"
+                      column="lines_count"
+                      activeColumn={sortBy}
+                      direction={sortDirection}
+                      onSort={toggleSort}
+                      align="right"
+                    />
                     <Th className="text-right">Actions</Th>
                   </TableRow>
                 </TableHeader>
