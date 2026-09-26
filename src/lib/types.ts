@@ -603,19 +603,19 @@ export type AiConversation = {
   updated_at: string
 }
 
-export type AiTurnAccepted = {
-  status: AiConversationStatus
-  conversation_id: string
-  message_id: string
-}
+export type AiDraftRequestStatus = 'queued' | 'running' | 'completed' | 'failed'
 
-export type AiTurnStatus = {
-  status: AiConversationStatus
+/** A prompt submitted to be drafted in the background. */
+export type AiDraftRequest = {
+  id: string
+  prompt: string
+  status: AiDraftRequestStatus
   error: string | null
-  pending_drafts_count: number
+  drafts_count: number
   queued_at: string | null
   started_at: string | null
   completed_at: string | null
+  created_at: string
 }
 
 export type AiMessageRole = 'user' | 'assistant' | 'tool'
@@ -651,8 +651,8 @@ export type AiActionDraft = {
   created_at: string
 }
 
-export type AiDraftList = {
-  pending: AiActionDraft[]
-  all: AiActionDraft[]
+export type AiAssistantTurn = {
+  reply: string
+  drafts: AiActionDraft[]
 }
 

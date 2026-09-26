@@ -10,8 +10,8 @@ import type {
   AiMessage,
   AiSettings,
   AiSettingsStore,
-  AiTurnAccepted,
-  AiTurnStatus,
+  AiAssistantTurn,
+  AiDraftRequest,
   Allocation,
   AllocationAdjust,
   AllocationDirectDeduct,
@@ -243,13 +243,17 @@ export const api = {
       }
     }>(tenantPath(`/ai/conversations/${id}`)).then((r) => r.data),
   sendAiMessage: (id: string, message: string) =>
-    post<ApiEnvelope<AiTurnAccepted>>(tenantPath(`/ai/conversations/${id}/messages`), {
+    post<ApiEnvelope<AiAssistantTurn>>(tenantPath(`/ai/conversations/${id}/messages`), {
       message,
     }).then((r) => r.data),
-  getAiTurnStatus: (id: string) =>
-    get<ApiEnvelope<AiTurnStatus>>(tenantPath(`/ai/conversations/${id}/status`)).then(
+
+  // Queued drafting — fire and forget, unlike the synchronous chat above
+  createAiDraftRequest: (prompt: string) =>
+    post<ApiEnvelope<AiDraftRequest>>(tenantPath('/ai/draft-requests'), { prompt }).then(
       (r) => r.data,
     ),
+  listAiDraftRequests: () =>
+    get<{ data: AiDraftRequest[] }>(tenantPath('/ai/draft-requests')).then((r) => r.data),
   listAiDrafts: (status?: AiDraftStatus) =>
     get<{ data: AiActionDraft[] }>(tenantPath(`/ai/drafts${toQuery({ status })}`)).then(
       (r) => r.data,
