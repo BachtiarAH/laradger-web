@@ -1,5 +1,17 @@
 import * as React from 'react'
-import { AlertCircle, Check, ChevronDown, ChevronUp, Pencil, Sparkles, X } from 'lucide-react'
+import {
+  AlertCircle,
+  BookOpen,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Pencil,
+  Sparkles,
+  Tag,
+  Wallet,
+  X,
+  type LucideIcon,
+} from 'lucide-react'
 import { api } from '../../lib/api'
 import type { AiActionDraft } from '../../lib/types'
 import { Button, ErrorBox } from '../ui'
@@ -90,12 +102,12 @@ export function DraftCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+          <div className="flex items-center gap-1.5">
             <Sparkles className="size-3.5 shrink-0 text-primary" aria-hidden />
-            <span className="truncate">{draft.title}</span>
-          </p>
-          <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-            {draft.tool}
+            <ActionPill tool={draft.tool} />
+          </div>
+          <p className="mt-1 truncate text-sm font-medium text-foreground">
+            {draft.title}
           </p>
         </div>
         <StatusPill status={draft.status} />
@@ -204,6 +216,50 @@ export function DraftCard({
         </>
       )}
     </div>
+  )
+}
+
+/**
+ * What the action does, in words.
+ *
+ * A raw tool name says what the *code* calls it, not what will happen to the
+ * ledger, and it is the only thing distinguishing a journal from a tag at a
+ * glance. Anything not listed here falls back to the tool name rather than a
+ * generic word, so a new tool is never silently unlabelled.
+ */
+const ACTION_META: Record<string, { label: string; icon: LucideIcon; className: string }> = {
+  journal_create: {
+    label: 'Jurnal',
+    icon: BookOpen,
+    className: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200',
+  },
+  tag_create: {
+    label: 'Tag',
+    icon: Tag,
+    className: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200',
+  },
+  account_create: {
+    label: 'Akun',
+    icon: Wallet,
+    className: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200',
+  },
+}
+
+function ActionPill({ tool }: { tool: string }) {
+  const meta = ACTION_META[tool]
+  const Icon = meta?.icon
+
+  return (
+    <span
+      title={tool}
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium',
+        meta?.className ?? 'bg-muted text-muted-foreground',
+      )}
+    >
+      {Icon && <Icon className="size-3" aria-hidden />}
+      {meta?.label ?? tool}
+    </span>
   )
 }
 

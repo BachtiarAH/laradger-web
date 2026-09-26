@@ -3,12 +3,13 @@ import * as React from 'react'
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Inbox,
   Loader2,
   Plus,
   RefreshCw,
   Send,
-  Sparkles,
 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
@@ -195,28 +196,6 @@ function AiDraftsPage() {
 
       {error != null && <ErrorBox error={error} />}
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-foreground">
-          Riwayat prompt
-          {requests.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-muted-foreground">
-              {requests.length} dikirim
-            </span>
-          )}
-        </h2>
-        {requests.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-            Belum ada prompt yang dikirim.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {requests.map((request) => (
-              <RequestRow key={request.id} request={request} />
-            ))}
-          </ul>
-        )}
-      </section>
-
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-foreground">Draft yang tersedia</h2>
@@ -266,7 +245,73 @@ function AiDraftsPage() {
           </div>
         )}
       </section>
+
+      <PromptHistory requests={requests} />
     </div>
+  )
+}
+
+/**
+ * Submitted prompts, kept below the actions and folded away by default.
+ *
+ * This list only grows, and it used to sit above the draft cards, so after a
+ * handful of prompts the thing you actually came to review was a scroll away.
+ * Work in flight stays visible whatever the toggle says, because a queued turn
+ * is live state and a hidden spinner reads as a hang.
+ */
+function PromptHistory({ requests }: { requests: AiDraftRequest[] }) {
+  const [open, setOpen] = React.useState(false)
+  const inFlight = requests.filter(
+    (r) => r.status === 'queued' || r.status === 'running',
+  )
+  const settled = requests.length - inFlight.length
+  const visible = open ? requests : inFlight
+
+  return (
+    <section className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-foreground">
+          Riwayat prompt
+          {requests.length > 0 && (
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              {requests.length} dikirim
+            </span>
+          )}
+        </h2>
+        {requests.length > inFlight.length && (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            {open ? (
+              <ChevronUp className="size-3.5" aria-hidden />
+            ) : (
+              <ChevronDown className="size-3.5" aria-hidden />
+            )}
+            {open ? 'Sembunyikan riwayat' : `Lihat riwayat (${settled} selesai)`}
+          </button>
+        )}
+      </div>
+
+      {requests.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+          Belum ada prompt yang dikirim.
+        </p>
+      ) : visible.length === 0 ? (
+        <p className="px-1 text-xs text-muted-foreground">
+          {settled} prompt selesai, semuanya disembunyikan. Buka di atas kalau
+          perlu melihat jawabannya.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {visible.map((request) => (
+            <RequestRow key={request.id} request={request} />
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }
 
