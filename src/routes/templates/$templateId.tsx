@@ -223,7 +223,27 @@ function TemplateDetailPage() {
               <h2 className="text-lg font-semibold text-foreground">Lines</h2>
             </div>
             {!template.lines || template.lines.length === 0 ? (
-              <p className="p-6 text-sm text-muted-foreground">No lines on this template.</p>
+              // A bare "no lines" reads as a rendering failure. Say what it
+              // means for the template, because it is not cosmetic: without
+              // lines there is nothing to post, and Generate cannot work.
+              <div className="p-6">
+                <p className="text-sm font-medium text-foreground">
+                  Template ini belum punya baris jurnal.
+                </p>
+                <p className="mt-1 max-w-prose text-sm text-muted-foreground">
+                  Setiap template butuh minimal satu baris debit dan satu baris
+                  kredit. Tanpa itu,_generate_ tidak bisa membuat jurnal apa pun
+                  dan penjadwalan otomatis akan melewati template ini.
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => setEditing(true)}
+                >
+                  Tambahkan baris
+                </Button>
+              </div>
             ) : (
               <Table>
                 <TableHeader>

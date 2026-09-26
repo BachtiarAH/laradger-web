@@ -48,6 +48,27 @@ const PERIOD_LABEL: Record<string, string> = {
   monthly: 'Bulanan',
 }
 
+/**
+ * A template with no lines cannot generate anything, and the failure only shows
+ * up when the scheduler silently passes it over. Flag it in the list, where it
+ * can still be fixed.
+ */
+function lineCount(template: JournalTemplate) {
+  const count = template.lines_count ?? template.lines?.length
+
+  if (count == null) return '—'
+
+  if (count === 0) {
+    return (
+      <span className="font-medium text-amber-700 dark:text-amber-400">
+        0 · tidak bisa dipakai
+      </span>
+    )
+  }
+
+  return count
+}
+
 function TemplatesPage() {
   const navigate = useNavigate()
   const [page, setPage] = React.useState(1)
@@ -249,7 +270,7 @@ function TemplatesPage() {
                           <span className="text-xs text-emerald-700 dark:text-emerald-300">Auto-detect</span>
                         )}
                       </Td>
-                      <Td>{template.lines_count ?? template.lines?.length ?? '—'}</Td>
+                      <Td>{lineCount(template)}</Td>
                       <Td>{template.next_run_at ? formatDate(template.next_run_at) : '—'}</Td>
                       <Td className="text-right">
                         <div className="flex justify-end gap-3" onClick={(e) => e.stopPropagation()}>
