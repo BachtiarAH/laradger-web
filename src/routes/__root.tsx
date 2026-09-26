@@ -22,6 +22,7 @@ import {
   Inbox,
 } from 'lucide-react'
 import { AuthProvider, useAuth } from '../lib/auth'
+import { PendingDraftsProvider, usePendingDrafts } from '../lib/pendingDrafts'
 import { PrivacyProvider } from '../lib/privacy'
 import { api, onConnectionLost, onTenantNotFound, onForbidden } from '../lib/api'
 import { ConnectionDown } from '../components/ConnectionDown'
@@ -73,7 +74,6 @@ const settingsItems: { to: string; label: string; icon: React.ComponentType<{ cl
   { to: '/settings/ai', label: 'AI', icon: Settings },
 ]
 
-const PENDING_COUNT_INTERVAL_MS = 60000
 
 function SidebarNavLink({
   to,
@@ -106,43 +106,6 @@ function SidebarNavLink({
   )
 }
 
-/**
- * How many drafts are waiting for a decision.
- *
- * The nudge belongs on the link that leads to them, not on the assistant's
- * floating button: the drafts page is the only place every pending draft is
- * listed, including the ones the queued path produced, so a count anywhere else
- * is a promise the screen behind it cannot keep.
- */
-function usePendingDraftCount(ready: boolean): number {
-  const [count, setCount] = React.useState(0)
-
-  React.useEffect(() => {
-    if (!ready) return
-    let active = true
-
-    const load = () =>
-      api
-        .listAiDrafts('pending')
-        .then((all) => {
-          if (active) setCount(all.length)
-        })
-        // Supplementary: a failure here must not disturb the navigation.
-        .catch(() => undefined)
-
-    void load()
-    // Slow on purpose. This is a nudge, not a live counter, and every page load
-    // would otherwise cost a request.
-    const timer = setInterval(load, PENDING_COUNT_INTERVAL_MS)
-    return () => {
-      active = false
-      clearInterval(timer)
-    }
-  }, [ready])
-
-  return count
-}
-
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { token, user, tenants, logout } = useAuth()
   const [loggingOut, setLoggingOut] = React.useState(false)
@@ -150,7 +113,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const onLogin = pathname === '/login'
   const onRegister = pathname === '/register'
   const canUseTenants = (user?.tenants?.length ?? 0) > 0 || tenants.length > 0
-  const pendingDrafts = usePendingDraftCount(Boolean(token) && canUseTenants)
+  const { count: pendingDrafts } = usePendingDrafts()
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -347,6 +310,7 @@ function RootComponent() {
     <TooltipProvider>
       <PrivacyProvider>
       <AuthProvider>
+       <PendingDraftsProvider>
         <div className="min-h-screen lg:flex">
         <aside className="hidden w-64 shrink-0 border-r border-border lg:block">
           <div className="sticky top-0 h-screen">
@@ -402,6 +366,7 @@ function RootComponent() {
 
         <AssistantHost />
       </div>
+       </PendingDraftsProvider>
       {/* Moved off bottom-right so it does not sit under the assistant button. */}
       <TanStackRouterDevtools position="bottom-left" />
       </AuthProvider>

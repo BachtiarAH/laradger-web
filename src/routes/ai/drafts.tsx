@@ -21,6 +21,7 @@ import type {
 import { Button, ErrorBox, PageHeader } from '../../components/ui'
 import { DraftCard } from '../../components/ai/DraftCard'
 import { MarkdownText } from '../../components/ai/MarkdownText'
+import { usePendingDrafts } from '../../lib/pendingDrafts'
 import { cn } from '../../lib/utils'
 
 export const Route = createFileRoute('/ai/drafts')({
@@ -62,6 +63,7 @@ function AiDraftsPage() {
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<unknown>(null)
   const [pendingCount, setPendingCount] = React.useState(0)
+  const { refresh: refreshPendingBadge } = usePendingDrafts()
 
   const loadDrafts = React.useCallback(async (which: Filter) => {
     setLoading(true)
@@ -132,6 +134,10 @@ function AiDraftsPage() {
       setDrafts((prev) => prev.filter((d) => d.id !== settled.id))
       setPendingCount((n) => Math.max(0, n - 1))
     }
+    // Approving here is what the sidebar badge is counting, so it has to hear
+    // about it. Its own timer would correct this a minute later, which is
+    // indistinguishable from the number being wrong.
+    refreshPendingBadge()
   }
 
   if (!ready) {

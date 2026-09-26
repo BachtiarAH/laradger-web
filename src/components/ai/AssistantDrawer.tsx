@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react'
 import { api } from '../../lib/api'
+import { usePendingDrafts } from '../../lib/pendingDrafts'
 import type { AiActionDraft, AiConversation, AiMessage } from '../../lib/types'
 import { Button, ErrorBox } from '../ui'
 import { DraftCard } from './DraftCard'
@@ -30,6 +31,7 @@ export function AssistantDrawer() {
   // next to AI Drafts, which is where drafts from the queued path are too - a
   // count here would promise actions this drawer does not show.
   const [drafts, setDrafts] = React.useState<AiActionDraft[]>([])
+  const { refresh: refreshPendingBadge } = usePendingDrafts()
   const [input, setInput] = React.useState('')
   const [sending, setSending] = React.useState(false)
   const [error, setError] = React.useState<unknown>(null)
@@ -110,6 +112,8 @@ export function AssistantDrawer() {
 
   const handleSettled = (settled: AiActionDraft) => {
     setDrafts((prev) => prev.map((d) => (d.id === settled.id ? settled : d)))
+    // The sidebar badge counts these too, and it is not on this screen.
+    refreshPendingBadge()
   }
 
   if (!open) {
