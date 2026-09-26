@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { cn } from '../../lib/utils'
 
 /**
  * A small, dependency-free Markdown renderer for assistant replies.
@@ -9,8 +10,8 @@ import * as React from 'react'
  * needs approval, and the subset models actually emit in chat replies is small.
  *
  * Supported: headings, bold, italic, inline code, fenced code blocks,
- * unordered and ordered lists, blockquotes, horizontal rules, links, and
- * hard line breaks. Anything else renders as its own text node.
+ * unordered and ordered lists, blockquotes, horizontal rules, links, GFM
+ * tables, and hard line breaks. Anything else renders as its own text node.
  */
 export function MarkdownText({ text }: { text: string }) {
   const blocks = React.useMemo(() => parseBlocks(text ?? ''), [text])
@@ -26,6 +27,8 @@ export function MarkdownText({ text }: { text: string }) {
   )
 }
 
+type Alignment = 'left' | 'center' | 'right'
+
 type Block =
   | { kind: 'p'; text: string }
   | { kind: 'h'; level: number; text: string }
@@ -33,7 +36,68 @@ type Block =
   | { kind: 'ol'; items: string[] }
   | { kind: 'quote'; text: string }
   | { kind: 'code'; lang: string; text: string }
+  | { kind: 'table'; header: string[]; align: Alignment[]; rows: string[][] }
   | { kind: 'hr' }
+
+/**
+ * Split one table row into cells, honouring `\|` so a pipe can appear in the
+ * text. Leading and trailing pipes are optional, which is how models actually
+ * write them.
+ */
+function splitRow(line: string): string[] {
+  let body = line.trim()
+
+  if (body.startsWith('|')) body = body.slice(1)
+  if (body.endsWith('|') && !body.endsWith('\\|')) body = body.slice(0, -1)
+
+  const cells: string[] = []
+  let current = ''
+
+  for (let k = 0; k < body.length; k++) {
+    const char = body[k]
+
+    if (char === '\\' && body[k + 1] === '|') {
+      current += '|'
+      k++
+      continue
+    }
+
+    if (char === '|') {
+      cells.push(current.trim())
+      current = ''
+      continue
+    }
+
+    current += char
+  }
+
+  cells.push(current.trim())
+
+  return cells
+}
+
+/** `|:---|---:|` style row: every cell is nothing but an optional colon and dashes. */
+function isDelimiterRow(line: string | undefined): boolean {
+  if (line === undefined || !line.includes('|')) return false
+
+  const cells = splitRow(line)
+
+  return cells.length > 0 && cells.every((cell) => /^:?-+:?$/.test(cell))
+}
+
+function isTableStart(lines: string[], index: number): boolean {
+  return (lines[index] ?? '').includes('|') && isDelimiterRow(lines[index + 1])
+}
+
+function alignmentOf(cell: string): Alignment {
+  const left = cell.startsWith(':')
+  const right = cell.endsWith(':')
+
+  if (left && right) return 'center'
+  if (right) return 'right'
+
+  return 'left'
+}
 
 function parseBlocks(source: string): Block[] {
   const lines = source.replace(/\r\n/g, '\n').split('\n')
@@ -45,6 +109,25 @@ function parseBlocks(source: string): Block[] {
 
     if (line.trim() === '') {
       i++
+      continue
+    }
+
+    if (isTableStart(lines, i)) {
+      const header = splitRow(lines[i])
+      const align = splitRow(lines[i + 1]).map(alignmentOf)
+      i += 2
+
+      const rows: string[][] = []
+
+      // A table ends at a blank line or the first line that is not a row. Cells
+      // are padded to the header width so a short row cannot shift the columns.
+      while (i < lines.length && lines[i].trim() !== '' && lines[i].includes('|')) {
+        const cells = splitRow(lines[i])
+        rows.push(header.map((_, column) => cells[column] ?? ''))
+        i++
+      }
+
+      blocks.push({ kind: 'table', header, align, rows })
       continue
     }
 
@@ -104,7 +187,9 @@ function parseBlocks(source: string): Block[] {
       continue
     }
 
-    // Paragraph: run until a blank line or the start of another block.
+    // Paragraph: run until a blank line or the start of another block. The table
+    // check matters most: without it a table that follows a text line on the
+    // next row gets swallowed into the paragraph as raw pipes.
     const para: string[] = []
     while (
       i < lines.length &&
@@ -113,7 +198,8 @@ function parseBlocks(source: string): Block[] {
       !/^#{1,6}\s/.test(lines[i]) &&
       !/^\s*>\s?/.test(lines[i]) &&
       !/^\s*[-*+]\s+/.test(lines[i]) &&
-      !/^\s*\d+[.)]\s+/.test(lines[i])
+      !/^\s*\d+[.)]\s+/.test(lines[i]) &&
+      !isTableStart(lines, i)
     ) {
       para.push(lines[i])
       i++
@@ -247,9 +333,79 @@ export function MarkdownBlock({ block, index }: { block: Block; index: number })
           <code>{block.text}</code>
         </pre>
       )
+    case 'table':
+      return (
+        <div
+          key={key}
+          className="overflow-x-auto rounded border border-border"
+        >
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border bg-muted/50">
+                {block.header.map((cell, column) => (
+                  <th
+                    key={column}
+                    scope="col"
+                    className={cn(
+                      'whitespace-nowrap px-2 py-1.5 font-semibold text-muted-foreground',
+                      columnClass(block.align[column], cell),
+                    )}
+                  >
+                    {renderInline(cell, `${key}-h${column}`)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows.map((row, r) => (
+                <tr key={r} className="border-b border-border last:border-0">
+                  {row.map((cell, column) => (
+                    <td
+                      key={column}
+                      className={cn(
+                        'px-2 py-1.5 align-top',
+                        columnClass(block.align[column], cell),
+                      )}
+                    >
+                      {renderInline(cell, `${key}-${r}-${column}`)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
     case 'hr':
       return <hr key={key} className="border-border" />
   }
+}
+
+const ALIGN_CLASS: Record<Alignment, string> = {
+  left: 'text-left',
+  center: 'text-center',
+  right: 'text-right',
+}
+
+/**
+ * Money in a column of numbers is unreadable unless the digits line up. Models
+ * usually write `|---|` and leave the alignment implied, so a cell that is
+ * plainly a number is right-aligned and given tabular figures regardless.
+ *
+ * Handles `8.500.000`, `0,00`, `+3.600.000` and the Unicode minus that models
+ * reach for. An em dash is not a number and stays left.
+ */
+const NUMERIC = /^[\sRp]*[-+−]?\s*[\d.,]+\s*%?$/
+
+function columnClass(align: Alignment | undefined, cell: string): string {
+  const numeric = NUMERIC.test(cell.trim())
+
+  if (align === 'center') return 'text-center'
+  if (align === 'right' || numeric) {
+    return cn('text-right', numeric && 'tabular-nums')
+  }
+
+  return 'text-left'
 }
 
 export { parseBlocks as parseMarkdown }
