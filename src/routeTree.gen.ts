@@ -18,6 +18,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AccountsIndexRouteImport } from './routes/accounts/index'
 import { Route as AccountsAccountIdRouteImport } from './routes/accounts/$accountId'
 import { Route as AccountsNewRouteImport } from './routes/accounts/new'
+import { Route as AiDraftsRouteImport } from './routes/ai/drafts'
 import { Route as AllocationsIndexRouteImport } from './routes/allocations/index'
 import { Route as AllocationsAllocationIdRouteImport } from './routes/allocations/$allocationId'
 import { Route as AllocationsNewRouteImport } from './routes/allocations/new'
@@ -83,6 +84,11 @@ const AccountsAccountIdRoute = AccountsAccountIdRouteImport.update({
 const AccountsNewRoute = AccountsNewRouteImport.update({
   id: '/accounts/new',
   path: '/accounts/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiDraftsRoute = AiDraftsRouteImport.update({
+  id: '/ai/drafts',
+  path: '/ai/drafts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AllocationsIndexRoute = AllocationsIndexRouteImport.update({
@@ -200,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/accounts/new': typeof AccountsNewRoute
+  '/ai/drafts': typeof AiDraftsRoute
   '/allocations/$allocationId': typeof AllocationsAllocationIdRoute
   '/allocations/new': typeof AllocationsNewRoute
   '/audit-logs/$auditLogId': typeof AuditLogsAuditLogIdRoute
@@ -232,6 +239,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/accounts/new': typeof AccountsNewRoute
+  '/ai/drafts': typeof AiDraftsRoute
   '/allocations/$allocationId': typeof AllocationsAllocationIdRoute
   '/allocations/new': typeof AllocationsNewRoute
   '/audit-logs/$auditLogId': typeof AuditLogsAuditLogIdRoute
@@ -265,6 +273,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/accounts/$accountId': typeof AccountsAccountIdRoute
   '/accounts/new': typeof AccountsNewRoute
+  '/ai/drafts': typeof AiDraftsRoute
   '/allocations/$allocationId': typeof AllocationsAllocationIdRoute
   '/allocations/new': typeof AllocationsNewRoute
   '/audit-logs/$auditLogId': typeof AuditLogsAuditLogIdRoute
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/accounts/$accountId'
     | '/accounts/new'
+    | '/ai/drafts'
     | '/allocations/$allocationId'
     | '/allocations/new'
     | '/audit-logs/$auditLogId'
@@ -331,6 +341,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/accounts/$accountId'
     | '/accounts/new'
+    | '/ai/drafts'
     | '/allocations/$allocationId'
     | '/allocations/new'
     | '/audit-logs/$auditLogId'
@@ -363,6 +374,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/accounts/$accountId'
     | '/accounts/new'
+    | '/ai/drafts'
     | '/allocations/$allocationId'
     | '/allocations/new'
     | '/audit-logs/$auditLogId'
@@ -396,6 +408,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   AccountsAccountIdRoute: typeof AccountsAccountIdRoute
   AccountsNewRoute: typeof AccountsNewRoute
+  AiDraftsRoute: typeof AiDraftsRoute
   AllocationsAllocationIdRoute: typeof AllocationsAllocationIdRoute
   AllocationsNewRoute: typeof AllocationsNewRoute
   AuditLogsAuditLogIdRoute: typeof AuditLogsAuditLogIdRoute
@@ -483,6 +496,13 @@ declare module '@tanstack/react-router' {
       path: '/accounts/new'
       fullPath: '/accounts/new'
       preLoaderRoute: typeof AccountsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai/drafts': {
+      id: '/ai/drafts'
+      path: '/ai/drafts'
+      fullPath: '/ai/drafts'
+      preLoaderRoute: typeof AiDraftsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/allocations/': {
@@ -644,6 +664,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   AccountsAccountIdRoute: AccountsAccountIdRoute,
   AccountsNewRoute: AccountsNewRoute,
+  AiDraftsRoute: AiDraftsRoute,
   AllocationsAllocationIdRoute: AllocationsAllocationIdRoute,
   AllocationsNewRoute: AllocationsNewRoute,
   AuditLogsAuditLogIdRoute: AuditLogsAuditLogIdRoute,

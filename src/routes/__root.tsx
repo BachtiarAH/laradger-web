@@ -19,6 +19,7 @@ import {
   Wallet,
   X,
   FileClock,
+  Inbox,
 } from 'lucide-react'
 import { AuthProvider, useAuth } from '../lib/auth'
 import { PrivacyProvider } from '../lib/privacy'
@@ -68,6 +69,7 @@ const navItems: { to: string; label: string; icon: React.ComponentType<{ classNa
 ]
 
 const settingsItems: { to: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { to: '/ai/drafts', label: 'AI Drafts', icon: Inbox },
   { to: '/settings/ai', label: 'AI', icon: Settings },
 ]
 

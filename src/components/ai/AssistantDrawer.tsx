@@ -1,30 +1,48 @@
 import * as React from 'react'
-import { Bot, MessageSquarePlus, Send, Sparkles, X } from 'lucide-react'
+import {
+  AlertCircle,
+  Bot,
+  CheckCircle2,
+  Loader2,
+  MessageSquarePlus,
+  Send,
+  Sparkles,
+  X,
+} from 'lucide-react'
 import { api } from '../../lib/api'
 import type {
   AiActionDraft,
   AiConversation,
+  AiConversationStatus,
   AiMessage,
 } from '../../lib/types'
 import { Button, ErrorBox } from '../ui'
 import { DraftCard } from './DraftCard'
+import { MarkdownText } from './MarkdownText'
 import { cn } from '../../lib/utils'
+
+const POLL_INTERVAL_MS = 2000
 
 /**
  * The assistant, as a drawer.
  *
- * Read tools run behind the scenes, so the transcript only shows the two things
- * a person cares about: what was said, and what is waiting for a decision.
+ * Sending a message only queues a turn: the reply and any proposed actions are
+ * produced in the background, so the user can close this and come back. The
+ * drawer polls a lightweight status endpoint while work is in flight and stops
+ * as soon as it settles.
  */
 export function AssistantDrawer() {
   const [open, setOpen] = React.useState(false)
   const [conversation, setConversation] = React.useState<AiConversation | null>(null)
   const [messages, setMessages] = React.useState<AiMessage[]>([])
   const [drafts, setDrafts] = React.useState<AiActionDraft[]>([])
+  const [status, setStatus] = React.useState<AiConversationStatus>('idle')
+  const [statusError, setStatusError] = React.useState<string | null>(null)
   const [input, setInput] = React.useState('')
-  const [loading, setLoading] = React.useState(false)
+  const [sending, setSending] = React.useState(false)
   const [error, setError] = React.useState<unknown>(null)
 
+  const busy = status === 'queued' || status === 'running'
   const pending = drafts.filter((d) => d.status === 'pending').length
   const scrollRef = React.useRef<HTMLDivElement>(null)
 
@@ -37,14 +55,51 @@ export function AssistantDrawer() {
     if (open) scrollToEnd()
   }, [open, messages.length, drafts.length, scrollToEnd])
 
-  const load = React.useCallback(async (id: string) => {
-    const data = await api.getAiConversation(id)
-    setConversation(data.conversation)
-    setMessages(data.messages)
-    setDrafts(data.drafts)
-  }, [])
+  const applyConversation = React.useCallback(
+    (data: {
+      conversation: AiConversation
+      messages: AiMessage[]
+      drafts: AiActionDraft[]
+    }) => {
+      setConversation(data.conversation)
+      setMessages(data.messages)
+      setDrafts(data.drafts)
+      setStatus(data.conversation.status)
+      setStatusError(data.conversation.error)
+    },
+    [],
+  )
 
-  // The badge has to know about pending drafts even while the drawer is shut.
+  // Poll while a turn is in flight. Cleared on unmount and when it settles, so
+  // a closed drawer is not still hitting the API.
+  React.useEffect(() => {
+    if (!open || !busy || !conversation) return
+
+    let cancelled = false
+
+    const tick = async () => {
+      try {
+        const next = await api.getAiTurnStatus(conversation.id)
+        if (cancelled) return
+        setStatus(next.status)
+        setStatusError(next.error)
+        if (next.status !== 'queued' && next.status !== 'running') {
+          // Settled: pull the transcript and the drafts it produced.
+          applyConversation(await api.getAiConversation(conversation.id))
+        }
+      } catch (err) {
+        if (!cancelled) setError(err)
+      }
+    }
+
+    const timer = setInterval(tick, POLL_INTERVAL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [open, busy, conversation, applyConversation])
+
+  // The badge counts pending drafts even while the drawer is shut.
   React.useEffect(() => {
     if (open) return
     let active = true
@@ -58,26 +113,28 @@ export function AssistantDrawer() {
   }, [open])
 
   const start = async () => {
-    setLoading(true)
+    setSending(true)
     setError(null)
     try {
       const created = await api.createAiConversation()
       setConversation(created)
       setMessages([])
       setDrafts([])
+      setStatus('idle')
+      setStatusError(null)
     } catch (err) {
       setError(err)
     } finally {
-      setLoading(false)
+      setSending(false)
     }
   }
 
   const send = async () => {
     const message = input.trim()
-    if (!message || loading) return
+    if (!message || sending || busy) return
 
     setInput('')
-    setLoading(true)
+    setSending(true)
     setError(null)
 
     try {
@@ -87,8 +144,7 @@ export function AssistantDrawer() {
         setConversation(target)
       }
 
-      // Show the user's own message immediately; the server echoes it back with
-      // the rest of the transcript on reload.
+      // Show the words immediately; the server has already recorded them.
       setMessages((prev) => [
         ...prev,
         {
@@ -100,32 +156,19 @@ export function AssistantDrawer() {
         },
       ])
 
-      const turn = await api.sendAiMessage(target.id, message)
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `assistant-${prev.length}`,
-          role: 'assistant',
-          content: turn.reply,
-          tool_calls: null,
-          created_at: new Date().toISOString(),
-        },
-      ])
-
-      setDrafts((prev) => [...prev, ...turn.drafts])
+      const accepted = await api.sendAiMessage(target.id, message)
+      setStatus(accepted.status)
+      setStatusError(null)
     } catch (err) {
       setError(err)
     } finally {
-      setLoading(false)
+      setSending(false)
     }
   }
 
   const handleSettled = (settled: AiActionDraft) => {
     setDrafts((prev) => prev.map((d) => (d.id === settled.id ? settled : d)))
   }
-
-  const decide = (draft: AiActionDraft) => handleSettled(draft)
 
   if (!open) {
     return (
@@ -139,6 +182,11 @@ export function AssistantDrawer() {
         {pending > 0 && (
           <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-amber-500 text-[11px] font-bold text-white">
             {pending}
+          </span>
+        )}
+        {busy && (
+          <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-sky-500 text-white">
+            <Loader2 className="size-3 animate-spin" aria-hidden />
           </span>
         )}
       </button>
@@ -169,7 +217,7 @@ export function AssistantDrawer() {
               size="icon"
               aria-label="Mulai percakapan baru"
               onClick={start}
-              disabled={loading}
+              disabled={sending || busy}
             >
               <MessageSquarePlus className="size-4" aria-hidden />
             </Button>
@@ -187,23 +235,33 @@ export function AssistantDrawer() {
         {conversation && (
           <button
             type="button"
-            onClick={() => load(conversation.id).catch(setError)}
+            onClick={() =>
+              api
+                .getAiConversation(conversation.id)
+                .then(applyConversation)
+                .catch(setError)
+            }
             className="border-b border-border px-4 py-2 text-left text-xs text-muted-foreground hover:bg-muted"
           >
             Muat ulang percakapan ini
           </button>
         )}
 
+        <StatusBanner status={status} message={statusError} />
+
         <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-          {messages.length === 0 && !loading && (
+          {messages.length === 0 && !busy && (
             <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Tanya apa saja tentang pembukuan.</p>
+              <p className="font-medium text-foreground">
+                Tanya apa saja tentang pembukuan.
+              </p>
               <ul className="mt-2 list-disc space-y-1 pl-4">
                 <li>&ldquo;Berapa yang bisa saya keluarkan bulan ini?&rdquo;</li>
                 <li>&ldquo;Saya expend 45.500 di belanja, bayar tunai&rdquo;</li>
                 <li>&ldquo;Buatkan akun baru untuk biaya listrik&rdquo;</li>
               </ul>
               <p className="mt-3 text-xs">
+                Permintaan dikerjakan di latar belakang, jadi tidak perlu menunggu.
                 Setiap tindakan yang mengubah data akan menunggu persetujuan kamu
                 dulu.
               </p>
@@ -220,13 +278,9 @@ export function AssistantDrawer() {
                 Tindakan yang perlu ditinjau
               </h3>
               {drafts.map((draft) => (
-                <DraftCard key={draft.id} draft={draft} onSettled={decide} />
+                <DraftCard key={draft.id} draft={draft} onSettled={handleSettled} />
               ))}
             </section>
-          )}
-
-          {loading && (
-            <p className="text-sm text-muted-foreground">Berpikir…</p>
           )}
 
           {error != null && <ErrorBox error={error} />}
@@ -240,6 +294,7 @@ export function AssistantDrawer() {
               placeholder="Tulis pertanyaan atau instruksi…"
               value={input}
               maxLength={4000}
+              disabled={busy}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -248,13 +303,53 @@ export function AssistantDrawer() {
                 }
               }}
             />
-            <Button onClick={send} loading={loading} disabled={!input.trim()}>
+            <Button onClick={send} loading={sending} disabled={!input.trim() || busy}>
               <Send className="size-4" aria-hidden />
             </Button>
           </div>
+          {busy && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Kamu boleh menutup panel ini, hasilnya nanti muncul di daftar draft.
+            </p>
+          )}
         </footer>
       </aside>
     </div>
+  )
+}
+
+function StatusBanner({
+  status,
+  message,
+}: {
+  status: AiConversationStatus
+  message: string | null
+}) {
+  if (status === 'idle') return null
+
+  if (status === 'queued' || status === 'running') {
+    return (
+      <p className="flex items-center gap-2 border-b border-border bg-sky-50 px-4 py-2 text-xs text-sky-800 dark:bg-sky-950 dark:text-sky-200">
+        <Loader2 className="size-3.5 animate-spin shrink-0" aria-hidden />
+        {status === 'queued' ? 'Terjadwal, menunggu worker…' : 'Sedang dikerjakan…'}
+      </p>
+    )
+  }
+
+  if (status === 'failed') {
+    return (
+      <p className="flex items-start gap-2 border-b border-border bg-red-50 px-4 py-2 text-xs text-red-800 dark:bg-red-950 dark:text-red-200">
+        <AlertCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+        <span>{message ?? 'Permintaan gagal diproses.'}</span>
+      </p>
+    )
+  }
+
+  return (
+    <p className="flex items-center gap-2 border-b border-border bg-emerald-50 px-4 py-2 text-xs text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+      <CheckCircle2 className="size-3.5 shrink-0" aria-hidden />
+      Selesai. Periksa draft di bawah sebelum menyetujuinya.
+    </p>
   )
 }
 
@@ -268,13 +363,17 @@ function MessageBubble({ message }: { message: AiMessage }) {
     <div className={cn('flex flex-col gap-1', isUser ? 'items-end' : 'items-start')}>
       <div
         className={cn(
-          'max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm',
+          'max-w-[85%] rounded-lg px-3 py-2 text-sm',
           isUser
-            ? 'bg-primary text-primary-foreground'
+            ? 'whitespace-pre-wrap bg-primary text-primary-foreground'
             : 'border border-border bg-muted text-foreground',
         )}
       >
-        {message.content}
+        {isUser ? (
+          message.content
+        ) : (
+          <MarkdownText text={message.content ?? ''} />
+        )}
       </div>
       {called.length > 0 && (
         <p className="px-1 text-[11px] text-muted-foreground">

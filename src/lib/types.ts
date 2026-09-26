@@ -583,12 +583,39 @@ export type AiConnectionTest = {
   latency_ms: number
 }
 
+export type AiConversationStatus =
+  | 'idle'
+  | 'queued'
+  | 'running'
+  | 'completed'
+  | 'failed'
+
 export type AiConversation = {
   id: string
   title: string | null
+  status: AiConversationStatus
+  error: string | null
+  queued_at: string | null
+  started_at: string | null
+  completed_at: string | null
   pending_drafts_count: number
   created_at: string
   updated_at: string
+}
+
+export type AiTurnAccepted = {
+  status: AiConversationStatus
+  conversation_id: string
+  message_id: string
+}
+
+export type AiTurnStatus = {
+  status: AiConversationStatus
+  error: string | null
+  pending_drafts_count: number
+  queued_at: string | null
+  started_at: string | null
+  completed_at: string | null
 }
 
 export type AiMessageRole = 'user' | 'assistant' | 'tool'
@@ -624,7 +651,8 @@ export type AiActionDraft = {
   created_at: string
 }
 
-export type AiAssistantTurn = {
-  reply: string
-  drafts: AiActionDraft[]
+export type AiDraftList = {
+  pending: AiActionDraft[]
+  all: AiActionDraft[]
 }
+

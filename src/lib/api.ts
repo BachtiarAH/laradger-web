@@ -4,13 +4,14 @@ import type {
   AccountAnalytics,
   AccountStore,
   AiActionDraft,
-  AiAssistantTurn,
   AiConnectionTest,
   AiConversation,
   AiDraftStatus,
   AiMessage,
   AiSettings,
   AiSettingsStore,
+  AiTurnAccepted,
+  AiTurnStatus,
   Allocation,
   AllocationAdjust,
   AllocationDirectDeduct,
@@ -242,9 +243,13 @@ export const api = {
       }
     }>(tenantPath(`/ai/conversations/${id}`)).then((r) => r.data),
   sendAiMessage: (id: string, message: string) =>
-    post<ApiEnvelope<AiAssistantTurn>>(tenantPath(`/ai/conversations/${id}/messages`), {
+    post<ApiEnvelope<AiTurnAccepted>>(tenantPath(`/ai/conversations/${id}/messages`), {
       message,
     }).then((r) => r.data),
+  getAiTurnStatus: (id: string) =>
+    get<ApiEnvelope<AiTurnStatus>>(tenantPath(`/ai/conversations/${id}/status`)).then(
+      (r) => r.data,
+    ),
   listAiDrafts: (status?: AiDraftStatus) =>
     get<{ data: AiActionDraft[] }>(tenantPath(`/ai/drafts${toQuery({ status })}`)).then(
       (r) => r.data,
