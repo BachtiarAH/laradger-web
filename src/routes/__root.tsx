@@ -20,6 +20,7 @@ import {
   FileClock,
 } from 'lucide-react'
 import { AuthProvider, useAuth } from '../lib/auth'
+import { PrivacyProvider } from '../lib/privacy'
 import { api, onConnectionLost, onTenantNotFound, onForbidden } from '../lib/api'
 import { ConnectionDown } from '../components/ConnectionDown'
 import { TenantNotFound } from '../components/TenantNotFound'
@@ -30,6 +31,7 @@ import { Button as UiButton } from '../components/ui/button'
 import { TooltipProvider } from '../components/ui/tooltip'
 import { TenantSwitcher } from '../components/TenantSwitcher'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { PrivacyToggle } from '../components/PrivacyToggle'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -175,6 +177,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 {user?.email ?? ''}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <PrivacyToggle />
               <ThemeToggle />
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -257,6 +260,7 @@ function RootComponent() {
 
   return (
     <TooltipProvider>
+      <PrivacyProvider>
       <AuthProvider>
         <div className="min-h-screen lg:flex">
         <aside className="hidden w-64 shrink-0 border-r border-border lg:block">
@@ -313,6 +317,7 @@ function RootComponent() {
       </div>
       <TanStackRouterDevtools position="bottom-right" />
       </AuthProvider>
+      </PrivacyProvider>
     </TooltipProvider>
   )
 }

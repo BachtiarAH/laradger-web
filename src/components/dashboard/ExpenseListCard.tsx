@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
 import { useDebounce } from '../../hooks/useDebounce'
 import { useAuth } from '../../lib/auth'
+import { useMoney } from '../../lib/money'
 import { AccountSelect } from '../AccountSelect'
 import { Pagination } from '../Pagination'
 import {
@@ -69,16 +70,6 @@ function presetRange(preset: RangePreset): { from: string; to: string } {
   }
 }
 
-function formatIDR(value: string | null | undefined): string {
-  const num = Number(value)
-  if (!Number.isFinite(num)) return '—'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(num)
-}
-
 function formatDay(value: string | null | undefined): string {
   if (!value) return '—'
   const date = new Date(value)
@@ -89,6 +80,7 @@ function formatDay(value: string | null | undefined): string {
 export function ExpenseListCard() {
   const navigate = useNavigate()
   const { token, tenant } = useAuth()
+  const { idr } = useMoney()
 
   const [page, setPage] = React.useState(1)
   const [from, setFrom] = React.useState(() => presetRange('this_month').from)
@@ -167,7 +159,7 @@ export function ExpenseListCard() {
             <p className="text-xs text-muted-foreground">
               {data ? (
                 <>
-                  <span className="font-semibold text-foreground">{formatIDR(data.totals?.expense_total)}</span>
+                  <span className="font-semibold text-foreground">{idr(data.totals?.expense_total)}</span>
                   {` across ${transactionCount} transaction${transactionCount === 1 ? '' : 's'}`}
                 </>
               ) : (
@@ -328,7 +320,7 @@ export function ExpenseListCard() {
                   </Td>
                   <Td className="text-xs text-muted-foreground">{line.journal?.status ?? '—'}</Td>
                   <Td className="text-right font-medium text-red-600 dark:text-red-400">
-                    {formatIDR(line.debit)}
+                    {idr(line.debit)}
                   </Td>
                 </TableRow>
               ))}

@@ -15,8 +15,12 @@ import {
   PiggyBank,
   ShieldCheck,
   Info,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import type { Overview, WealthPoint } from '../lib/types'
+import { useMoney } from '../lib/money'
+import { usePrivacy } from '../lib/privacy'
 
 type Period = 'today' | 'this_week' | 'this_month'
 
@@ -25,26 +29,6 @@ const periods: { value: Period; label: string }[] = [
   { value: 'this_week', label: 'This week' },
   { value: 'this_month', label: 'This month' },
 ]
-
-function formatIDR(value: string): string {
-  const num = Number(value)
-  if (Number.isNaN(num)) return '—'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(num)
-}
-
-function formatCompactIDR(value: number): string {
-  if (!Number.isFinite(value)) return '—'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(value)
-}
 
 function monthLabel(month: string): string {
   const [year, m] = month.split('-').map(Number)
@@ -76,6 +60,7 @@ function StatCard({
 
 function WealthDonut({ assets, liabilities }: { assets: number; liabilities: number }) {
   const [hovered, setHovered] = React.useState<'assets' | 'liabilities' | null>(null)
+  const { compactIdr, hidden } = useMoney()
 
   const size = 168
   const stroke = 22
@@ -102,8 +87,10 @@ function WealthDonut({ assets, liabilities }: { assets: number; liabilities: num
   }
 
   // Slices proportional to absolute amounts, with a small gap between them.
-  const assetLen = (Math.abs(assets) / gross) * circumference
-  const liabilityLen = (Math.abs(liabilities) / gross) * circumference
+  // While hidden, the arcs are dropped entirely — their length would leak the
+  // ratio between assets and liabilities even with the labels masked.
+  const assetLen = hidden ? 0 : (Math.abs(assets) / gross) * circumference
+  const liabilityLen = hidden ? 0 : (Math.abs(liabilities) / gross) * circumference
   const gap = 4
 
   const centerValue = hovered === 'assets' ? assets : hovered === 'liabilities' ? liabilities : assets - liabilities
@@ -142,7 +129,7 @@ function WealthDonut({ assets, liabilities }: { assets: number; liabilities: num
           textAnchor="middle"
           className="fill-foreground text-lg font-extrabold"
         >
-          {formatCompactIDR(centerValue)}
+          {compactIdr(centerValue)}
         </text>
         <text
           x="50%"
@@ -163,7 +150,7 @@ function WealthDonut({ assets, liabilities }: { assets: number; liabilities: num
           onBlur={() => setHovered(null)}
         >
           <span className="size-2 rounded-full bg-emerald-500" />
-          Assets {formatCompactIDR(assets)}
+          Assets {compactIdr(assets)}
         </button>
         <button
           type="button"
@@ -174,7 +161,7 @@ function WealthDonut({ assets, liabilities }: { assets: number; liabilities: num
           onBlur={() => setHovered(null)}
         >
           <span className="size-2 rounded-full bg-rose-500" />
-          Liabilities {formatCompactIDR(liabilities)}
+          Liabilities {compactIdr(liabilities)}
         </button>
       </div>
     </div>
@@ -183,6 +170,7 @@ function WealthDonut({ assets, liabilities }: { assets: number; liabilities: num
 
 function WealthTrend({ history }: { history: WealthPoint[] }) {
   const values = history.map((p) => Number(p.net_worth))
+  const { hidden } = useMoney()
   if (values.length < 2 || values.every((v) => !Number.isFinite(v))) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -211,6 +199,10 @@ function WealthTrend({ history }: { history: WealthPoint[] }) {
 
   const isPositive = values[values.length - 1] >= values[0]
 
+  // The curve itself encodes the real values, so it is replaced by a flat
+  // placeholder while privacy mode is on — masking the axis labels is not enough.
+  const showCurve = !hidden
+
   return (
     <div>
       <svg
@@ -236,20 +228,29 @@ function WealthTrend({ history }: { history: WealthPoint[] }) {
           strokeDasharray="3 4"
         />
 
-        <polygon points={area} fill="url(#wealth-fill)" />
-        <polyline
-          points={points}
-          fill="none"
-          stroke={isPositive ? '#10b981' : '#f43f5e'}
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {values.map((v, i) =>
-          i === values.length - 1 ? (
-            <circle key={i} cx={x(i)} cy={y(v)} r={4} fill="hsl(var(--background))" stroke={isPositive ? '#059669' : '#be123c'} strokeWidth={2} />
-          ) : null,
+        {showCurve ? (
+          <>
+            <polygon points={area} fill="url(#wealth-fill)" />
+            <polyline
+              points={points}
+              fill="none"
+              stroke={isPositive ? '#10b981' : '#f43f5e'}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <circle cx={x(values.length - 1)} cy={y(values[values.length - 1])} r={4} fill="hsl(var(--background))" stroke={isPositive ? '#059669' : '#be123c'} strokeWidth={2} />
+          </>
+        ) : (
+          <line
+            x1={padX}
+            x2={width - padX}
+            y1={height / 2}
+            y2={height / 2}
+            stroke="hsl(var(--muted-foreground) / 0.35)"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+          />
         )}
 
         <text x={padX} y={height - 6} textAnchor="start" className="fill-muted-foreground text-[10px] opacity-80">
@@ -264,6 +265,7 @@ function WealthTrend({ history }: { history: WealthPoint[] }) {
 }
 
 function SafeMoneyHero({ overview }: { overview: Overview }) {
+  const { idr } = useMoney()
   const eligible = Number(overview.eligible_assets ?? overview.assets.balance)
   const allocated = Number(overview.allocated?.total_allocated ?? 0)
   const goalTotal = Number(overview.goal_commitments?.total ?? 0)
@@ -286,7 +288,7 @@ function SafeMoneyHero({ overview }: { overview: Overview }) {
           <div className="mt-3 grid gap-4 lg:grid-cols-4">
             <div className="rounded-xl bg-muted/50 p-4">
               <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Wallet className="size-3.5" /> Total Assets</p>
-              <p className="mt-1 text-2xl font-extrabold text-foreground">{formatIDR(String(eligible))}</p>
+              <p className="mt-1 text-2xl font-extrabold text-foreground">{idr(eligible)}</p>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
@@ -302,42 +304,42 @@ function SafeMoneyHero({ overview }: { overview: Overview }) {
 
             <div className="rounded-xl bg-muted/50 p-4">
               <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><PiggyBank className="size-3.5" /> Allocations</p>
-              <p className="mt-1 text-2xl font-extrabold text-foreground">{formatIDR(String(allocated))}</p>
+              <p className="mt-1 text-2xl font-extrabold text-foreground">{idr(allocated)}</p>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
                     <Info className="size-3" />
-                    <span>Target {formatIDR(String(target))}</span>
+                    <span>Target {idr(target)}</span>
                   </p>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="text-xs">Komitmen alokasi aktif yang belum terpakai</p>
-                  {unfunded > 0 && <p className="mt-1 text-xs text-muted-foreground">Unfunded: {formatIDR(String(unfunded))}</p>}
+                  {unfunded > 0 && <p className="mt-1 text-xs text-muted-foreground">Unfunded: {idr(unfunded)}</p>}
                 </TooltipContent>
               </Tooltip>
             </div>
 
             <div className="rounded-xl bg-muted/50 p-4">
               <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><ShieldCheck className="size-3.5" /> Goals</p>
-              <p className="mt-1 text-2xl font-extrabold text-foreground">{formatIDR(String(goalTotal))}</p>
+              <p className="mt-1 text-2xl font-extrabold text-foreground">{idr(goalTotal)}</p>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
                     <Info className="size-3" />
-                    <span>Pending: {formatIDR(String(pendingGoals))}</span>
+                    <span>Pending: {idr(pendingGoals)}</span>
                   </p>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="text-xs">Dana tujuan finansial (Emergency fund, Wishlist, dll.)</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Pending transfer bulan ini: {formatIDR(String(pendingGoals))}</p>
-                  <p className="text-xs text-muted-foreground">Tersimpan terakumulasi: {formatIDR(String(accumulatedGoals))}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Pending transfer bulan ini: {idr(pendingGoals)}</p>
+                  <p className="text-xs text-muted-foreground">Tersimpan terakumulasi: {idr(accumulatedGoals)}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
 
             <div className={`rounded-xl p-4 ${isOver ? 'bg-rose-100 dark:bg-rose-900/30 ring-1 ring-rose-200 dark:ring-rose-800' : 'bg-emerald-100 dark:bg-emerald-900/30 ring-1 ring-emerald-200 dark:ring-emerald-800'}`}>
               <p className="text-xs font-medium text-muted-foreground">Safe to Spend</p>
-              <p className={`mt-1 text-2xl font-extrabold ${isOver ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}`}>{formatIDR(String(safe))}</p>
+              <p className={`mt-1 text-2xl font-extrabold ${isOver ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}`}>{idr(safe)}</p>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
@@ -348,7 +350,7 @@ function SafeMoneyHero({ overview }: { overview: Overview }) {
                 <TooltipContent>
                   <p className="font-mono text-xs">{formula}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {formatIDR(String(eligible))} − {formatIDR(String(allocated))} − {formatIDR(String(goalTotal))}
+                    {idr(eligible)} − {idr(allocated)} − {idr(goalTotal)}
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -362,6 +364,7 @@ function SafeMoneyHero({ overview }: { overview: Overview }) {
 }
 
 function WealthHero({ overview }: { overview: Overview }) {
+  const { idr } = useMoney()
   const assets = Number(overview.assets.balance)
   const liabilities = Number(overview.liabilities.balance)
   const netWorth = Number(overview.net_worth)
@@ -379,12 +382,12 @@ function WealthHero({ overview }: { overview: Overview }) {
               Net Worth
             </p>
             <p className={`mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl text-foreground ${netWorth < 0 ? 'text-rose-600 dark:text-rose-400' : ''}`}>
-              {formatIDR(overview.net_worth)}
+              {idr(overview.net_worth)}
             </p>
             {delta != null && (
               <p className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${delta >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300'}`}>
                 {delta >= 0 ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
-                {formatIDR(String(Math.abs(delta)))} from last month
+                {idr(Math.abs(delta))} from last month
               </p>
             )}
             <div className="mt-5 flex flex-wrap gap-2">
@@ -392,7 +395,7 @@ function WealthHero({ overview }: { overview: Overview }) {
                 <TooltipTrigger asChild>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 text-sm font-medium text-emerald-700 dark:text-emerald-300 cursor-help">
                     <span className="size-2 rounded-full bg-emerald-500" />
-                    Assets {formatIDR(overview.assets.balance)}
+                    Assets {idr(overview.assets.balance)}
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -403,7 +406,7 @@ function WealthHero({ overview }: { overview: Overview }) {
                 <TooltipTrigger asChild>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 dark:bg-rose-900/30 px-3 py-1 text-sm font-medium text-rose-700 dark:text-rose-300 cursor-help">
                     <span className="size-2 rounded-full bg-rose-500" />
-                    Liabilities {formatIDR(overview.liabilities.balance)}
+                    Liabilities {idr(overview.liabilities.balance)}
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -432,6 +435,8 @@ function WealthHero({ overview }: { overview: Overview }) {
 
 export default function OverviewPage() {
   const { token, user, tenant } = useAuth()
+  const { idr, hidden } = useMoney()
+  const { toggleAmounts } = usePrivacy()
   const [period, setPeriod] = React.useState<Period>('this_month')
 
   const shouldFetch = !!token && !!tenant
@@ -523,7 +528,15 @@ export default function OverviewPage() {
             Financial overview for the selected period.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant={hidden ? 'primary' : 'secondary'}
+            onClick={toggleAmounts}
+            title={hidden ? 'Amounts are hidden' : 'Hide amounts'}
+          >
+            {hidden ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
+            {hidden ? 'Amounts hidden' : 'Hide amounts'}
+          </Button>
           {periods.map((p) => (
             <Button
               key={p.value}
@@ -562,10 +575,10 @@ export default function OverviewPage() {
                 <p className="text-sm text-muted-foreground">Income (Actual)</p>
               </div>
               <p className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                {formatIDR(overview.data.income.actual)}
+                {idr(overview.data.income.actual)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Budgeted: {formatIDR(overview.data.income.budgeted)}
+                Budgeted: {idr(overview.data.income.budgeted)}
               </p>
             </Card>
 
@@ -575,10 +588,10 @@ export default function OverviewPage() {
                 <p className="text-sm text-muted-foreground">Expenses (Actual)</p>
               </div>
               <p className="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">
-                {formatIDR(overview.data.expense.actual)}
+                {idr(overview.data.expense.actual)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Budgeted: {formatIDR(overview.data.expense.budgeted)}
+                Budgeted: {idr(overview.data.expense.budgeted)}
               </p>
             </Card>
           </div>
