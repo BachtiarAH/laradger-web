@@ -140,6 +140,38 @@ function JournalSummary({
             )}, akan ditolak saat dijalankan.`}
         {missingAccount && ' Ada baris yang belum memilih akun.'}
       </p>
+
+      <TagStrip payload={payload} />
+    </div>
+  )
+}
+
+/**
+ * Tags are what make a journal findable later, and they are the easiest thing
+ * in a draft to skim past — so they get their own line rather than being buried
+ * in the payload, and the ids are resolved to real names.
+ */
+function TagStrip({ payload }: { payload: Record<string, any> }) {
+  const ids: string[] = Array.isArray(payload.tags) ? payload.tags.map(String) : []
+  const names = useTagNames()
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 border-t border-border pt-2">
+      <span className="text-xs text-muted-foreground">Tag:</span>
+      {ids.length === 0 ? (
+        <span className="rounded-full border border-dashed border-border px-2 py-0.5 text-[11px] text-muted-foreground">
+          belum ada
+        </span>
+      ) : (
+        ids.map((id) => (
+          <span
+            key={id}
+            className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+          >
+            {names(id)}
+          </span>
+        ))
+      )}
     </div>
   )
 }
@@ -195,6 +227,32 @@ function useAccountNames(): (id: string) => string {
 
   return React.useCallback(
     (id: string) => map[id] ?? `akun tidak dikenal (${id.slice(0, 8)}…)`,
+    [map],
+  )
+}
+
+/** Resolve tag ids to names for the summary. */
+function useTagNames(): (id: string) => string {
+  const [map, setMap] = React.useState<Record<string, string>>({})
+
+  React.useEffect(() => {
+    let active = true
+
+    api
+      .listTags({ per_page: 100 })
+      .then(({ data }) => {
+        if (!active) return
+        setMap(Object.fromEntries(data.map((t) => [t.id, t.name])))
+      })
+      .catch(() => undefined)
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  return React.useCallback(
+    (id: string) => map[id] ?? `tag tidak dikenal (${id.slice(0, 8)}…)`,
     [map],
   )
 }

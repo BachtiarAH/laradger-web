@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from './ui'
 import { LineEditor, createBlankLine, type LineDraft } from './LineEditor'
+import { LineBalanceHint } from './LineBalanceHint'
 import { TagInput } from './TagInput'
 
 const PERIODS: { value: JournalTemplatePeriod; label: string }[] = [
@@ -229,6 +230,7 @@ export function TemplateForm({
       <div className="space-y-2">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Lines</h3>
         <LineEditor accounts={accounts.data?.data} lines={lines} onChange={setLines} />
+        <LineBalanceHint lines={lines} />
       </div>
 
       <Field label="Tags">

@@ -1,10 +1,11 @@
 import * as React from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Tag } from 'lucide-react'
 import { api } from '../../lib/api'
 import type { AiActionDraft, JournalStatus, TagType } from '../../lib/types'
 import { Button, Field, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui'
 import { AccountSelect } from '../AccountSelect'
 import { LineEditor, createBlankLine, type LineDraft } from '../LineEditor'
+import { LineBalanceHint } from '../LineBalanceHint'
 import { TagInput } from '../TagInput'
 
 const ACCOUNT_TYPES = ['asset', 'liability', 'equity', 'income', 'expense'] as const
@@ -147,7 +148,21 @@ function JournalCreateForm({
       </div>
 
       <div>
-        <p className="mb-1 text-sm font-medium">Tag</p>
+        <LineBalanceHint lines={lines} />
+      </div>
+
+      {/* Tags were previously the last field with no framing, which made them
+          the easiest thing in the draft to overlook. */}
+      <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+        <div className="mb-2 flex items-center gap-2">
+          <Tag className="size-4 text-primary" aria-hidden />
+          <p className="text-sm font-semibold text-foreground">Tag</p>
+        </div>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Tag menempel ke jurnal setiap kali template atau draft ini dipakai,
+          dan dipakai untuk filter. Boleh kosong, tapi tambahkan kalau nanti
+          mau gampang dicari.
+        </p>
         <TagInput
           tags={tags}
           selectedIds={Array.isArray(payload.tags) ? payload.tags.map(String) : []}

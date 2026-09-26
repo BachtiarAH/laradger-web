@@ -8,6 +8,7 @@ import {
   createBlankLine,
   type LineDraft,
 } from '../../components/LineEditor'
+import { LineBalanceHint } from '../../components/LineBalanceHint'
 import { AiDraftPanel, type AiDraftResult } from '../../components/AiDraftPanel'
 import {
   AllocationAdjustmentsPanel,
@@ -425,6 +426,7 @@ function NewJournalPage() {
               }}
               lineErrors={lineErrors}
             />
+            <LineBalanceHint lines={lines} />
           </Card>
 
           <Card className="p-6">
