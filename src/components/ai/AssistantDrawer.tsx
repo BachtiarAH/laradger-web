@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import * as React from 'react'
 import {
   Bot,
@@ -26,11 +27,15 @@ export function AssistantDrawer() {
   const [conversation, setConversation] = React.useState<AiConversation | null>(null)
   const [messages, setMessages] = React.useState<AiMessage[]>([])
   const [drafts, setDrafts] = React.useState<AiActionDraft[]>([])
+  // The badge is its own count, deliberately not the draft list. `listAiDrafts`
+  // is not scoped to a conversation, so folding it into `drafts` made the drawer
+  // open on a wall of cards from the Drafts page that had nothing to do with the
+  // chat the user was looking at.
+  const [pendingCount, setPendingCount] = React.useState(0)
   const [input, setInput] = React.useState('')
   const [sending, setSending] = React.useState(false)
   const [error, setError] = React.useState<unknown>(null)
 
-  const pending = drafts.filter((d) => d.status === 'pending').length
   const scrollRef = React.useRef<HTMLDivElement>(null)
 
   const scrollToEnd = React.useCallback(() => {
@@ -48,7 +53,7 @@ export function AssistantDrawer() {
     let active = true
     api
       .listAiDrafts('pending')
-      .then((all) => active && setDrafts(all))
+      .then((all) => active && setPendingCount(all.length))
       .catch(() => undefined)
     return () => {
       active = false
@@ -120,6 +125,9 @@ export function AssistantDrawer() {
 
   const handleSettled = (settled: AiActionDraft) => {
     setDrafts((prev) => prev.map((d) => (d.id === settled.id ? settled : d)))
+    if (settled.status !== 'pending') {
+      setPendingCount((n) => Math.max(0, n - 1))
+    }
   }
 
   if (!open) {
@@ -131,9 +139,9 @@ export function AssistantDrawer() {
         className="fixed bottom-5 right-5 z-40 flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <Sparkles className="size-5" aria-hidden />
-        {pending > 0 && (
+        {pendingCount > 0 && (
           <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-amber-500 text-[11px] font-bold text-white">
-            {pending}
+            {pendingCount}
           </span>
         )}
       </button>
@@ -227,9 +235,18 @@ export function AssistantDrawer() {
 
           {drafts.length > 0 && (
             <section className="space-y-2 pt-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Tindakan yang perlu ditinjau
-              </h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Diusulkan di percakapan ini
+                </h3>
+                <Link
+                  to="/ai/drafts"
+                  className="text-[11px] font-medium text-primary hover:underline"
+                  onClick={() => setOpen(false)}
+                >
+                  Semua draft
+                </Link>
+              </div>
               {drafts.map((draft) => (
                 <DraftCard key={draft.id} draft={draft} onSettled={handleSettled} />
               ))}
