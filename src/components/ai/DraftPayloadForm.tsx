@@ -63,6 +63,19 @@ function JournalCreateForm({
     [draft.payload],
   )
 
+  const pendingAccounts = React.useMemo(
+    () =>
+      Array.from(
+        new Set(
+          lines
+            .map((line) => line.account_id)
+            .filter((id) => id.startsWith('pending:'))
+            .map((id) => id.slice('pending:'.length)),
+        ),
+      ),
+    [lines],
+  )
+
   const patch = (next: Record<string, any>) => onChange({ ...payload, ...next })
 
   // An empty string means "leave blank" and must not overwrite a real value,
@@ -144,6 +157,15 @@ function JournalCreateForm({
             <Plus className="size-3.5" aria-hidden />
             Tambah baris
           </Button>
+        )}
+
+        {pendingAccounts.length > 0 && (
+          <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+            Baris ini memakai akun yang masih berupa draft:{' '}
+            <span className="font-medium">{pendingAccounts.join(', ')}</span>.
+            Setujui draft akunnya dulu, baru jurnal ini — kalau tidak, akun di
+            baris tersebut akan kosong.
+          </p>
         )}
       </div>
 

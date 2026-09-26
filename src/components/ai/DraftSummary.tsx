@@ -106,7 +106,7 @@ function JournalSummary({
               <tr key={index} className="border-t border-border">
                 <td className="px-2 py-1">
                   {line.account_id ? (
-                    names(String(line.account_id))
+                    accountLabel(String(line.account_id), names)
                   ) : (
                     <span className="text-amber-600 dark:text-amber-400">
                       akun belum dipilih
@@ -153,24 +153,37 @@ function JournalSummary({
  */
 function TagStrip({ payload }: { payload: Record<string, any> }) {
   const ids: string[] = Array.isArray(payload.tags) ? payload.tags.map(String) : []
+  const pending: string[] = Array.isArray(payload.pending_tags)
+    ? payload.pending_tags.map(String)
+    : []
   const names = useTagNames()
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 border-t border-border pt-2">
       <span className="text-xs text-muted-foreground">Tag:</span>
-      {ids.length === 0 ? (
+      {ids.length === 0 && pending.length === 0 ? (
         <span className="rounded-full border border-dashed border-border px-2 py-0.5 text-[11px] text-muted-foreground">
           belum ada
         </span>
       ) : (
-        ids.map((id) => (
-          <span
-            key={id}
-            className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
-          >
-            {names(id)}
-          </span>
-        ))
+        <>
+          {ids.map((id) => (
+            <span
+              key={id}
+              className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+            >
+              {names(id)}
+            </span>
+          ))}
+          {pending.map((name) => (
+            <span
+              key={name}
+              className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
+            >
+              {name} · tag baru
+            </span>
+          ))}
+        </>
       )}
     </div>
   )
@@ -229,6 +242,26 @@ function useAccountNames(): (id: string) => string {
     (id: string) => map[id] ?? `akun tidak dikenal (${id.slice(0, 8)}…)`,
     [map],
   )
+}
+
+/**
+ * A line may point at an account the assistant is proposing in the same reply.
+ * It has no id yet, so it arrives as `pending:<name>` and is resolved when the
+ * journal is approved. Showing that as an unknown id would read as a mistake.
+ */
+function accountLabel(reference: string, names: (id: string) => string): React.ReactNode {
+  if (reference.startsWith('pending:')) {
+    return (
+      <span className="inline-flex items-center gap-1">
+        <span>{reference.slice('pending:'.length)}</span>
+        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+          akun baru
+        </span>
+      </span>
+    )
+  }
+
+  return names(reference)
 }
 
 /** Resolve tag ids to names for the summary. */
