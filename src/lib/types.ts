@@ -545,3 +545,86 @@ export type RegisterPayload = {
   tenant_name?: string
   tenant_slug?: string
 }
+
+export type AiProviderName = 'openai' | 'anthropic' | 'openai_compatible'
+
+export type AiProviderInfo = {
+  name: AiProviderName
+  label: string
+  default_model: string | null
+  configured: boolean
+  source: 'user' | 'environment'
+}
+
+export type AiSettings = {
+  provider: AiProviderName
+  model: string | null
+  base_uri: string | null
+  endpoint: string | null
+  has_key: boolean
+  key_hint: string | null
+  source: 'user' | 'environment'
+  providers: AiProviderInfo[]
+}
+
+export type AiSettingsStore = {
+  provider?: AiProviderName
+  model?: string | null
+  api_key?: string | null
+  base_uri?: string | null
+  endpoint?: string | null
+}
+
+export type AiConnectionTest = {
+  ok: boolean
+  provider: string
+  model: string | null
+  base_uri: string | null
+  latency_ms: number
+}
+
+export type AiConversation = {
+  id: string
+  title: string | null
+  pending_drafts_count: number
+  created_at: string
+  updated_at: string
+}
+
+export type AiMessageRole = 'user' | 'assistant' | 'tool'
+
+export type AiToolCall = {
+  id: string
+  name: string
+  arguments: Record<string, unknown>
+}
+
+export type AiMessage = {
+  id: string
+  role: AiMessageRole
+  content: string | null
+  tool_calls: AiToolCall[] | null
+  created_at: string
+}
+
+export type AiDraftStatus = 'pending' | 'executed' | 'rejected' | 'failed'
+
+export type AiActionDraft = {
+  id: string
+  tool: string
+  kind: 'read' | 'write'
+  title: string
+  status: AiDraftStatus
+  /** Exactly what will be sent when the draft is approved. */
+  payload: Record<string, any>
+  result: Record<string, any> | null
+  error: string | null
+  executed_at: string | null
+  rejected_at: string | null
+  created_at: string
+}
+
+export type AiAssistantTurn = {
+  reply: string
+  drafts: AiActionDraft[]
+}

@@ -3,6 +3,14 @@ import type {
   AccountAllocations,
   AccountAnalytics,
   AccountStore,
+  AiActionDraft,
+  AiAssistantTurn,
+  AiConnectionTest,
+  AiConversation,
+  AiDraftStatus,
+  AiMessage,
+  AiSettings,
+  AiSettingsStore,
   Allocation,
   AllocationAdjust,
   AllocationDirectDeduct,
@@ -211,6 +219,44 @@ export const api = {
   login: (payload: { email: string; password: string; device_name?: string }) =>
     post<AuthResponse>('/login', payload),
   logout: () => post<{ message: string }>('/logout'),
+
+  // AI settings — personal, deliberately not tenant-scoped
+  getAiSettings: () => get<ApiEnvelope<AiSettings>>('/me/ai').then((r) => r.data),
+  updateAiSettings: (payload: AiSettingsStore) =>
+    put<ApiEnvelope<AiSettings>>('/me/ai', payload).then((r) => r.data),
+  clearAiSettings: () =>
+    request<ApiEnvelope<AiSettings>>('/me/ai', { method: 'DELETE' }).then((r) => r.data),
+  testAiSettings: (payload: AiSettingsStore = {}) =>
+    post<ApiEnvelope<AiConnectionTest>>('/me/ai/test', payload).then((r) => r.data),
+
+  // AI assistant — conversations and proposed actions
+  listAiConversations: () => get<{ data: AiConversation[] }>(tenantPath('/ai/conversations')).then((r) => r.data),
+  createAiConversation: () =>
+    post<ApiEnvelope<AiConversation>>(tenantPath('/ai/conversations')).then((r) => r.data),
+  getAiConversation: (id: string) =>
+    get<{
+      data: {
+        conversation: AiConversation
+        messages: AiMessage[]
+        drafts: AiActionDraft[]
+      }
+    }>(tenantPath(`/ai/conversations/${id}`)).then((r) => r.data),
+  sendAiMessage: (id: string, message: string) =>
+    post<ApiEnvelope<AiAssistantTurn>>(tenantPath(`/ai/conversations/${id}/messages`), {
+      message,
+    }).then((r) => r.data),
+  listAiDrafts: (status?: AiDraftStatus) =>
+    get<{ data: AiActionDraft[] }>(tenantPath(`/ai/drafts${toQuery({ status })}`)).then(
+      (r) => r.data,
+    ),
+  updateAiDraft: (id: string, payload: Record<string, any>) =>
+    patch<ApiEnvelope<AiActionDraft>>(tenantPath(`/ai/drafts/${id}`), { payload }).then(
+      (r) => r.data,
+    ),
+  executeAiDraft: (id: string) =>
+    post<ApiEnvelope<AiActionDraft>>(tenantPath(`/ai/drafts/${id}/execute`)).then((r) => r.data),
+  rejectAiDraft: (id: string) =>
+    post<ApiEnvelope<AiActionDraft>>(tenantPath(`/ai/drafts/${id}/reject`)).then((r) => r.data),
 
   // Tenants
   listTenants: () => get<{ data: Tenant[] }>('/tenants').then((r) => r.data),

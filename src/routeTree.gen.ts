@@ -32,6 +32,7 @@ import { Route as GoalsNewRouteImport } from './routes/goals/new'
 import { Route as JournalsIndexRouteImport } from './routes/journals/index'
 import { Route as JournalsJournalIdRouteImport } from './routes/journals/$journalId'
 import { Route as JournalsNewRouteImport } from './routes/journals/new'
+import { Route as SettingsAiRouteImport } from './routes/settings/ai'
 import { Route as TagsIndexRouteImport } from './routes/tags/index'
 import { Route as TemplatesIndexRouteImport } from './routes/templates/index'
 import { Route as TemplatesTemplateIdRouteImport } from './routes/templates/$templateId'
@@ -154,6 +155,11 @@ const JournalsNewRoute = JournalsNewRouteImport.update({
   path: '/journals/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsAiRoute = SettingsAiRouteImport.update({
+  id: '/settings/ai',
+  path: '/settings/ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TagsIndexRoute = TagsIndexRouteImport.update({
   id: '/tags/',
   path: '/tags/',
@@ -203,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/goals/new': typeof GoalsNewRoute
   '/journals/$journalId': typeof JournalsJournalIdRoute
   '/journals/new': typeof JournalsNewRoute
+  '/settings/ai': typeof SettingsAiRoute
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
   '/templates/new': typeof TemplatesNewRoute
   '/transactions/new': typeof TransactionsNewRoute
@@ -234,6 +241,7 @@ export interface FileRoutesByTo {
   '/goals/new': typeof GoalsNewRoute
   '/journals/$journalId': typeof JournalsJournalIdRoute
   '/journals/new': typeof JournalsNewRoute
+  '/settings/ai': typeof SettingsAiRoute
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
   '/templates/new': typeof TemplatesNewRoute
   '/transactions/new': typeof TransactionsNewRoute
@@ -266,6 +274,7 @@ export interface FileRoutesById {
   '/goals/new': typeof GoalsNewRoute
   '/journals/$journalId': typeof JournalsJournalIdRoute
   '/journals/new': typeof JournalsNewRoute
+  '/settings/ai': typeof SettingsAiRoute
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
   '/templates/new': typeof TemplatesNewRoute
   '/transactions/new': typeof TransactionsNewRoute
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/goals/new'
     | '/journals/$journalId'
     | '/journals/new'
+    | '/settings/ai'
     | '/templates/$templateId'
     | '/templates/new'
     | '/transactions/new'
@@ -330,6 +340,7 @@ export interface FileRouteTypes {
     | '/goals/new'
     | '/journals/$journalId'
     | '/journals/new'
+    | '/settings/ai'
     | '/templates/$templateId'
     | '/templates/new'
     | '/transactions/new'
@@ -361,6 +372,7 @@ export interface FileRouteTypes {
     | '/goals/new'
     | '/journals/$journalId'
     | '/journals/new'
+    | '/settings/ai'
     | '/templates/$templateId'
     | '/templates/new'
     | '/transactions/new'
@@ -393,6 +405,7 @@ export interface RootRouteChildren {
   GoalsNewRoute: typeof GoalsNewRoute
   JournalsJournalIdRoute: typeof JournalsJournalIdRoute
   JournalsNewRoute: typeof JournalsNewRoute
+  SettingsAiRoute: typeof SettingsAiRoute
   TemplatesTemplateIdRoute: typeof TemplatesTemplateIdRoute
   TemplatesNewRoute: typeof TemplatesNewRoute
   TransactionsNewRoute: typeof TransactionsNewRoute
@@ -570,6 +583,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JournalsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/ai': {
+      id: '/settings/ai'
+      path: '/settings/ai'
+      fullPath: '/settings/ai'
+      preLoaderRoute: typeof SettingsAiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tags/': {
       id: '/tags/'
       path: '/tags'
@@ -633,6 +653,7 @@ const rootRouteChildren: RootRouteChildren = {
   GoalsNewRoute: GoalsNewRoute,
   JournalsJournalIdRoute: JournalsJournalIdRoute,
   JournalsNewRoute: JournalsNewRoute,
+  SettingsAiRoute: SettingsAiRoute,
   TemplatesTemplateIdRoute: TemplatesTemplateIdRoute,
   TemplatesNewRoute: TemplatesNewRoute,
   TransactionsNewRoute: TransactionsNewRoute,

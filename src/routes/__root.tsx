@@ -10,6 +10,7 @@ import {
   Menu,
   NotebookPen,
   PiggyBank,
+  Settings,
   Target,
   Flag,
   Tags,
@@ -32,6 +33,7 @@ import { TooltipProvider } from '../components/ui/tooltip'
 import { TenantSwitcher } from '../components/TenantSwitcher'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { PrivacyToggle } from '../components/PrivacyToggle'
+import { AssistantDrawer } from '../components/ai/AssistantDrawer'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,6 +65,10 @@ const navItems: { to: string; label: string; icon: React.ComponentType<{ classNa
   { to: '/budgets', label: 'Budgets', icon: PiggyBank },
   { to: '/tags', label: 'Tags', icon: Tags },
   { to: '/audit-logs', label: 'Audit Logs', icon: History },
+]
+
+const settingsItems: { to: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { to: '/settings/ai', label: 'AI', icon: Settings },
 ]
 
 function SidebarNavLink({
@@ -136,6 +142,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 onNavigate={onNavigate}
               />
             ))}
+
+          <div className="mt-4 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Settings
+          </div>
+          {settingsItems.map((item) => (
+            <SidebarNavLink
+              key={item.to}
+              to={item.to}
+              label={item.label}
+              icon={item.icon}
+              onNavigate={onNavigate}
+            />
+          ))}
 
           {user?.is_admin && (
             <>
@@ -254,6 +273,22 @@ function TenantlessAdminRedirect({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function AssistantHost() {
+  const { token, user, tenants } = useAuth()
+
+  // The assistant is tenant-scoped, so it is only offered where the rest of the
+  // tenant-scoped navigation is: never on the login/register screens and never
+  // for a tenantless platform admin.
+  const canUseAssistant =
+    Boolean(token) &&
+    ((user?.tenants?.length ?? 0) > 0 || tenants.length > 0) &&
+    !(user?.is_admin && (user?.tenants?.length ?? 0) === 0 && tenants.length === 0)
+
+  if (!canUseAssistant) return null
+
+  return <AssistantDrawer />
+}
+
 function RootComponent() {
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const closeMobile = React.useCallback(() => setMobileOpen(false), [])
@@ -314,8 +349,11 @@ function RootComponent() {
             </div>
           </main>
         </div>
+
+        <AssistantHost />
       </div>
-      <TanStackRouterDevtools position="bottom-right" />
+      {/* Moved off bottom-right so it does not sit under the assistant button. */}
+      <TanStackRouterDevtools position="bottom-left" />
       </AuthProvider>
       </PrivacyProvider>
     </TooltipProvider>

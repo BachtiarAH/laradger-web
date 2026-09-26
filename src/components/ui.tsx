@@ -20,7 +20,9 @@ import {
 } from './ui/table'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success'
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost'
+
+export type ButtonSize = 'sm' | 'md' | 'icon'
 
 const buttonVariantMap: Record<
   ButtonVariant,
@@ -30,22 +32,35 @@ const buttonVariantMap: Record<
   secondary: 'outline',
   danger: 'destructive',
   success: 'default',
+  ghost: 'ghost',
+}
+
+const buttonSizeMap: Record<
+  ButtonSize,
+  React.ComponentProps<typeof ShadcnButton>['size']
+> = {
+  sm: 'sm',
+  md: 'default',
+  icon: 'icon',
 }
 
 export function Button({
   variant = 'primary',
+  size = 'md',
   className = '',
   loading = false,
   children,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
+  size?: ButtonSize
   loading?: boolean
 }) {
   return (
     <ShadcnButton
       {...props}
       variant={buttonVariantMap[variant]}
+      size={buttonSizeMap[size]}
       className={cn(
         variant === 'success' &&
           'bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400',
