@@ -609,6 +609,8 @@ export type AiDraftRequestStatus = 'queued' | 'running' | 'completed' | 'failed'
 export type AiDraftRequest = {
   id: string
   prompt: string
+  /** The assistant's answer, when it had something to say about the prompt. */
+  reply: string | null
   status: AiDraftRequestStatus
   error: string | null
   drafts_count: number

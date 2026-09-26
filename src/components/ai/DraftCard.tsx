@@ -1,16 +1,10 @@
 import * as React from 'react'
-import {
-  AlertCircle,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Pencil,
-  Sparkles,
-  X,
-} from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, ChevronUp, Pencil, Sparkles, X } from 'lucide-react'
 import { api } from '../../lib/api'
 import type { AiActionDraft } from '../../lib/types'
 import { Button, ErrorBox } from '../ui'
+import { DraftPayloadForm } from './DraftPayloadForm'
+import { DraftSummary } from './DraftSummary'
 import { cn } from '../../lib/utils'
 
 /**
@@ -26,34 +20,44 @@ export function DraftCard({
 }) {
   const [expanded, setExpanded] = React.useState(draft.kind === 'write')
   const [editing, setEditing] = React.useState(false)
-  const [text, setText] = React.useState(() => JSON.stringify(draft.payload, null, 2))
+  const [payload, setPayload] = React.useState<Record<string, any>>(draft.payload)
   const [busy, setBusy] = React.useState<null | 'execute' | 'reject' | 'save'>(null)
   const [error, setError] = React.useState<unknown>(null)
 
   const pending = draft.status === 'pending'
+  const dirty = React.useMemo(
+    () => JSON.stringify(payload) !== JSON.stringify(draft.payload),
+    [payload, draft.payload],
+  )
 
-  const handleSave = async () => {
-    let parsed: Record<string, unknown>
-    try {
-      parsed = JSON.parse(text)
-    } catch {
-      setError(new Error('The payload is not valid JSON.'))
-      return
-    }
+  // A settled draft is immutable server-side, so freeze the local copy.
+  React.useEffect(() => {
+    if (!editing) setPayload(draft.payload)
+  }, [draft.payload, editing])
 
+  /** @returns whether the save succeeded, so callers can gate on it. */
+  const handleSave = async (): Promise<boolean> => {
     setBusy('save')
     setError(null)
     try {
-      onSettled(await api.updateAiDraft(draft.id, parsed))
+      const saved = await api.updateAiDraft(draft.id, payload)
+      onSettled(saved)
       setEditing(false)
+      return true
     } catch (err) {
       setError(err)
+      return false
     } finally {
       setBusy(null)
     }
   }
 
   const handleExecute = async () => {
+    // Approving sends the *stored* payload, so unsaved edits have to land
+    // first. If the save fails, stop: running the old payload while the form
+    // shows the new one would approve something the user never reviewed.
+    if (dirty && !(await handleSave())) return
+
     setBusy('execute')
     setError(null)
     try {
@@ -118,50 +122,10 @@ export function DraftCard({
 
       {error != null && <ErrorBox error={error} />}
 
-      {pending && (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            onClick={handleExecute}
-            loading={busy === 'execute'}
-            disabled={busy !== null}
-          >
-            <Check className="size-4" aria-hidden />
-            Setujui &amp; jalankan
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => setEditing((v) => !v)}
-            disabled={busy !== null}
-          >
-            <Pencil className="size-3.5" aria-hidden />
-            {editing ? 'Tutup editor' : 'Ubah isi'}
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
-            onClick={handleReject}
-            loading={busy === 'reject'}
-            disabled={busy !== null}
-          >
-            <X className="size-4" aria-hidden />
-            Buang
-          </Button>
-        </div>
-      )}
-
+      {/* A rejected or failed draft is read-only: there is nothing left to edit. */}
       {editing && pending ? (
-        <div className="mt-3 space-y-2">
-          <p className="text-xs text-muted-foreground">
-            Isi persis seperti yang akan dikirim.
-          </p>
-          <textarea
-            className="min-h-40 w-full rounded-lg border border-input bg-transparent p-2.5 font-mono text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-            value={text}
-            spellCheck={false}
-            onChange={(e) => setText(e.target.value)}
-          />
+        <div className="mt-3 space-y-3">
+          <DraftPayloadForm draft={{ ...draft, payload }} onChange={setPayload} />
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={handleSave} loading={busy === 'save'}>
               Simpan perubahan
@@ -170,34 +134,74 @@ export function DraftCard({
               size="sm"
               variant="secondary"
               onClick={() => {
-                setText(JSON.stringify(draft.payload, null, 2))
+                setPayload(draft.payload)
                 setEditing(false)
               }}
+              disabled={busy !== null}
             >
               Batal
             </Button>
+            {dirty && (
+              <span className="text-xs text-muted-foreground">
+                Belum disimpan — menyetujui akan menyimpannya dulu.
+              </span>
+            )}
           </div>
         </div>
       ) : (
-        <div className="mt-3">
+        <>
+          {expanded && (
+            <div className="mt-3">
+              <DraftSummary draft={{ ...draft, payload }} />
+            </div>
+          )}
+
+          {pending && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                onClick={handleExecute}
+                loading={busy === 'execute'}
+                disabled={busy !== null}
+              >
+                <Check className="size-4" aria-hidden />
+                Setujui &amp; jalankan
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setEditing(true)}
+                disabled={busy !== null}
+              >
+                <Pencil className="size-3.5" aria-hidden />
+                Ubah isi
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={handleReject}
+                loading={busy === 'reject'}
+                disabled={busy !== null}
+              >
+                <X className="size-4" aria-hidden />
+                Buang
+              </Button>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
             {expanded ? (
               <ChevronUp className="size-3.5" aria-hidden />
             ) : (
               <ChevronDown className="size-3.5" aria-hidden />
             )}
-            {expanded ? 'Sembunyikan detail' : 'Lihat yang akan dikirim'}
+            {expanded ? 'Sembunyikan detail' : 'Lihat detail'}
           </button>
-          {expanded && (
-            <pre className="mt-2 max-h-64 overflow-auto rounded bg-muted p-2 font-mono text-[11px] leading-relaxed">
-              {JSON.stringify(draft.payload, null, 2)}
-            </pre>
-          )}
-        </div>
+        </>
       )}
     </div>
   )

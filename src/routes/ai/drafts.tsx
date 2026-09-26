@@ -19,6 +19,7 @@ import type {
 } from '../../lib/types'
 import { Button, ErrorBox, LoadingBox, PageHeader } from '../../components/ui'
 import { DraftCard } from '../../components/ai/DraftCard'
+import { MarkdownText } from '../../components/ai/MarkdownText'
 import { cn } from '../../lib/utils'
 
 export const Route = createFileRoute('/ai/drafts')({
@@ -287,8 +288,29 @@ function RequestRow({ request }: { request: AiDraftRequest }) {
           {request.drafts_count > 0 && ` · ${request.drafts_count} draft`}
           {request.completed_at && ` · ${formatWhen(request.completed_at)}`}
         </p>
+
         {request.error && (
           <p className="mt-1 text-xs text-destructive">{request.error}</p>
+        )}
+
+        {/* A queued turn can still have something to say. Hiding it would make
+            an assistant that asked a sensible question look like a failure. */}
+        {request.reply && (
+          <details className="mt-2 rounded border border-border bg-muted/40 px-2.5 py-2">
+            <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+              Lihat jawaban asisten
+            </summary>
+            <div className="mt-2 text-xs text-foreground">
+              <MarkdownText text={request.reply} />
+            </div>
+          </details>
+        )}
+
+        {request.status === 'completed' && request.drafts_count === 0 && (
+          <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+            Tidak ada draft yang dibuat. Buka asistente di pojok kanan bawah
+            untuk lanjutkan obrolan soal prompt ini.
+          </p>
         )}
       </div>
     </li>
@@ -320,7 +342,7 @@ function statusMeta(request: AiDraftRequest): { label: string; icon: React.React
         label:
           request.drafts_count > 0
             ? 'Selesai — menunggu persetujuan'
-            : 'Selesai — tidak ada draft',
+            : 'Selesai — belum ada draft',
         icon: (
           <span className="flex size-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
             <CheckCircle2 className="size-3" aria-hidden />
