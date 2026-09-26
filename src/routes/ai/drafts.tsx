@@ -33,7 +33,12 @@ export const Route = createFileRoute('/ai/drafts')({
   component: AiDraftsPage,
 })
 
-const POLL_INTERVAL_MS = 2500
+/**
+ * How often the page re-reads the status of submitted prompts, opening up as the
+ * wait goes on. A turn that is going to finish usually finishes inside the first
+ * couple of ticks; one that is not usually has no worker behind it.
+ */
+const BACKOFF_MS = [2500, 2500, 5000, 10000, 15000, 30000]
 
 type Filter = 'pending' | 'executed' | 'failed' | 'rejected' | 'all'
 
@@ -107,16 +112,84 @@ function AiDraftsPage() {
     (r) => r.status === 'queued' || r.status === 'running',
   )
 
+  const [visible, setVisible] = React.useState(
+    () => typeof document === 'undefined' || document.visibilityState !== 'hidden',
+  )
+
+  React.useEffect(() => {
+    const onVisibility = () => setVisible(document.visibilityState !== 'hidden')
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [])
+
+  /**
+   * A turn only produces drafts when it finishes, so while one is in flight the
+   * draft list cannot have changed. Polling it anyway was two of the three
+   * requests per tick, spent on a list that was not going to differ — and the
+   * whole tick at 2.5s worked out to 72 requests a minute against a 30/min limit,
+   * so a queued prompt throttled the page watching it.
+   */
+  const settledKey = React.useMemo(
+    () =>
+      requests
+        .filter((r) => r.status === 'completed' || r.status === 'failed')
+        .map((r) => `${r.id}:${r.status}`)
+        .sort()
+        .join('|'),
+    [requests],
+  )
+
+  const seenSettled = React.useRef<string | null>(null)
+
+  React.useEffect(() => {
+    // The first value is the initial load, which the mount effect already covers.
+    if (seenSettled.current === null) {
+      seenSettled.current = settledKey
+      return
+    }
+
+    if (seenSettled.current === settledKey) return
+    seenSettled.current = settledKey
+
+    void loadDrafts(filter)
+    // A turn that just finished is the one moment new drafts appear on their own,
+    // and the sidebar badge counts exactly those. Its own 60s timer would make a
+    // finished prompt look like nothing came of it.
+    refreshPendingBadge()
+  }, [settledKey, filter, loadDrafts, refreshPendingBadge])
+
   React.useEffect(() => {
     if (!ready) return
     void loadRequests()
-    if (!inFlight) return
-    const timer = setInterval(() => {
-      void loadRequests()
-      void loadDrafts(filter)
-    }, POLL_INTERVAL_MS)
-    return () => clearInterval(timer)
-  }, [ready, inFlight, filter, loadRequests, loadDrafts])
+  }, [ready, loadRequests])
+
+  // Only the request statuses are polled, and only on a visible tab. A prompt with
+  // no worker behind it waits forever, so the interval opens up the longer it is
+  // asked and nothing has moved rather than spending the whole budget on a queue
+  // position that is not going to change on its own.
+  React.useEffect(() => {
+    if (!ready || !inFlight || !visible) return
+
+    let cancelled = false
+    let step = 0
+    let timer = 0
+
+    const tick = async () => {
+      await loadRequests()
+      if (cancelled) return
+
+      const delay = BACKOFF_MS[Math.min(step, BACKOFF_MS.length - 1)]
+      step += 1
+      timer = window.setTimeout(tick, delay)
+    }
+
+    timer = window.setTimeout(tick, BACKOFF_MS[0])
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [ready, inFlight, visible, loadRequests])
 
   const composed = React.useMemo(() => composePrompt(prompt, receipts), [prompt, receipts])
 
