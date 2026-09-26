@@ -37,9 +37,31 @@ export function DraftCard({
   const [error, setError] = React.useState<unknown>(null)
 
   const pending = draft.status === 'pending'
+  const failed = draft.status === 'failed'
+  // Mirrors the server's `isEditable`. A failed draft is normally failed because
+  // the payload is wrong, and the fix is to correct it and run it again — hiding
+  // the buttons here would leave the only option being to throw it away and ask
+  // the assistant to produce the same thing a second time.
+  const actionable = pending || failed
   const dirty = React.useMemo(
     () => JSON.stringify(payload) !== JSON.stringify(draft.payload),
     [payload, draft.payload],
+  )
+
+  // What one click will actually do, counting only the drafts still to run. A
+  // prerequisite already applied is skipped server-side, so counting it would
+  // promise work that does not happen.
+  const dependsOn = draft.depends_on ?? []
+  const chain = dependsOn.filter(
+    (dependency) => dependency.status === 'pending' || dependency.status === 'failed',
+  )
+  // Rejected or failed prerequisites can never be run, so the server refuses the
+  // whole chain. Saying so up front beats a 409 the user has to interpret.
+  const blocked = dependsOn.filter(
+    (dependency) =>
+      dependency.status !== 'pending' &&
+      dependency.status !== 'failed' &&
+      dependency.status !== 'executed',
   )
 
   // A settled draft is immutable server-side, so freeze the local copy.
@@ -113,6 +135,16 @@ export function DraftCard({
         <StatusPill status={draft.status} />
       </div>
 
+      {actionable && blocked.length > 0 && (
+        <p className="mt-2 flex items-start gap-1.5 rounded bg-amber-50 px-2 py-1 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          <AlertCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          <span>
+            Tidak bisa dijalankan: {blocked.map((d) => `&ldquo;${d.title}&rdquo;`).join(', ')}{' '}
+            sudah dibuang atau gagal. Ubah isi draft ini untuk melepas referensinya.
+          </span>
+        </p>
+      )}
+
       {pending && (
         <p className="mt-2 text-xs text-muted-foreground">
           Belum ada yang berubah. Periksa dulu, lalu setujui kalau sudah benar.
@@ -135,7 +167,7 @@ export function DraftCard({
       {error != null && <ErrorBox error={error} />}
 
       {/* A rejected or failed draft is read-only: there is nothing left to edit. */}
-      {editing && pending ? (
+      {editing && actionable ? (
         <div className="mt-3 space-y-3">
           <DraftPayloadForm draft={{ ...draft, payload }} onChange={setPayload} />
           <div className="flex items-center gap-2">
@@ -168,16 +200,30 @@ export function DraftCard({
             </div>
           )}
 
-          {pending && (
+          {actionable && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
+              {/* The button says what it will do, not just that it acts. A chain is
+                  one decision — the drafts it covers are all on screen — so it is
+                  offered as one click rather than as a puzzle about ordering. */}
+              {chain.length > 0 && (
+                <p className="w-full text-[11px] text-muted-foreground">
+                  Menjalankan ini juga akan membuat, berurutan:{' '}
+                  {chain.map((dependency) => dependency.title).join(' → lalu → ')}
+                </p>
+              )}
+
               <Button
                 size="sm"
                 onClick={handleExecute}
                 loading={busy === 'execute'}
-                disabled={busy !== null}
+                disabled={busy !== null || blocked.length > 0}
               >
                 <Check className="size-4" aria-hidden />
-                Setujui &amp; jalankan
+                {chain.length > 0
+                  ? `Setujui ${chain.length + 1} draft`
+                  : failed
+                    ? 'Coba lagi'
+                    : 'Setujui & jalankan'}
               </Button>
               <Button
                 size="sm"

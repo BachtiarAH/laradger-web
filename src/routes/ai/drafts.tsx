@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
+import { composePrompt, messageBudget } from '../../lib/receiptPrompt'
+import { useReceiptAttachments } from '../../lib/useReceiptAttachments'
 import type {
   AiActionDraft,
   AiDraftRequest,
@@ -21,6 +23,9 @@ import type {
 import { Button, ErrorBox, PageHeader } from '../../components/ui'
 import { DraftCard } from '../../components/ai/DraftCard'
 import { MarkdownText } from '../../components/ai/MarkdownText'
+import { PromptLength } from '../../components/ai/PromptLength'
+import { ReceiptAttachments } from '../../components/ai/ReceiptAttachments'
+import { TurnOutcome } from '../../components/ai/TurnOutcome'
 import { usePendingDrafts } from '../../lib/pendingDrafts'
 import { cn } from '../../lib/utils'
 
@@ -54,6 +59,10 @@ function AiDraftsPage() {
   const ready = Boolean(token) && canUseTenants
 
   const [prompt, setPrompt] = React.useState('')
+  // Receipts are read in the browser and folded into the prompt on submit, so a
+  // batch can be queued from photographs without the server ever seeing a file.
+  const attachments = useReceiptAttachments()
+  const { receipts } = attachments
   const [requests, setRequests] = React.useState<AiDraftRequest[]>([])
   const [submitting, setSubmitting] = React.useState(false)
 
@@ -109,11 +118,14 @@ function AiDraftsPage() {
     return () => clearInterval(timer)
   }, [ready, inFlight, filter, loadRequests, loadDrafts])
 
+  const composed = React.useMemo(() => composePrompt(prompt, receipts), [prompt, receipts])
+
   const submit = async () => {
-    const text = prompt.trim()
-    if (!text || submitting) return
+    const text = composed
+    if (text === '' || submitting) return
 
     setPrompt('')
+    attachments.reset()
     setSubmitting(true)
     setError(null)
     try {
@@ -122,7 +134,10 @@ function AiDraftsPage() {
       setRequests((prev) => [created, ...prev])
     } catch (err) {
       setError(err)
-      setPrompt(text)
+      // The attachments are already OCR'd; losing them to a failed POST would mean
+      // making the user upload the same photographs again.
+      setPrompt(prompt)
+      attachments.replaceAll(receipts)
     } finally {
       setSubmitting(false)
     }
@@ -169,7 +184,10 @@ function AiDraftsPage() {
         }
       />
 
-      <Card>
+      {/* The paste handler sits on the composer card rather than the textarea, so a
+          screenshot pasted while the cursor is anywhere in the prompt area is
+          picked up. A text paste is left untouched. */}
+      <Card onPaste={attachments.pasteImage}>
         <label htmlFor="draft-prompt" className="text-sm font-medium text-foreground">
           Prompt untuk didraft
         </label>
@@ -177,12 +195,23 @@ function AiDraftsPage() {
           Diproses di belakang layar, jadi tidak perlu menunggu. Hasilnya tetap
           perlu kamu setujui sebelum ada yang berubah.
         </p>
+
+        <div className="mt-3">
+          <ReceiptAttachments
+            receipts={receipts}
+            onChange={attachments.replaceAll}
+            onAttachFile={attachments.attachFile}
+            state={attachments.state}
+            disabled={submitting}
+          />
+        </div>
+
         <div className="mt-3 flex items-end gap-2">
           <textarea
             id="draft-prompt"
             rows={2}
             value={prompt}
-            maxLength={4000}
+            maxLength={messageBudget(receipts.length)}
             placeholder="e.g. Catat pengeluaran 45.500 di belanja, 120.000 di bensin, dibayar tunai"
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={(e) => {
@@ -193,11 +222,13 @@ function AiDraftsPage() {
             }}
             className="min-h-16 flex-1 resize-y rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
           />
-          <Button onClick={submit} loading={submitting} disabled={!prompt.trim()}>
+          <Button onClick={submit} loading={submitting} disabled={composed === ''}>
             <Send className="size-4" aria-hidden />
             Kirim
           </Button>
         </div>
+
+        <PromptLength used={composed.length} />
       </Card>
 
       {error != null && <ErrorBox error={error} />}
@@ -321,15 +352,32 @@ function PromptHistory({ requests }: { requests: AiDraftRequest[] }) {
   )
 }
 
-function Card({ children }: { children: React.ReactNode }) {
+function Card({
+  children,
+  onPaste,
+}: {
+  children: React.ReactNode
+  onPaste?: React.ClipboardEventHandler<HTMLDivElement>
+}) {
   return (
-    <div className="rounded-xl bg-card p-5 ring-1 ring-foreground/10">{children}</div>
+    <div
+      onPaste={onPaste}
+      className="rounded-xl bg-card p-5 ring-1 ring-foreground/10"
+    >
+      {children}
+    </div>
   )
 }
 
 /** One submitted prompt, with where it got to. */
 function RequestRow({ request }: { request: AiDraftRequest }) {
   const status = statusMeta(request)
+  // A turn that declined on purpose is not an empty result, so the outcome and
+  // the reply *are* this row rather than something extra to expand.
+  const declined =
+    request.status === 'completed' &&
+    request.drafts_count === 0 &&
+    request.outcome != null
 
   return (
     <li className="flex items-start gap-3 rounded-lg border border-border px-3 py-2.5">
@@ -346,10 +394,22 @@ function RequestRow({ request }: { request: AiDraftRequest }) {
           <p className="mt-1 text-xs text-destructive">{request.error}</p>
         )}
 
-        {/* A queued turn can still have something to say. Hiding it would make
-            an assistant that asked a sensible question look like a failure. */}
+        {declined && (
+          <TurnOutcome
+            className="mt-2"
+            outcome={request.outcome!}
+            reason={request.outcome_reason}
+            reference={request.outcome_reference}
+          />
+        )}
+
+        {/* A queued turn can still have something to say, and so can a turn that
+            proposed nothing — there the reply is the answer, not a footnote. */}
         {request.reply && (
-          <details className="mt-2 rounded border border-border bg-muted/40 px-2.5 py-2">
+          <details
+            open={declined}
+            className="mt-2 rounded border border-border bg-muted/40 px-2.5 py-2"
+          >
             <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
               Lihat jawaban asisten
             </summary>
@@ -359,12 +419,17 @@ function RequestRow({ request }: { request: AiDraftRequest }) {
           </details>
         )}
 
-        {request.status === 'completed' && request.drafts_count === 0 && (
-          <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-            Tidak ada draft yang dibuat. Buka asistente di pojok kanan bawah
-            untuk lanjutkan obrolan soal prompt ini.
-          </p>
-        )}
+        {/* No outcome and no stored reply is the only genuinely unexplained
+            result, and the only one worth asking about. */}
+        {request.status === 'completed' &&
+          request.drafts_count === 0 &&
+          !declined &&
+          !request.reply && (
+            <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+              Tidak ada draft yang dibuat dan tidak ada penjelasan yang tersimpan.
+              Buka asisten di pojok kanan bawah untuk menanyakan prompt ini.
+            </p>
+          )}
       </div>
     </li>
   )
@@ -392,10 +457,17 @@ function statusMeta(request: AiDraftRequest): { label: string; icon: React.React
       }
     case 'completed':
       return {
+        // A turn that proposed nothing on purpose has a verdict, not a shortfall.
+        // "Selesai — belum ada draft" on a deliberate refusal reads as a failure and
+        // is what sent the user to the assistant to ask what had already been said.
         label:
-          request.drafts_count > 0
-            ? 'Selesai — menunggu persetujuan'
-            : 'Selesai — belum ada draft',
+          request.drafts_count === 0 && request.outcome === 'already_recorded'
+            ? 'Selesai — sudah tercatat, tidak diduplikasi'
+            : request.drafts_count > 0
+              ? 'Selesai — menunggu persetujuan'
+              : request.outcome != null
+                ? 'Selesai — tidak ada yang perlu dicatat'
+                : 'Selesai — belum ada draft',
         icon: (
           <span className="flex size-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
             <CheckCircle2 className="size-3" aria-hidden />

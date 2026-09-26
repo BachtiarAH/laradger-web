@@ -605,6 +605,26 @@ export type AiConversation = {
 
 export type AiDraftRequestStatus = 'queued' | 'running' | 'completed' | 'failed'
 
+/**
+ * How a turn ended when it deliberately proposed nothing.
+ *
+ * Without this, "completed with zero drafts" meant two opposite things at once —
+ * the model correctly declined to double-book a transaction, or the model gave up
+ * — and the screen rendered both as a failure and told the user to go ask the
+ * assistant about something the assistant had already answered.
+ */
+export type AiTurnOutcomeKind =
+  | 'already_recorded'
+  | 'nothing_to_record'
+  | 'needs_attention'
+
+export type AiTurnOutcome = {
+  outcome: AiTurnOutcomeKind
+  reason: string
+  /** The entry that already holds it. Only for `already_recorded`. */
+  reference: string | null
+}
+
 /** A prompt submitted to be drafted in the background. */
 export type AiDraftRequest = {
   id: string
@@ -614,6 +634,10 @@ export type AiDraftRequest = {
   status: AiDraftRequestStatus
   error: string | null
   drafts_count: number
+  /** Set only when the turn proposed no drafts on purpose. */
+  outcome: AiTurnOutcomeKind | null
+  outcome_reason: string | null
+  outcome_reference: string | null
   queued_at: string | null
   started_at: string | null
   completed_at: string | null
@@ -638,6 +662,14 @@ export type AiMessage = {
 
 export type AiDraftStatus = 'pending' | 'executed' | 'rejected' | 'failed'
 
+/** Another draft that has to be applied before this one can be. */
+export type AiDraftDependency = {
+  id: string
+  tool: string
+  title: string
+  status: AiDraftStatus
+}
+
 export type AiActionDraft = {
   id: string
   tool: string
@@ -648,6 +680,14 @@ export type AiActionDraft = {
   payload: Record<string, any>
   result: Record<string, any> | null
   error: string | null
+  /**
+   * Drafts applied first, in order, by the same click.
+   *
+   * Approving a journal that waits on a proposed tag creates the tag too, so the
+   * user never has to work out an order — and never has to find the order out by
+   * getting it wrong.
+   */
+  depends_on: AiDraftDependency[]
   executed_at: string | null
   rejected_at: string | null
   created_at: string
@@ -656,5 +696,7 @@ export type AiActionDraft = {
 export type AiAssistantTurn = {
   reply: string
   drafts: AiActionDraft[]
+  /** Set only when the turn proposed no drafts on purpose. */
+  outcome: AiTurnOutcome | null
 }
 
