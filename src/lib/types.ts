@@ -489,6 +489,20 @@ export type Paginated<T> = {
   total: number
   total_amount?: string
   summary?: BudgetSummary
+  totals?: ExpenseTotals
+  date_range?: DateRange
+}
+
+export type DateRange = {
+  from: string | null
+  to: string | null
+}
+
+export type ExpenseTotals = {
+  /** Sum of the filtered expense debits, across every page. */
+  expense_total: string
+  /** Number of matching lines across every page. */
+  lines_count: number
 }
 
 export type ApiEnvelope<T> = {

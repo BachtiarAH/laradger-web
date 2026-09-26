@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth'
 import { Button, Card, LoadingBox, ErrorBox } from '../components/ui'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import { TemplateQuickActions } from '../components/dashboard/TemplateQuickActions'
+import { ExpenseListCard } from '../components/dashboard/ExpenseListCard'
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -581,6 +582,8 @@ export default function OverviewPage() {
               </p>
             </Card>
           </div>
+
+          <ExpenseListCard />
         </div>
       )}
 

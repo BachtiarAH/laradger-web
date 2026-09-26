@@ -293,6 +293,21 @@ export const api = {
   getOverview: (params: { period?: 'today' | 'this_week' | 'this_month' } = {}) =>
     get<ApiEnvelope<Overview>>(tenantPath(`/overview${toQuery(params as Record<string, string | number | null | undefined>)}`)).then((r) => r.data),
 
+  // Expenses
+  listExpenses: (
+    params: {
+      page?: number
+      per_page?: number
+      from?: string
+      to?: string
+      status?: string
+      account_id?: string
+      search?: string
+      sort_by?: 'transaction_date' | 'debit' | 'account'
+      sort_direction?: 'asc' | 'desc'
+    } = {},
+  ) => get<RawList<JournalLine>>(tenantPath(`/expenses${toQuery(params as Record<string, string | number | null | undefined>)}`)).then(asList),
+
   // Journals
   listJournals: (
     params: {
@@ -447,6 +462,8 @@ type RawList<T> = {
     total?: number
     total_amount?: string
     summary?: import('./types').BudgetSummary
+    totals?: import('./types').ExpenseTotals
+    date_range?: import('./types').DateRange
   }
   current_page?: number
   last_page?: number
@@ -462,5 +479,7 @@ function asList<T>(raw: RawList<T>): Paginated<T> {
     total: meta.total ?? raw.total ?? raw.data?.length ?? 0,
     total_amount: meta.total_amount,
     summary: meta.summary,
+    totals: meta.totals,
+    date_range: meta.date_range,
   }
 }
