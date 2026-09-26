@@ -73,15 +73,19 @@ const settingsItems: { to: string; label: string; icon: React.ComponentType<{ cl
   { to: '/settings/ai', label: 'AI', icon: Settings },
 ]
 
+const PENDING_COUNT_INTERVAL_MS = 60000
+
 function SidebarNavLink({
   to,
   label,
   icon: Icon,
+  badge,
   onNavigate,
 }: {
   to: string
   label: string
   icon: React.ComponentType<{ className?: string }>
+  badge?: number
   onNavigate?: () => void
 }) {
   return (
@@ -93,8 +97,50 @@ function SidebarNavLink({
     >
       <Icon className="size-4 shrink-0" aria-hidden />
       {label}
+      {badge != null && badge > 0 && (
+        <span className="ml-auto rounded-full bg-amber-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
+          {badge}
+        </span>
+      )}
     </Link>
   )
+}
+
+/**
+ * How many drafts are waiting for a decision.
+ *
+ * The nudge belongs on the link that leads to them, not on the assistant's
+ * floating button: the drafts page is the only place every pending draft is
+ * listed, including the ones the queued path produced, so a count anywhere else
+ * is a promise the screen behind it cannot keep.
+ */
+function usePendingDraftCount(ready: boolean): number {
+  const [count, setCount] = React.useState(0)
+
+  React.useEffect(() => {
+    if (!ready) return
+    let active = true
+
+    const load = () =>
+      api
+        .listAiDrafts('pending')
+        .then((all) => {
+          if (active) setCount(all.length)
+        })
+        // Supplementary: a failure here must not disturb the navigation.
+        .catch(() => undefined)
+
+    void load()
+    // Slow on purpose. This is a nudge, not a live counter, and every page load
+    // would otherwise cost a request.
+    const timer = setInterval(load, PENDING_COUNT_INTERVAL_MS)
+    return () => {
+      active = false
+      clearInterval(timer)
+    }
+  }, [ready])
+
+  return count
 }
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -104,6 +150,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const onLogin = pathname === '/login'
   const onRegister = pathname === '/register'
   const canUseTenants = (user?.tenants?.length ?? 0) > 0 || tenants.length > 0
+  const pendingDrafts = usePendingDraftCount(Boolean(token) && canUseTenants)
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -154,6 +201,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               to={item.to}
               label={item.label}
               icon={item.icon}
+              badge={item.to === '/ai/drafts' ? pendingDrafts : undefined}
               onNavigate={onNavigate}
             />
           ))}

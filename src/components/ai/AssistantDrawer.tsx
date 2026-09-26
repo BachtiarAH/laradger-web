@@ -26,12 +26,10 @@ export function AssistantDrawer() {
   const [open, setOpen] = React.useState(false)
   const [conversation, setConversation] = React.useState<AiConversation | null>(null)
   const [messages, setMessages] = React.useState<AiMessage[]>([])
+  // Only what this conversation proposed. The pending count lives in the sidebar
+  // next to AI Drafts, which is where drafts from the queued path are too - a
+  // count here would promise actions this drawer does not show.
   const [drafts, setDrafts] = React.useState<AiActionDraft[]>([])
-  // The badge is its own count, deliberately not the draft list. `listAiDrafts`
-  // is not scoped to a conversation, so folding it into `drafts` made the drawer
-  // open on a wall of cards from the Drafts page that had nothing to do with the
-  // chat the user was looking at.
-  const [pendingCount, setPendingCount] = React.useState(0)
   const [input, setInput] = React.useState('')
   const [sending, setSending] = React.useState(false)
   const [error, setError] = React.useState<unknown>(null)
@@ -46,19 +44,6 @@ export function AssistantDrawer() {
   React.useEffect(() => {
     if (open) scrollToEnd()
   }, [open, messages.length, drafts.length, scrollToEnd])
-
-  // The badge counts pending drafts even while the drawer is shut.
-  React.useEffect(() => {
-    if (open) return
-    let active = true
-    api
-      .listAiDrafts('pending')
-      .then((all) => active && setPendingCount(all.length))
-      .catch(() => undefined)
-    return () => {
-      active = false
-    }
-  }, [open])
 
   const start = async () => {
     setSending(true)
@@ -125,9 +110,6 @@ export function AssistantDrawer() {
 
   const handleSettled = (settled: AiActionDraft) => {
     setDrafts((prev) => prev.map((d) => (d.id === settled.id ? settled : d)))
-    if (settled.status !== 'pending') {
-      setPendingCount((n) => Math.max(0, n - 1))
-    }
   }
 
   if (!open) {
@@ -139,11 +121,6 @@ export function AssistantDrawer() {
         className="fixed bottom-5 right-5 z-40 flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <Sparkles className="size-5" aria-hidden />
-        {pendingCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-amber-500 text-[11px] font-bold text-white">
-            {pendingCount}
-          </span>
-        )}
       </button>
     )
   }
