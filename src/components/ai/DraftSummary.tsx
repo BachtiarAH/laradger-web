@@ -71,11 +71,15 @@ function JournalSummary({
   const lines: Array<Record<string, any>> = Array.isArray(payload.lines)
     ? payload.lines
     : []
-  const total = lines.reduce(
-    (sum, line) => sum + Number(line.debit || 0),
-    0,
-  )
-  const balanced = Math.abs(total) < 0.005
+
+  // Compare debits against credits, not against zero. Amounts arrive as
+  // decimal strings, so they are converted to integer cents rather than
+  // summed as floats, which is also how the server validates them.
+  const debitCents = lines.reduce((sum, line) => sum + toCents(line.debit), 0)
+  const creditCents = lines.reduce((sum, line) => sum + toCents(line.credit), 0)
+  const difference = debitCents - creditCents
+  const balanced = difference === 0
+  const missingAccount = lines.some((line) => !line.account_id)
 
   return (
     <div className="space-y-2">
@@ -130,11 +134,23 @@ function JournalSummary({
         )}
       >
         {balanced
-          ? `Total ${formatAmount(total)} — seimbang.`
-          : `Total debit ${formatAmount(total)} — belum seimbang, akan ditolak saat dijalankan.`}
+          ? `Debit ${formatCents(debitCents)} = kredit ${formatCents(creditCents)} — seimbang.`
+          : `Debit ${formatCents(debitCents)} vs kredit ${formatCents(creditCents)} — beda ${formatCents(
+              Math.abs(difference),
+            )}, akan ditolak saat dijalankan.`}
+        {missingAccount && ' Ada baris yang belum memilih akun.'}
       </p>
     </div>
   )
+}
+
+/** Decimal string to integer cents, matching how the server stores money. */
+function toCents(value: unknown): number {
+  if (value === null || value === undefined || value === '') return 0
+
+  const parsed = Number(value)
+
+  return Number.isFinite(parsed) ? Math.round(parsed * 100) : 0
 }
 
 function Field({ label, value }: { label: string; value: unknown }) {
@@ -148,11 +164,11 @@ function Field({ label, value }: { label: string; value: unknown }) {
   )
 }
 
-function formatAmount(value: number): string {
+function formatCents(cents: number): string {
   return new Intl.NumberFormat('id-ID', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value)
+  }).format(cents / 100)
 }
 
 /** Resolve account ids to names for the summary, fetched once and shared. */

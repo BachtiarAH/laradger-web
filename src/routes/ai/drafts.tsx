@@ -17,7 +17,7 @@ import type {
   AiDraftRequest,
   AiDraftStatus,
 } from '../../lib/types'
-import { Button, ErrorBox, LoadingBox, PageHeader } from '../../components/ui'
+import { Button, ErrorBox, PageHeader } from '../../components/ui'
 import { DraftCard } from '../../components/ai/DraftCard'
 import { MarkdownText } from '../../components/ai/MarkdownText'
 import { cn } from '../../lib/utils'
@@ -57,7 +57,8 @@ function AiDraftsPage() {
 
   const [filter, setFilter] = React.useState<Filter>('pending')
   const [drafts, setDrafts] = React.useState<AiActionDraft[]>([])
-  const [loading, setLoading] = React.useState(true)
+  // Only the refresh button shows a spinner; the list never blanks.
+  const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<unknown>(null)
   const [pendingCount, setPendingCount] = React.useState(0)
 
@@ -243,9 +244,10 @@ function AiDraftsPage() {
           </div>
         </div>
 
-        {loading && drafts.length === 0 ? (
-          <LoadingBox label="Memuat draft…" />
-        ) : drafts.length === 0 ? (
+        {/* No loading state for the list: drafts already on screen stay there
+            while a refresh runs, so nothing blanks out. The refresh button
+            carries the spinner. */}
+        {drafts.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-12 text-center">
             <Inbox className="size-6 text-muted-foreground" aria-hidden />
             <p className="text-sm font-medium text-foreground">
