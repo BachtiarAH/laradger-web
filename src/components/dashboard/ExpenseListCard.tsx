@@ -1,13 +1,12 @@
-import { useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
-import { CalendarRange, Receipt, RotateCcw } from 'lucide-react'
+import { CalendarRange, PieChart, RotateCcw } from 'lucide-react'
+// useNavigate removed — no longer navigating to journal detail
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
 import { useDebounce } from '../../hooks/useDebounce'
 import { useAuth } from '../../lib/auth'
 import { useMoney } from '../../lib/money'
 import { AccountSelect } from '../AccountSelect'
-import { Pagination } from '../Pagination'
 import {
   Button,
   Card,
@@ -15,7 +14,6 @@ import {
   Field,
   Input,
   Skeleton,
-  SortableTableHeader,
   Table,
   TableBody,
   TableHeader,
@@ -23,16 +21,7 @@ import {
   Td,
   Th,
 } from '../ui'
-import type { SortDirection } from '../ui'
-
-type ExpenseSortColumn = 'transaction_date' | 'debit' | 'account'
-
-const PER_PAGE = 8
-
-function toDateInput(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-}
+import type { JournalLine } from '../../lib/types'
 
 type RangePreset = 'this_month' | 'last_month' | 'last_3_months' | 'all'
 
@@ -43,10 +32,11 @@ const rangePresets: { value: RangePreset; label: string }[] = [
   { value: 'all', label: 'All time' },
 ]
 
-/**
- * Resolve a preset into an inclusive [from, to] range. `all` clears both
- * bounds so the API falls back to "no date filter".
- */
+function toDateInput(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 function presetRange(preset: RangePreset): { from: string; to: string } {
   const now = new Date()
 
@@ -70,53 +60,197 @@ function presetRange(preset: RangePreset): { from: string; to: string } {
   }
 }
 
-function formatDay(value: string | null | undefined): string {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+type AccountSummary = {
+  accountId: string
+  accountName: string
+  accountCode: string
+  total: number
+  percentage: number
+}
+
+const CHART_COLORS = [
+  '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6',
+  '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', '#06b6d4',
+]
+
+function ExpenseDonut({ data }: { data: AccountSummary[] }) {
+  const [hovered, setHovered] = React.useState<string | null>(null)
+  const { compactIdr, hidden } = useMoney()
+
+  const size = 180
+  const stroke = 28
+  const radius = (size - stroke) / 2
+  const circumference = 2 * Math.PI * radius
+  const total = data.reduce((sum, d) => sum + d.total, 0)
+
+  if (total <= 0) {
+    return (
+      <div className="flex flex-col items-center">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Expense breakdown">
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="hsl(var(--muted-foreground) / 0.25)"
+            strokeWidth={stroke}
+          />
+        </svg>
+        <p className="mt-2 text-xs text-muted-foreground">No data yet</p>
+      </div>
+    )
+  }
+
+  const gap = 3
+  let offset = 0
+
+  const centerItem = data.find((d) => d.accountId === hovered)
+  const centerValue = centerItem ? centerItem.total : total
+  const centerLabel = centerItem ? centerItem.accountName : 'Total'
+
+  return (
+    <div className="flex flex-col items-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Expense breakdown by account">
+        <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+          {data.map((item, i) => {
+            const sliceLen = hidden ? 0 : (item.total / total) * circumference
+            const color = CHART_COLORS[i % CHART_COLORS.length]
+            const currentOffset = offset
+            offset += sliceLen
+
+            if (sliceLen <= 0) return null
+
+            return (
+              <circle
+                key={item.accountId}
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="none"
+                stroke={color}
+                strokeWidth={hovered === null || hovered === item.accountId ? stroke : stroke - 8}
+                strokeDasharray={`${Math.max(sliceLen - gap, 0)} ${circumference}`}
+                strokeDashoffset={-currentOffset}
+                className="cursor-pointer transition-all duration-200"
+                onMouseEnter={() => setHovered(item.accountId)}
+                onMouseLeave={() => setHovered(null)}
+                onFocus={() => setHovered(item.accountId)}
+                onBlur={() => setHovered(null)}
+              />
+            )
+          })}
+        </g>
+        <text
+          x="50%"
+          y="46%"
+          textAnchor="middle"
+          className="fill-foreground text-lg font-extrabold"
+        >
+          {compactIdr(centerValue)}
+        </text>
+        <text
+          x="50%"
+          y="58%"
+          textAnchor="middle"
+          className="fill-muted-foreground text-[11px] opacity-80"
+        >
+          {centerLabel}
+        </text>
+      </svg>
+      <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+        {data.map((item, i) => (
+          <button
+            key={item.accountId}
+            type="button"
+            className="flex cursor-pointer items-center gap-1.5"
+            onMouseEnter={() => setHovered(item.accountId)}
+            onMouseLeave={() => setHovered(null)}
+            onFocus={() => setHovered(item.accountId)}
+            onBlur={() => setHovered(null)}
+          >
+            <span
+              className="size-2 rounded-full"
+              style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
+            />
+            {item.accountName} ({item.percentage.toFixed(1)}%)
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export function ExpenseListCard() {
-  const navigate = useNavigate()
   const { token, tenant } = useAuth()
   const { idr } = useMoney()
 
-  const [page, setPage] = React.useState(1)
   const [from, setFrom] = React.useState(() => presetRange('this_month').from)
   const [to, setTo] = React.useState(() => presetRange('this_month').to)
   const [accountId, setAccountId] = React.useState('')
   const [search, setSearch] = React.useState('')
-  const [sortBy, setSortBy] = React.useState<ExpenseSortColumn>('transaction_date')
-  const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc')
   const debouncedSearch = useDebounce(search, 300)
 
   const shouldFetch = !!token && !!tenant
 
+  // Fetch all expenses (no pagination) to group by account on the frontend
   const { data, error, loading } = useFetch(
     () =>
       shouldFetch
         ? api.listExpenses({
-            page,
-            per_page: PER_PAGE,
+            per_page: 1000,
             from: from || undefined,
             to: to || undefined,
             account_id: accountId || undefined,
             search: debouncedSearch || undefined,
-            sort_by: sortBy,
-            sort_direction: sortDirection,
+            sort_by: 'debit',
+            sort_direction: 'desc',
           })
         : Promise.resolve({ data: [], current_page: 1, last_page: 1, total: 0 }),
-    [shouldFetch, page, from, to, accountId, debouncedSearch, sortBy, sortDirection],
+    [shouldFetch, from, to, accountId, debouncedSearch],
   )
 
-  const lines = data?.data ?? []
+  const lines: JournalLine[] = data?.data ?? []
+
+  // Group by account and compute summary
+  const summary = React.useMemo(() => {
+    const grouped = new Map<string, AccountSummary>()
+
+    for (const line of lines) {
+      const acc = line.account
+      if (!acc) continue
+
+      const existing = grouped.get(acc.id)
+      const debit = Number(line.debit ?? 0)
+
+      if (existing) {
+        existing.total += debit
+      } else {
+        grouped.set(acc.id, {
+          accountId: acc.id,
+          accountName: acc.name,
+          accountCode: acc.code,
+          total: debit,
+          percentage: 0,
+        })
+      }
+    }
+
+    const total = Array.from(grouped.values()).reduce((sum, item) => sum + item.total, 0)
+
+    const result = Array.from(grouped.values())
+      .map((item) => ({
+        ...item,
+        percentage: total > 0 ? (item.total / total) * 100 : 0,
+      }))
+      .sort((a, b) => b.total - a.total)
+
+    return { items: result, total }
+  }, [lines])
 
   const applyPreset = (preset: RangePreset) => {
     const range = presetRange(preset)
     setFrom(range.from)
     setTo(range.to)
-    setPage(1)
   }
 
   const activePreset = rangePresets.find((preset) => {
@@ -124,12 +258,7 @@ export function ExpenseListCard() {
     return range.from === from && range.to === to
   })
 
-  // The default range (this month) is not treated as a user-applied filter, so
-  // an empty default view still invites the first expense to be recorded.
   const hasFilters = activePreset?.value !== 'this_month' || !!accountId || !!search
-
-  // `totals.lines_count` covers every page; the paginator `total` is the fallback.
-  const transactionCount = data?.totals?.lines_count ?? data?.total ?? 0
 
   const resetFilters = () => {
     setSearch('')
@@ -137,33 +266,23 @@ export function ExpenseListCard() {
     applyPreset('this_month')
   }
 
-  const toggleSort = (column: ExpenseSortColumn) => {
-    if (sortBy === column) {
-      setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortBy(column)
-      setSortDirection(column === 'transaction_date' || column === 'debit' ? 'desc' : 'asc')
-    }
-    setPage(1)
-  }
-
   return (
     <Card className="overflow-hidden">
       <div className="flex flex-col gap-3 border-b border-border px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-600 dark:text-red-400">
-            <Receipt className="size-5" aria-hidden />
+            <PieChart className="size-5" aria-hidden />
           </span>
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-foreground">Expenses</h2>
+            <h2 className="text-lg font-semibold text-foreground">Expense Summary</h2>
             <p className="text-xs text-muted-foreground">
               {data ? (
                 <>
-                  <span className="font-semibold text-foreground">{idr(data.totals?.expense_total)}</span>
-                  {` across ${transactionCount} transaction${transactionCount === 1 ? '' : 's'}`}
+                  <span className="font-semibold text-foreground">{idr(summary.total)}</span>
+                  {` across ${summary.items.length} account${summary.items.length === 1 ? '' : 's'}`}
                 </>
               ) : (
-                'Posted expense transactions'
+                'Grouped by expense account'
               )}
             </p>
           </div>
@@ -182,16 +301,13 @@ export function ExpenseListCard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 sm:grid-cols-3">
         <Field label="From">
           <Input
             type="date"
             value={from}
             max={to || undefined}
-            onChange={(e) => {
-              setFrom(e.target.value)
-              setPage(1)
-            }}
+            onChange={(e) => setFrom(e.target.value)}
           />
         </Field>
         <Field label="To">
@@ -199,34 +315,18 @@ export function ExpenseListCard() {
             type="date"
             value={to}
             min={from || undefined}
-            onChange={(e) => {
-              setTo(e.target.value)
-              setPage(1)
-            }}
+            onChange={(e) => setTo(e.target.value)}
           />
         </Field>
         <Field label="Account">
           <AccountSelect
             value={accountId || null}
-            onValueChange={(value) => {
-              setAccountId(value ?? '')
-              setPage(1)
-            }}
+            onValueChange={(value) => setAccountId(value ?? '')}
             type="expense"
             leafOnly
             allowNone
             noneLabel="All expense accounts"
             placeholder="All expense accounts"
-          />
-        </Field>
-        <Field label="Search">
-          <Input
-            placeholder="Search description or reference…"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
           />
         </Field>
       </div>
@@ -237,21 +337,20 @@ export function ExpenseListCard() {
         </div>
       )}
 
-      {loading && lines.length === 0 && (
+      {loading && summary.items.length === 0 && (
         <div className="p-4 space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4">
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-4 w-48" />
               <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-20 ml-auto" />
+              <Skeleton className="h-4 w-16 ml-auto" />
             </div>
           ))}
         </div>
       )}
 
-      {!loading && lines.length === 0 && error == null && (
+      {!loading && summary.items.length === 0 && error == null && (
         <p className="px-6 py-5 text-sm text-muted-foreground">
           {hasFilters ? (
             <>
@@ -266,78 +365,46 @@ export function ExpenseListCard() {
               .
             </>
           ) : (
-            <>
-              No expense transactions yet.{' '}
-              <button
-                type="button"
-                className="font-medium text-primary hover:underline"
-                onClick={() => navigate({ to: '/transactions/new' })}
-              >
-                Record your first expense
-              </button>
-              .
-            </>
+            'No expense transactions yet.'
           )}
         </p>
       )}
 
-      {lines.length > 0 && (
+      {summary.items.length > 0 && (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <SortableTableHeader
-                  label="Date"
-                  column="transaction_date"
-                  activeColumn={sortBy}
-                  direction={sortDirection}
-                  onSort={toggleSort}
-                />
-                <Th>Description</Th>
-                <SortableTableHeader
-                  label="Account"
-                  column="account"
-                  activeColumn={sortBy}
-                  direction={sortDirection}
-                  onSort={toggleSort}
-                />
-                <Th>Status</Th>
-                <SortableTableHeader
-                  label="Amount"
-                  column="debit"
-                  activeColumn={sortBy}
-                  direction={sortDirection}
-                  onSort={toggleSort}
-                  align="right"
-                />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lines.map((line) => (
-                <TableRow
-                  key={line.id}
-                  className="cursor-pointer"
-                  onClick={(e) => {
-                    const target = e.target as HTMLElement
-                    if (target.closest('a, button')) return
-                    navigate({ to: '/journals/$journalId', params: { journalId: line.journal_id } })
-                  }}
-                >
-                  <Td className="whitespace-nowrap text-muted-foreground">
-                    {formatDay(line.journal?.transaction_date)}
-                  </Td>
-                  <Td className="max-w-xs truncate">{line.description || line.journal?.description || '—'}</Td>
-                  <Td className="max-w-[14rem] truncate">
-                    {line.account ? `${line.account.code} — ${line.account.name}` : '—'}
-                  </Td>
-                  <Td className="text-xs text-muted-foreground">{line.journal?.status ?? '—'}</Td>
-                  <Td className="text-right font-medium text-red-600 dark:text-red-400">
-                    {idr(line.debit)}
-                  </Td>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="grid grid-cols-1 gap-6 px-6 py-6 lg:grid-cols-[auto_minmax(0,1fr)]">
+            <div className="flex items-center justify-center">
+              <ExpenseDonut data={summary.items} />
+            </div>
+
+            <div className="min-w-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <Th>Account</Th>
+                    <Th className="text-right">Amount</Th>
+                    <Th className="text-right">%</Th>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {summary.items.map((item) => (
+                    <TableRow key={item.accountId}>
+                      <Td className="max-w-[16rem] truncate">
+                        <span className="font-medium">{item.accountCode}</span>
+                        <span className="text-muted-foreground"> — {item.accountName}</span>
+                      </Td>
+                      <Td className="text-right font-medium text-red-600 dark:text-red-400">
+                        {idr(item.total)}
+                      </Td>
+                      <Td className="text-right text-muted-foreground">
+                        {item.percentage.toFixed(1)}%
+                      </Td>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
 
           <div className="flex flex-col gap-3 border-t border-border px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
@@ -353,17 +420,6 @@ export function ExpenseListCard() {
               </Button>
             )}
           </div>
-
-          {data && data.last_page > 1 && (
-            <div className="border-t border-border px-6 py-3">
-              <Pagination
-                page={data.current_page}
-                lastPage={data.last_page}
-                total={data.total}
-                onPageChange={setPage}
-              />
-            </div>
-          )}
         </>
       )}
     </Card>
