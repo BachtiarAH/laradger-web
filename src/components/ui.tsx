@@ -253,6 +253,10 @@ const badgeColors: Record<string, string> = {
   equity: 'bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-200',
   income: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200',
   expense: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200',
+  debit: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200',
+  credit: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200',
+  parent: 'bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-200',
+  child: 'bg-muted text-muted-foreground',
   priority: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200',
   recurring: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
   vendor: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200',
@@ -260,14 +264,32 @@ const badgeColors: Record<string, string> = {
   transfer: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200',
 }
 
-export function Badge({ value }: { value: string }) {
-  const color =
-    badgeColors[value] ?? 'bg-muted text-muted-foreground'
-  return <ShadcnBadge className={color}>{value}</ShadcnBadge>
+/**
+ * A status/type pill. `value` picks the colour from the shared palette, while
+ * `label` lets a page show a friendlier word than the raw stored value (e.g.
+ * `value="asset"` with `label="1 - Aset"`) without hardcoding colours.
+ */
+export function Badge({
+  value,
+  label,
+  className = '',
+}: {
+  value: string
+  label?: string
+  className?: string
+}) {
+  const color = badgeColors[value] ?? 'bg-muted text-muted-foreground'
+  return <ShadcnBadge className={cn(color, className)}>{label ?? value}</ShadcnBadge>
 }
 
-export function Table({ children }: { children: React.ReactNode }) {
-  return <ShadcnTable>{children}</ShadcnTable>
+export function Table({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
+  return <ShadcnTable className={className}>{children}</ShadcnTable>
 }
 
 export function Th({
@@ -350,12 +372,15 @@ export function SortableTableHeader<TColumn extends string>({
 export function Td({
   children,
   className = '',
+  colSpan,
 }: {
   children?: React.ReactNode
   className?: string
+  colSpan?: number
 }) {
   return (
     <TableCell
+      colSpan={colSpan}
       className={cn('px-4 py-3 text-foreground', className)}
     >
       {children}
