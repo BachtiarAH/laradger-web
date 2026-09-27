@@ -10,6 +10,7 @@ import {
   Plus,
   RefreshCw,
   Send,
+  XCircle,
 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
@@ -162,6 +163,18 @@ function AiDraftsPage() {
     if (!ready) return
     void loadRequests()
   }, [ready, loadRequests])
+
+  // Listen for immediate updates from the cancel button so the row reflects
+  // the cancelled status without waiting for the next poll tick.
+  React.useEffect(() => {
+    if (!ready) return
+    const onUpdated = (e: Event) => {
+      const updated = (e as CustomEvent<AiDraftRequest>).detail
+      setRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
+    }
+    window.addEventListener('ai-draft-request-updated', onUpdated)
+    return () => window.removeEventListener('ai-draft-request-updated', onUpdated)
+  }, [ready])
 
   // Only the request statuses are polled, and only on a visible tab. A prompt with
   // no worker behind it waits forever, so the interval opens up the longer it is
@@ -452,6 +465,21 @@ function RequestRow({ request }: { request: AiDraftRequest }) {
     request.drafts_count === 0 &&
     request.outcome != null
 
+  const canCancel = request.status === 'queued' || request.status === 'running'
+
+  const handleCancel = async () => {
+    try {
+      const cancelled = await api.cancelAiDraftRequest(request.id)
+      // Update the row immediately so the user sees the change without
+      // waiting for the next poll tick.
+      window.dispatchEvent(
+        new CustomEvent('ai-draft-request-updated', { detail: cancelled }),
+      )
+    } catch {
+      // The next poll will pick up the server state.
+    }
+  }
+
   return (
     <li className="flex items-start gap-3 rounded-lg border border-border px-3 py-2.5">
       <span className="mt-0.5 shrink-0">{status.icon}</span>
@@ -504,6 +532,18 @@ function RequestRow({ request }: { request: AiDraftRequest }) {
             </p>
           )}
       </div>
+
+      {canCancel && (
+        <button
+          type="button"
+          onClick={() => void handleCancel()}
+          className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          aria-label="Batalkan draft"
+        >
+          <XCircle className="size-3.5" aria-hidden />
+          Batalkan
+        </button>
+      )}
     </li>
   )
 }
@@ -544,6 +584,15 @@ function statusMeta(request: AiDraftRequest): { label: string; icon: React.React
         icon: (
           <span className="flex size-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
             <CheckCircle2 className="size-3" aria-hidden />
+          </span>
+        ),
+      }
+    case 'cancelled':
+      return {
+        label: 'Dibatalkan',
+        icon: (
+          <span className="flex size-5 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <XCircle className="size-3" aria-hidden />
           </span>
         ),
       }

@@ -254,6 +254,10 @@ export const api = {
     ),
   listAiDraftRequests: () =>
     get<{ data: AiDraftRequest[] }>(tenantPath('/ai/draft-requests')).then((r) => r.data),
+  cancelAiDraftRequest: (id: string) =>
+    post<ApiEnvelope<AiDraftRequest>>(tenantPath(`/ai/draft-requests/${id}/cancel`)).then(
+      (r) => r.data,
+    ),
   listAiDrafts: (status?: AiDraftStatus) =>
     get<{ data: AiActionDraft[] }>(tenantPath(`/ai/drafts${toQuery({ status })}`)).then(
       (r) => r.data,

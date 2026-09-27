@@ -603,7 +603,7 @@ export type AiConversation = {
   updated_at: string
 }
 
-export type AiDraftRequestStatus = 'queued' | 'running' | 'completed' | 'failed'
+export type AiDraftRequestStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 /**
  * How a turn ended when it deliberately proposed nothing.
