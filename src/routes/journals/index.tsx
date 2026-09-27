@@ -260,21 +260,80 @@ function JournalsPage() {
 
       <Card>
         {loading && !data && (
-          <div className="p-4 space-y-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-20 ml-auto" />
-                <Skeleton className="h-4 w-8" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            ))}
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SortableTableHeader
+                  label="Reference"
+                  column="reference"
+                  activeColumn={sortBy}
+                  direction={sortDirection}
+                  onSort={toggleSort}
+                />
+                <SortableTableHeader
+                  label="Description"
+                  column="description"
+                  activeColumn={sortBy}
+                  direction={sortDirection}
+                  onSort={toggleSort}
+                />
+                <Th>Planning</Th>
+                <SortableTableHeader
+                  label="Date"
+                  column="transaction_date"
+                  activeColumn={sortBy}
+                  direction={sortDirection}
+                  onSort={toggleSort}
+                />
+                <SortableTableHeader
+                  label="Status"
+                  column="status"
+                  activeColumn={sortBy}
+                  direction={sortDirection}
+                  onSort={toggleSort}
+                />
+                <SortableTableHeader
+                  label="Source"
+                  column="source"
+                  activeColumn={sortBy}
+                  direction={sortDirection}
+                  onSort={toggleSort}
+                />
+                <SortableTableHeader
+                  label="Amount"
+                  column="total_debit"
+                  activeColumn={sortBy}
+                  direction={sortDirection}
+                  onSort={toggleSort}
+                  align="right"
+                />
+                <SortableTableHeader
+                  label="Lines"
+                  column="lines_count"
+                  activeColumn={sortBy}
+                  direction={sortDirection}
+                  onSort={toggleSort}
+                  align="right"
+                />
+                <Th className="text-right">Actions</Th>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <TableRow key={i}>
+                  <Td><Skeleton className="h-4 w-24" /></Td>
+                  <Td><Skeleton className="h-4 w-48" /></Td>
+                  <Td><Skeleton className="h-4 w-20" /></Td>
+                  <Td><Skeleton className="h-4 w-24" /></Td>
+                  <Td><Skeleton className="h-4 w-16" /></Td>
+                  <Td><Skeleton className="h-4 w-16" /></Td>
+                  <Td className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></Td>
+                  <Td><Skeleton className="h-4 w-8" /></Td>
+                  <Td className="text-right"><Skeleton className="h-4 w-16" /></Td>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
         {!loading && data && (
           <>

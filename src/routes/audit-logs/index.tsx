@@ -39,18 +39,28 @@ function AuditLogsPage() {
 
       <Card>
         {loading && (
-          <div className="p-4 space-y-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-20 ml-auto" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            ))}
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <Th>Action</Th>
+                <Th>User</Th>
+                <Th>Reason</Th>
+                <Th>Created</Th>
+                <Th className="text-right">Actions</Th>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <TableRow key={i}>
+                  <Td><Skeleton className="h-4 w-24" /></Td>
+                  <Td><Skeleton className="h-4 w-20" /></Td>
+                  <Td><Skeleton className="h-4 w-48" /></Td>
+                  <Td><Skeleton className="h-4 w-20" /></Td>
+                  <Td className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></Td>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
         {!loading && data && (
           <>

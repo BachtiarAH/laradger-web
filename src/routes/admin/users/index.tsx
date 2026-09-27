@@ -207,19 +207,30 @@ function AdminUsersPage() {
 
       <Card>
         {loading && !data && (
-          <div className="p-4 space-y-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-40" />
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-20 ml-auto" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            ))}
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <Th>Name</Th>
+                <Th>Email</Th>
+                <Th>Role</Th>
+                <Th>Status</Th>
+                <Th>Created</Th>
+                <Th className="text-right">Actions</Th>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <TableRow key={i}>
+                  <Td><Skeleton className="h-4 w-32" /></Td>
+                  <Td><Skeleton className="h-4 w-40" /></Td>
+                  <Td><Skeleton className="h-4 w-16" /></Td>
+                  <Td><Skeleton className="h-4 w-16" /></Td>
+                  <Td><Skeleton className="h-4 w-20" /></Td>
+                  <Td className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></Td>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
         {data && (
           <>
