@@ -10,8 +10,8 @@ import {
   Button,
   Card,
   ErrorBox,
-  LoadingBox,
   PageHeader,
+  Skeleton,
   Table,
   TableBody,
   TableHeader,
@@ -112,7 +112,46 @@ function GoalDetailPage() {
 
       {actionError != null && <div className="mb-4"><ErrorBox error={actionError} /></div>}
       {error != null && !isNotFound && <div className="mb-4"><ErrorBox error={error} /></div>}
-      {loading && <Card className="p-4"><LoadingBox label="Loading goal…" /></Card>}
+      {loading && (
+        <div className="space-y-4">
+          <Card className="p-6">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="h-3 w-16 mb-2" />
+                  <Skeleton className="h-5 w-20" />
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 space-y-3">
+              <div>
+                <Skeleton className="h-3 w-24 mb-2" />
+                <Skeleton className="h-4 w-full max-w-md" />
+              </div>
+              <div>
+                <Skeleton className="h-3 w-28 mb-2" />
+                <Skeleton className="h-4 w-full max-w-sm" />
+              </div>
+            </div>
+          </Card>
+          <Card>
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {goal && (
         <>
@@ -215,7 +254,17 @@ function GoalDetailPage() {
             </Link>
           </div>
           {journals.loading ? (
-            <LoadingBox label="Loading contribution journals…" />
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-20 ml-auto" />
+                </div>
+              ))}
+            </div>
           ) : (journals.data?.data ?? []).length === 0 ? (
             <p className="text-sm text-muted-foreground py-2">
               No transfer transactions have contributed to this goal yet. You can create a new transfer or link an existing posted journal to this goal from its detail page.

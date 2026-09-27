@@ -8,8 +8,8 @@ import {
   Button,
   Card,
   ErrorBox,
-  LoadingBox,
   PageHeader,
+  Skeleton,
   formatDate,
 } from '../../components/ui'
 
@@ -63,7 +63,40 @@ function AuditLogDetailPage() {
       />
 
       {error != null && !isNotFound && <div className="mb-4"><ErrorBox error={error} /></div>}
-      {loading && <Card className="p-4"><LoadingBox label="Loading audit log…" /></Card>}
+      {loading && (
+        <div className="space-y-4">
+          <Card className="p-6">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="h-3 w-16 mb-2" />
+                  <Skeleton className="h-5 w-20" />
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 space-y-3">
+              <div>
+                <Skeleton className="h-3 w-24 mb-2" />
+                <Skeleton className="h-4 w-full max-w-md" />
+              </div>
+              <div>
+                <Skeleton className="h-3 w-28 mb-2" />
+                <Skeleton className="h-4 w-full max-w-sm" />
+              </div>
+            </div>
+          </Card>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card className="p-6">
+              <Skeleton className="h-4 w-16 mb-3" />
+              <Skeleton className="h-32 w-full" />
+            </Card>
+            <Card className="p-6">
+              <Skeleton className="h-4 w-16 mb-3" />
+              <Skeleton className="h-32 w-full" />
+            </Card>
+          </div>
+        </div>
+      )}
 
       {log && (
         <div className="space-y-4">

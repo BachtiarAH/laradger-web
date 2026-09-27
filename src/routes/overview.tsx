@@ -3,7 +3,7 @@ import * as React from 'react'
 import { api } from '../lib/api'
 import { useFetch } from '../lib/useFetch'
 import { useAuth } from '../lib/auth'
-import { Button, Card, LoadingBox, ErrorBox } from '../components/ui'
+import { Button, Card, ErrorBox, Skeleton } from '../components/ui'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import { TemplateQuickActions } from '../components/dashboard/TemplateQuickActions'
 import { ExpenseListCard } from '../components/dashboard/ExpenseListCard'
@@ -552,9 +552,49 @@ export default function OverviewPage() {
       <TemplateQuickActions />
 
       {(overview.loading) && (
-        <Card className="p-4">
-          <LoadingBox label="Loading overview…" />
-        </Card>
+        <div className="space-y-6">
+          <Card className="p-6">
+            <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.1fr)_auto_minmax(0,1fr)]">
+              <div>
+                <Skeleton className="h-3 w-24 mb-2" />
+                <Skeleton className="h-10 w-48 mb-2" />
+                <Skeleton className="h-4 w-32 mb-4" />
+                <div className="flex flex-wrap gap-2">
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-6 w-24" />
+                </div>
+              </div>
+              <Skeleton className="h-[168px] w-[168px] rounded-full" />
+              <div>
+                <Skeleton className="h-3 w-24 mb-2" />
+                <Skeleton className="h-24 w-full" />
+              </div>
+            </div>
+          </Card>
+          <Card className="p-6">
+            <div className="grid gap-4 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-xl bg-muted/50 p-4">
+                  <Skeleton className="h-3 w-20 mb-2" />
+                  <Skeleton className="h-8 w-24 mb-2" />
+                  <Skeleton className="h-3 w-28" />
+                </div>
+              ))}
+            </div>
+          </Card>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Card className="p-5">
+              <Skeleton className="h-4 w-24 mb-2" />
+              <Skeleton className="h-8 w-32 mb-2" />
+              <Skeleton className="h-3 w-28" />
+            </Card>
+            <Card className="p-5">
+              <Skeleton className="h-4 w-24 mb-2" />
+              <Skeleton className="h-8 w-32 mb-2" />
+              <Skeleton className="h-3 w-28" />
+            </Card>
+          </div>
+        </div>
       )}
 
       {(overview.error != null) && (

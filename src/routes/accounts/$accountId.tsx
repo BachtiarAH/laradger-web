@@ -15,13 +15,13 @@ import {
   ErrorBox,
   Field,
   Input,
-  LoadingBox,
   PageHeader,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
   SortableTableHeader,
   Table,
   TableBody,
@@ -184,7 +184,42 @@ function AccountDetailPage() {
 
       {actionError != null && <div className="mb-4"><ErrorBox error={actionError} /></div>}
       {error != null && !isNotFound && <div className="mb-4"><ErrorBox error={error} /></div>}
-      {loading && <Card className="p-4"><LoadingBox label="Loading account…" /></Card>}
+      {loading && (
+        <div className="space-y-4">
+          <Card className="p-6">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="h-3 w-16 mb-2" />
+                  <Skeleton className="h-5 w-20" />
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 space-y-3">
+              <div>
+                <Skeleton className="h-3 w-24 mb-2" />
+                <Skeleton className="h-4 w-full max-w-md" />
+              </div>
+              <div>
+                <Skeleton className="h-3 w-28 mb-2" />
+                <Skeleton className="h-4 w-full max-w-sm" />
+              </div>
+            </div>
+          </Card>
+          <Card className="p-6">
+            <Skeleton className="h-5 w-16 mb-4" />
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {account && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -263,7 +298,17 @@ function AccountDetailPage() {
           </div>
 
           {allocFetch.error != null && <div className="px-6 pb-4"><ErrorBox error={allocFetch.error} /></div>}
-          {allocFetch.loading && !allocations && <div className="px-6 pb-4"><LoadingBox label="Loading allocations…" /></div>}
+          {allocFetch.loading && !allocations && (
+            <div className="px-6 pb-4 space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-20 ml-auto" />
+                </div>
+              ))}
+            </div>
+          )}
 
           {allocations && (
             <>
@@ -358,7 +403,36 @@ function AccountDetailPage() {
             {analyticsFetch.loading && <span className="text-xs text-muted-foreground">Refreshing…</span>}
           </div>
           {analyticsFetch.error != null && <div className="mb-4"><ErrorBox error={analyticsFetch.error} /></div>}
-          {analyticsFetch.loading && !analytics && <LoadingBox label="Loading analytics…" />}
+          {analyticsFetch.loading && !analytics && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="rounded-lg border border-border p-3">
+                    <Skeleton className="h-3 w-16 mb-2" />
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div>
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-4 w-full" />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-4 w-full" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           {analytics && (
             <>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -480,7 +554,21 @@ function AccountDetailPage() {
           </div>
 
           {jlFetch.error != null && <div className="px-6 pb-4"><ErrorBox error={jlFetch.error} /></div>}
-          {jlFetch.loading && !jlFetch.data && <div className="px-6 pb-4"><LoadingBox label="Loading journal lines…" /></div>}
+          {jlFetch.loading && !jlFetch.data && (
+            <div className="px-6 pb-4 space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-20 ml-auto" />
+                </div>
+              ))}
+            </div>
+          )}
 
           {jlFetch.data && (
             <>

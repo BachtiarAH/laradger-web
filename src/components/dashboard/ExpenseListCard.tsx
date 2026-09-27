@@ -14,7 +14,7 @@ import {
   ErrorBox,
   Field,
   Input,
-  LoadingBox,
+  Skeleton,
   SortableTableHeader,
   Table,
   TableBody,
@@ -237,7 +237,19 @@ export function ExpenseListCard() {
         </div>
       )}
 
-      {loading && lines.length === 0 && <LoadingBox label="Loading expenses…" />}
+      {loading && lines.length === 0 && (
+        <div className="p-4 space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-20 ml-auto" />
+            </div>
+          ))}
+        </div>
+      )}
 
       {!loading && lines.length === 0 && error == null && (
         <p className="px-6 py-5 text-sm text-muted-foreground">

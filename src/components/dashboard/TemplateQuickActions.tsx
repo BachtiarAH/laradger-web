@@ -3,7 +3,7 @@ import * as React from 'react'
 import { ArrowRight, FileClock, Plus, RefreshCw } from 'lucide-react'
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
-import { Badge, Button, Card, ErrorBox, LoadingBox, formatDate } from '../ui'
+import { Badge, Button, Card, ErrorBox, Skeleton, formatDate } from '../ui'
 
 const PERIOD_LABEL: Record<string, string> = {
   daily: 'Daily',
@@ -48,7 +48,21 @@ export function TemplateQuickActions() {
         </div>
       </div>
 
-      {loading && !data && <LoadingBox label="Loading quick templates…" />}
+      {loading && !data && (
+        <div className="divide-y divide-border">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center">
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-4 w-40 mb-1" />
+                <Skeleton className="h-3 w-56 mb-1" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          ))}
+        </div>
+      )}
       {error != null && (
         <div className="space-y-3 px-6 py-4">
           <ErrorBox error={error} />
