@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
-import { api } from '../../lib/api'
+import { ApiError, api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
 import { RequireAuth } from '../../components/RequireAuth'
 import { Pagination } from '../../components/Pagination'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { Flag, Target } from 'lucide-react'
 import {
   Badge,
@@ -27,6 +28,7 @@ import {
   Td,
   Th,
 } from '../../components/ui'
+import type { Journal } from '../../lib/types'
 
 export const Route = createFileRoute('/journals/')({
   component: JournalsPage,
@@ -61,6 +63,10 @@ function JournalsPage() {
   const [to, setTo] = React.useState('')
   const [sortBy, setSortBy] = React.useState<JournalSortColumn>('transaction_date')
   const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc')
+
+  const [confirmPostJournal, setConfirmPostJournal] = React.useState<Journal | null>(null)
+  const [posting, setPosting] = React.useState(false)
+  const [postError, setPostError] = React.useState<unknown>(null)
 
   const allocations = useFetch(() => api.listAllocations({ per_page: 100 }), [])
   const goals = useFetch(() => api.listGoals({ per_page: 100 }), [])
@@ -110,6 +116,37 @@ function JournalsPage() {
       setSortDirection(['transaction_date', 'total_debit', 'lines_count'].includes(column) ? 'desc' : 'asc')
     }
     setPage(1)
+  }
+
+  const handlePost = async (journal: Journal) => {
+    setPostError(null)
+    setPosting(true)
+    try {
+      const full = await api.getJournal(journal.id)
+      const j = full.data
+      await api.updateJournal(journal.id, {
+        transaction_date: j.transaction_date,
+        description: j.description,
+        reference: j.reference,
+        status: 'posted',
+        source: j.source,
+        allocation_id: j.allocation_id ?? null,
+        goal_id: j.goal_id ?? null,
+        lines: (j.lines ?? []).map((line) => ({
+          account_id: line.account_id,
+          debit: Number(line.debit),
+          credit: Number(line.credit),
+          description: line.description ?? undefined,
+        })),
+        tags: (j.tags ?? []).map((tag) => tag.id),
+      })
+      setConfirmPostJournal(null)
+      window.location.reload()
+    } catch (err) {
+      setPostError(err)
+    } finally {
+      setPosting(false)
+    }
   }
 
   return (
@@ -345,14 +382,29 @@ function JournalsPage() {
                       <Td className="text-right">{fmtAmount(journal.total_debit)}</Td>
                       <Td>{journal.lines_count ?? journal.lines?.length ?? '—'}</Td>
                       <Td className="text-right">
-                        <Link
-                          to="/journals/$journalId"
-                          params={{ journalId: journal.id }}
-                          className="text-sm text-primary hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          View
-                        </Link>
+                        <div className="flex items-center justify-end gap-3">
+                          {journal.status === 'draft' && (
+                            <button
+                              type="button"
+                              className="text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setPostError(null)
+                                setConfirmPostJournal(journal)
+                              }}
+                            >
+                              Post
+                            </button>
+                          )}
+                          <Link
+                            to="/journals/$journalId"
+                            params={{ journalId: journal.id }}
+                            className="text-sm text-primary hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            View
+                          </Link>
+                        </div>
                       </Td>
                     </TableRow>
                   ))}
@@ -370,6 +422,25 @@ function JournalsPage() {
           </>
         )}
       </Card>
+
+      {postError != null && (
+        <div className="mt-4">
+          <ErrorBox error={postError} />
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmPostJournal !== null}
+        onOpenChange={(open) => !open && setConfirmPostJournal(null)}
+        title="Post journal"
+        description={
+          confirmPostJournal
+            ? `Post journal "${confirmPostJournal.reference || confirmPostJournal.id}"? This will change its status to posted.`
+            : ''
+        }
+        confirmLabel="Post"
+        onConfirm={() => confirmPostJournal && handlePost(confirmPostJournal)}
+      />
     </RequireAuth>
   )
 }
