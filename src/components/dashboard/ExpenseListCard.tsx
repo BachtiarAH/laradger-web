@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { CalendarRange, PieChart, RotateCcw } from 'lucide-react'
-// useNavigate removed — no longer navigating to journal detail
 import { api } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
 import { useDebounce } from '../../hooks/useDebounce'
@@ -31,6 +30,8 @@ const rangePresets: { value: RangePreset; label: string }[] = [
   { value: 'last_3_months', label: 'Last 3 months' },
   { value: 'all', label: 'All time' },
 ]
+
+const TOP_N = 10
 
 function toDateInput(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0')
@@ -66,12 +67,15 @@ type AccountSummary = {
   accountCode: string
   total: number
   percentage: number
+  isOther?: boolean
 }
 
 const CHART_COLORS = [
   '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6',
   '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', '#06b6d4',
 ]
+
+const OTHER_COLOR = '#9ca3af'
 
 function ExpenseDonut({ data }: { data: AccountSummary[] }) {
   const [hovered, setHovered] = React.useState<string | null>(null)
@@ -108,13 +112,16 @@ function ExpenseDonut({ data }: { data: AccountSummary[] }) {
   const centerValue = centerItem ? centerItem.total : total
   const centerLabel = centerItem ? centerItem.accountName : 'Total'
 
+  const getColor = (item: AccountSummary, i: number) =>
+    item.isOther ? OTHER_COLOR : CHART_COLORS[i % CHART_COLORS.length]
+
   return (
-    <div className="flex flex-col items-center">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Expense breakdown by account">
+    <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Expense breakdown by account" className="shrink-0">
         <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
           {data.map((item, i) => {
             const sliceLen = hidden ? 0 : (item.total / total) * circumference
-            const color = CHART_COLORS[i % CHART_COLORS.length]
+            const color = getColor(item, i)
             const currentOffset = offset
             offset += sliceLen
 
@@ -157,22 +164,24 @@ function ExpenseDonut({ data }: { data: AccountSummary[] }) {
           {centerLabel}
         </text>
       </svg>
-      <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+
+      <div className="flex w-full flex-col gap-1.5">
         {data.map((item, i) => (
           <button
             key={item.accountId}
             type="button"
-            className="flex cursor-pointer items-center gap-1.5"
+            className="flex cursor-pointer items-center gap-2 text-left text-xs text-muted-foreground hover:text-foreground transition-colors"
             onMouseEnter={() => setHovered(item.accountId)}
             onMouseLeave={() => setHovered(null)}
             onFocus={() => setHovered(item.accountId)}
             onBlur={() => setHovered(null)}
           >
             <span
-              className="size-2 rounded-full"
-              style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
+              className="size-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: getColor(item, i) }}
             />
-            {item.accountName} ({item.percentage.toFixed(1)}%)
+            <span className="min-w-0 flex-1 truncate">{item.accountName}</span>
+            <span className="shrink-0 font-medium text-foreground">{item.percentage.toFixed(1)}%</span>
           </button>
         ))}
       </div>
@@ -192,7 +201,6 @@ export function ExpenseListCard() {
 
   const shouldFetch = !!token && !!tenant
 
-  // Fetch all expenses (no pagination) to group by account on the frontend
   const { data, error, loading } = useFetch(
     () =>
       shouldFetch
@@ -211,7 +219,6 @@ export function ExpenseListCard() {
 
   const lines: JournalLine[] = data?.data ?? []
 
-  // Group by account and compute summary
   const summary = React.useMemo(() => {
     const grouped = new Map<string, AccountSummary>()
 
@@ -237,14 +244,36 @@ export function ExpenseListCard() {
 
     const total = Array.from(grouped.values()).reduce((sum, item) => sum + item.total, 0)
 
-    const result = Array.from(grouped.values())
+    const sorted = Array.from(grouped.values())
       .map((item) => ({
         ...item,
         percentage: total > 0 ? (item.total / total) * 100 : 0,
       }))
       .sort((a, b) => b.total - a.total)
 
-    return { items: result, total }
+    // Top N + Other
+    const topItems = sorted.slice(0, TOP_N)
+    const otherItems = sorted.slice(TOP_N)
+
+    let chartData: AccountSummary[]
+    if (otherItems.length > 0) {
+      const otherTotal = otherItems.reduce((sum, item) => sum + item.total, 0)
+      chartData = [
+        ...topItems,
+        {
+          accountId: '__other__',
+          accountName: `Other (${otherItems.length} account${otherItems.length === 1 ? '' : 's'})`,
+          accountCode: '',
+          total: otherTotal,
+          percentage: total > 0 ? (otherTotal / total) * 100 : 0,
+          isOther: true,
+        },
+      ]
+    } else {
+      chartData = topItems
+    }
+
+    return { items: chartData, total, fullCount: sorted.length }
   }, [lines])
 
   const applyPreset = (preset: RangePreset) => {
@@ -279,7 +308,7 @@ export function ExpenseListCard() {
               {data ? (
                 <>
                   <span className="font-semibold text-foreground">{idr(summary.total)}</span>
-                  {` across ${summary.items.length} account${summary.items.length === 1 ? '' : 's'}`}
+                  {` across ${summary.fullCount} account${summary.fullCount === 1 ? '' : 's'}`}
                 </>
               ) : (
                 'Grouped by expense account'
@@ -390,8 +419,14 @@ export function ExpenseListCard() {
                   {summary.items.map((item) => (
                     <TableRow key={item.accountId}>
                       <Td className="max-w-[16rem] truncate">
-                        <span className="font-medium">{item.accountCode}</span>
-                        <span className="text-muted-foreground"> — {item.accountName}</span>
+                        {item.isOther ? (
+                          <span className="italic text-muted-foreground">{item.accountName}</span>
+                        ) : (
+                          <>
+                            <span className="font-medium">{item.accountCode}</span>
+                            <span className="text-muted-foreground"> — {item.accountName}</span>
+                          </>
+                        )}
                       </Td>
                       <Td className="text-right font-medium text-red-600 dark:text-red-400">
                         {idr(item.total)}
