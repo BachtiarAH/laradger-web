@@ -20,13 +20,13 @@ import {
   ErrorBox,
   Field,
   Input,
-  LoadingBox,
   PageHeader,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
 } from '../../components/ui'
 import type { JournalSource, JournalStatus, Tag } from '../../lib/types'
 import { TagInput } from '../../components/TagInput'
@@ -262,7 +262,11 @@ function NewJournalPage() {
       />
 
       {tags.loading ? (
-        <Card className="p-4"><LoadingBox label="Loading tags…" /></Card>
+        <Card className="p-4 space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-full max-w-md" />
+          ))}
+        </Card>
       ) : (
         <>
           <AiDraftPanel
